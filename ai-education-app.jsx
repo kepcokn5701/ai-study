@@ -13,6 +13,31 @@ import {
 // ─── Shared Components ────────────────────────────────
 const SectionDivider = ({ conceptTitle, gameTitle }) => null;
 
+const DeepDive = ({ children }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-6">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-4 py-2.5 w-full rounded-xl text-sm font-medium transition-all border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-700"
+      >
+        <Layers size={14} />
+        <span>{open ? "딥다이브 접기" : "실제로는 이렇게 동작합니다"}</span>
+        <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-4 p-5 bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-gray-200 space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600">DEEP DIVE</span>
+          </div>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ConceptHeader = ({ icon: Icon, title }) => (
   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
     <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
@@ -282,6 +307,77 @@ const Tab2 = () => {
               {tokenized ? "원문 보기" : "토큰화 실행 ✂️"}
             </button>
             <p className="text-sm text-gray-500 leading-relaxed">AI는 문장을 한꺼번에 이해하지 못합니다. 마치 긴 문장을 단어 카드로 잘라내듯, 텍스트를 작은 조각(토큰)으로 쪼개는 것이 첫 단계입니다.</p>
+            <DeepDive>
+              {(() => {
+                const [demoInput, setDemoInput] = useState("저 내일 오후에 반차 쓰겠습니다");
+                const bpeSteps = [
+                  { label: "원문 입력", tokens: [demoInput], desc: "부장님 귀에 문장이 통째로 들어옵니다" },
+                  { label: "공백 분리", tokens: demoInput.split(" "), desc: "먼저 띄어쓰기 단위로 거칠게 나눕니다" },
+                  { label: "서브워드 분해 (BPE)", tokens: (() => {
+                    const result = [];
+                    demoInput.split(" ").forEach(w => {
+                      if (w.length > 2) { result.push(w.slice(0, Math.ceil(w.length / 2)), w.slice(Math.ceil(w.length / 2))); }
+                      else { result.push(w); }
+                    });
+                    return result;
+                  })(), desc: "자주 등장하는 글자 조합(서브워드)으로 더 잘게 쪼갭니다" },
+                  { label: "토큰 ID 매핑", tokens: (() => {
+                    const result = [];
+                    let id = 3842;
+                    demoInput.split(" ").forEach(w => {
+                      if (w.length > 2) {
+                        result.push({ text: w.slice(0, Math.ceil(w.length / 2)), id: id });
+                        result.push({ text: w.slice(Math.ceil(w.length / 2)), id: id + 157 });
+                        id += 311;
+                      } else {
+                        result.push({ text: w, id: id });
+                        id += 248;
+                      }
+                    });
+                    return result;
+                  })(), desc: "각 조각에 고유 번호(ID)를 부여합니다 — AI는 숫자만 이해합니다" },
+                ];
+                const [bpeStep, setBpeStep] = useState(0);
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">BPE (Byte Pair Encoding) — 실제 토큰화 과정</p>
+                    <p className="text-xs text-gray-500">GPT, Claude 등 대부분의 LLM은 BPE 알고리즘을 사용합니다. 단어를 통째로 외우는 게 아니라, 자주 나오는 글자 조합을 학습해서 효율적으로 쪼갭니다.</p>
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <span className="font-mono font-bold text-blue-600">Step {bpeStep + 1}/4</span>
+                        <span>—</span>
+                        <span className="font-medium">{bpeSteps[bpeStep].label}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 italic">{bpeSteps[bpeStep].desc}</p>
+                      <div className="flex gap-1.5 flex-wrap min-h-[48px] items-center">
+                        {bpeStep < 3 ? (
+                          bpeSteps[bpeStep].tokens.map((t, i) => (
+                            <span key={i} className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold border transition-all ${bpeStep === 0 ? "bg-gray-100 border-gray-200 text-gray-700" : bpeStep === 1 ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-purple-50 border-purple-200 text-purple-700"}`}>{t}</span>
+                          ))
+                        ) : (
+                          bpeSteps[3].tokens.map((t, i) => (
+                            <div key={i} className="flex flex-col items-center gap-0.5">
+                              <span className="px-3 py-1.5 rounded-md text-xs font-mono font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">{t.text}</span>
+                              <span className="text-[9px] font-mono text-gray-400">ID: {t.id}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setBpeStep(Math.max(0, bpeStep - 1))} disabled={bpeStep === 0} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">이전</button>
+                      <button onClick={() => setBpeStep(Math.min(3, bpeStep + 1))} disabled={bpeStep === 3} className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30">다음 단계</button>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>왜 서브워드로 쪼갤까?</strong> "쓰겠습니다"를 통째로 외우면 사전이 수십만 개 필요합니다. 하지만 "쓰겠" + "습니다"로 나누면, "습니다"는 다른 문장("하겠습니다", "먹겠습니다")에서도 재활용됩니다. 부장님도 모든 말을 통째로 외우는 게 아니라, 패턴을 파악하는 것이죠.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4의 토큰 사전 크기는 약 100,000개, Claude는 약 100,000개입니다. 한국어 한 글자는 평균 1.5~2 토큰을 소모합니다. "저 내일 오후에 반차 쓰겠습니다"는 실제로 약 12~15토큰이 됩니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -325,6 +421,105 @@ const Tab2 = () => {
             <button onClick={() => setShowScores(!showScores)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
               {showScores ? "수치 숨기기" : "수치화 시작 📊"}
             </button>
+            <DeepDive>
+              {(() => {
+                const [selectedWord, setSelectedWord] = useState(null);
+                const vectorSpace = [
+                  { word: "저", x: 20, y: 70, cluster: "인칭", color: "#3b82f6" },
+                  { word: "나", x: 25, y: 65, cluster: "인칭", color: "#3b82f6" },
+                  { word: "내일", x: 60, y: 30, cluster: "시간", color: "#f59e0b" },
+                  { word: "오후", x: 65, y: 25, cluster: "시간", color: "#f59e0b" },
+                  { word: "어제", x: 55, y: 35, cluster: "시간", color: "#f59e0b" },
+                  { word: "반차", x: 80, y: 60, cluster: "근무", color: "#10b981" },
+                  { word: "퇴근", x: 85, y: 55, cluster: "근무", color: "#10b981" },
+                  { word: "퇴사", x: 82, y: 75, cluster: "근무", color: "#10b981" },
+                  { word: "한숨", x: 40, y: 80, cluster: "감정", color: "#ef4444" },
+                  { word: "피곤", x: 35, y: 85, cluster: "감정", color: "#ef4444" },
+                ];
+                const dimensions = [
+                  { name: "시간 관련도", desc: "'내일', '오후'는 높고, '저'는 낮음" },
+                  { name: "감정 강도", desc: "'한숨', '피곤'이 높은 값" },
+                  { name: "행위 의도", desc: "'반차', '퇴사'에 강하게 반응" },
+                  { name: "주어 여부", desc: "'저', '나'만 높은 차원" },
+                ];
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">벡터 공간 — 단어가 숫자 좌표로 바뀌는 원리</p>
+                    <p className="text-xs text-gray-500">임베딩은 각 단어를 수백~수천 차원의 숫자 벡터로 변환합니다. 의미가 비슷한 단어는 가까이, 다른 단어는 멀리 배치됩니다. 아래는 부장님 수첩의 단어들을 2D로 축소해서 보여줍니다.</p>
+
+                    {/* 2D Vector Space */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-[10px] font-mono text-gray-400 mb-2">2D 벡터 공간 (실제로는 768~4096차원)</p>
+                      <div className="relative w-full h-56 bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-100 overflow-hidden">
+                        {/* Axis labels */}
+                        <span className="absolute bottom-1 right-2 text-[9px] text-gray-300 font-mono">차원 1</span>
+                        <span className="absolute top-1 left-2 text-[9px] text-gray-300 font-mono">차원 2</span>
+                        {/* Cluster circles */}
+                        <div className="absolute rounded-full border border-blue-100 bg-blue-50/30" style={{ left: "12%", top: "55%", width: "22%", height: "30%" }} />
+                        <div className="absolute rounded-full border border-amber-100 bg-amber-50/30" style={{ left: "45%", top: "12%", width: "28%", height: "35%" }} />
+                        <div className="absolute rounded-full border border-emerald-100 bg-emerald-50/30" style={{ left: "68%", top: "42%", width: "28%", height: "42%" }} />
+                        <div className="absolute rounded-full border border-red-100 bg-red-50/30" style={{ left: "22%", top: "68%", width: "28%", height: "30%" }} />
+                        {/* Words as dots */}
+                        {vectorSpace.map((item, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setSelectedWord(selectedWord === i ? null : i)}
+                            className={`absolute flex flex-col items-center gap-0.5 transition-all duration-300 cursor-pointer hover:scale-125 ${selectedWord === i ? "scale-125 z-10" : ""}`}
+                            style={{ left: `${item.x}%`, top: `${item.y}%`, transform: "translate(-50%, -50%)" }}
+                          >
+                            <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm transition-all ${selectedWord === i ? "w-4 h-4 ring-2 ring-offset-1" : ""}`} style={{ backgroundColor: item.color, ringColor: item.color }} />
+                            <span className="text-[9px] font-medium text-gray-600 whitespace-nowrap">{item.word}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {/* Cluster legend */}
+                      <div className="flex gap-3 mt-2 flex-wrap">
+                        {[{ label: "인칭", color: "#3b82f6" }, { label: "시간", color: "#f59e0b" }, { label: "근무", color: "#10b981" }, { label: "감정", color: "#ef4444" }].map((c, i) => (
+                          <div key={i} className="flex items-center gap-1 text-[10px] text-gray-500">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+                            {c.label}
+                          </div>
+                        ))}
+                      </div>
+                      {selectedWord !== null && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                          <p className="text-xs font-medium text-gray-700 mb-1.5">"{vectorSpace[selectedWord].word}"의 벡터 (4차원 축소)</p>
+                          <div className="flex gap-2 font-mono text-[10px]">
+                            {[0.73, -0.21, 0.55, 0.12].map((v, i) => {
+                              const jitter = ((selectedWord * 7 + i * 13) % 100) / 100 - 0.5;
+                              const val = Math.round((v + jitter) * 100) / 100;
+                              return <span key={i} className={`px-2 py-1 rounded ${val > 0 ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-700"}`}>{val > 0 ? "+" : ""}{val}</span>;
+                            })}
+                            <span className="text-gray-300 self-center">... ×768</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dimension explanation */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                      <p className="text-xs font-medium text-gray-700">각 차원은 무엇을 의미할까?</p>
+                      <p className="text-xs text-gray-500">부장님 수첩의 열(컬럼)이 2개였다면, 실제 AI는 768~4096개입니다:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {dimensions.map((d, i) => (
+                          <div key={i} className="p-2 bg-gray-50 rounded-lg">
+                            <p className="text-[10px] font-semibold text-gray-700">차원 #{i + 1}: {d.name}</p>
+                            <p className="text-[10px] text-gray-400">{d.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "반차"와 "퇴근"이 가까이 있는 건 AI가 수억 개의 문장에서 이 두 단어가 비슷한 맥락에 등장하는 것을 학습했기 때문입니다. 부장님이 수십 년 직장 경험으로 "반차"와 "퇴근"을 연결하는 것처럼, AI는 데이터에서 패턴을 찾습니다.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-3는 12,288차원, Claude는 약 8,192차원의 임베딩을 사용합니다. Word2Vec의 유명한 실험: vec("왕") - vec("남자") + vec("여자") ≈ vec("여왕"). 벡터 연산으로 의미가 계산됩니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -367,6 +562,134 @@ const Tab2 = () => {
             <button onClick={() => setShowLinks(!showLinks)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
               {showLinks ? "초기화" : "문맥 연결 시작 🔗"}
             </button>
+            <DeepDive>
+              {(() => {
+                const [activeHead, setActiveHead] = useState(0);
+                const tokens = ["저", "내일", "오후에", "한숨"];
+                const attentionHeads = [
+                  {
+                    name: "Head 1: 시간 관계",
+                    desc: "부장님의 첫 번째 시선 — '언제?'에 집중",
+                    matrix: [
+                      [0.1, 0.3, 0.5, 0.1],
+                      [0.1, 0.2, 0.6, 0.1],
+                      [0.1, 0.7, 0.1, 0.1],
+                      [0.1, 0.2, 0.3, 0.4],
+                    ]
+                  },
+                  {
+                    name: "Head 2: 감정 관계",
+                    desc: "부장님의 두 번째 시선 — '기분이 어때?'에 집중",
+                    matrix: [
+                      [0.2, 0.1, 0.1, 0.6],
+                      [0.1, 0.1, 0.2, 0.6],
+                      [0.1, 0.1, 0.3, 0.5],
+                      [0.3, 0.1, 0.2, 0.4],
+                    ]
+                  },
+                  {
+                    name: "Head 3: 주어-행위 관계",
+                    desc: "부장님의 세 번째 시선 — '누가 뭘 하려고?'에 집중",
+                    matrix: [
+                      [0.4, 0.1, 0.4, 0.1],
+                      [0.5, 0.1, 0.3, 0.1],
+                      [0.6, 0.1, 0.2, 0.1],
+                      [0.3, 0.1, 0.1, 0.5],
+                    ]
+                  }
+                ];
+                const head = attentionHeads[activeHead];
+                const getHeatColor = (val) => {
+                  if (val >= 0.6) return "bg-red-500 text-white";
+                  if (val >= 0.4) return "bg-orange-400 text-white";
+                  if (val >= 0.3) return "bg-yellow-300 text-gray-800";
+                  if (val >= 0.2) return "bg-yellow-100 text-gray-600";
+                  return "bg-gray-50 text-gray-400";
+                };
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">Q·K·V와 멀티헤드 어텐션 — 부장님의 다중 관점</p>
+                    <p className="text-xs text-gray-500">부장님이 김대리 말을 들을 때 동시에 여러 관점으로 분석합니다. 실제 AI도 마찬가지로 여러 "헤드"가 각기 다른 관계를 포착합니다.</p>
+
+                    {/* Q, K, V explanation */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-[10px] font-bold text-blue-700 mb-1">Q (Query)</p>
+                        <p className="text-[10px] text-blue-600">"내가 알고 싶은 것"</p>
+                        <p className="text-[10px] text-gray-500 mt-1">부장님: "이 단어가 뭘 궁금해하지?"</p>
+                      </div>
+                      <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <p className="text-[10px] font-bold text-emerald-700 mb-1">K (Key)</p>
+                        <p className="text-[10px] text-emerald-600">"내가 가진 정보 태그"</p>
+                        <p className="text-[10px] text-gray-500 mt-1">부장님: "이 단어가 어떤 정보를 제공하지?"</p>
+                      </div>
+                      <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p className="text-[10px] font-bold text-purple-700 mb-1">V (Value)</p>
+                        <p className="text-[10px] text-purple-600">"실제 정보 내용"</p>
+                        <p className="text-[10px] text-gray-500 mt-1">부장님: "그래서 실제로 뭘 전달하지?"</p>
+                      </div>
+                    </div>
+
+                    {/* Multi-head tabs */}
+                    <div className="flex gap-1.5 mt-2">
+                      {attentionHeads.map((h, i) => (
+                        <button key={i} onClick={() => setActiveHead(i)} className={`px-3 py-1.5 text-[10px] font-medium rounded-lg transition-all ${i === activeHead ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                          Head {i + 1}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Attention heatmap */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <p className="text-xs font-medium text-gray-700 mb-1">{head.name}</p>
+                      <p className="text-[10px] text-gray-400 mb-3">{head.desc}</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr>
+                              <th className="text-[9px] text-gray-400 p-1 text-left font-normal">Q↓ K→</th>
+                              {tokens.map((t, i) => (
+                                <th key={i} className="text-[10px] font-mono font-semibold text-gray-600 p-1 text-center">{t}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {tokens.map((t, i) => (
+                              <tr key={i}>
+                                <td className="text-[10px] font-mono font-semibold text-gray-600 p-1">{t}</td>
+                                {head.matrix[i].map((val, j) => (
+                                  <td key={j} className="p-1 text-center">
+                                    <span className={`inline-block w-full px-1 py-1 rounded text-[10px] font-mono font-bold ${getHeatColor(val)}`}>
+                                      {val.toFixed(2)}
+                                    </span>
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[9px] text-gray-400">약함</span>
+                        <div className="flex gap-0.5">
+                          {["bg-gray-100", "bg-yellow-100", "bg-yellow-300", "bg-orange-400", "bg-red-500"].map((c, i) => (
+                            <div key={i} className={`w-4 h-2 rounded-sm ${c}`} />
+                          ))}
+                        </div>
+                        <span className="text-[9px] text-gray-400">강함</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>왜 멀티헤드일까?</strong> 부장님이 "시간", "감정", "주어-행위" 세 가지를 동시에 파악하듯, GPT-4는 128개의 헤드가, Claude는 64~128개의 헤드가 각각 다른 관계를 동시에 포착합니다. 하나의 헤드만으로는 "내일 오후"의 시간 관계만 보고 "한숨"의 감정 신호를 놓칠 수 있습니다.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> 어텐션 계산: Attention(Q,K,V) = softmax(QK<sup>T</sup> / √d<sub>k</sub>)V. GPT-4는 약 128개 헤드 × 128차원 = 16,384차원. 모든 토큰 쌍의 관계를 계산하므로, 토큰 N개면 N² 번의 연산이 필요합니다 (이것이 긴 문장이 비싼 이유).</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -418,6 +741,93 @@ const Tab2 = () => {
             <button onClick={() => setRunning(!running)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
               {running ? "리셋 🔄" : "순전파 시작 ⚡"}
             </button>
+            <DeepDive>
+              {(() => {
+                const [activeNeuron, setActiveNeuron] = useState(null);
+                const [reluInput, setReluInput] = useState(0.5);
+                const layerDetails = [
+                  { name: "Layer 1 — 표면 인식", neurons: 6, desc: "글자 형태, 품사 구분", example: "부장님: '저'는 주어구나, '내일'은 시간이네" },
+                  { name: "Layer 6 — 문법 이해", neurons: 5, desc: "문장 구조, 어순 파악", example: "부장님: '저 + 내일 + 오후에' → 누군가 내일 뭔가를 할 예정" },
+                  { name: "Layer 12 — 의미 추론", neurons: 5, desc: "의도, 감정, 맥락 종합", example: "부장님: 한숨 + 내일 오후 = 뭔가 쉬고 싶다는 신호!" },
+                  { name: "Layer 24 — 최종 결론", neurons: 4, desc: "예측 후보 생성", example: "부장님: 반차(80%), 외근(15%), 퇴사(5%)" },
+                ];
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">FFN(Feed-Forward Network) — 뉴런이 실제로 하는 일</p>
+                    <p className="text-xs text-gray-500">어텐션으로 "어디를 볼지" 정했다면, FFN은 "봐서 어떤 결론을 내릴지" 계산합니다. 각 레이어가 점점 더 추상적인 개념을 학습합니다.</p>
+
+                    {/* Layer visualization */}
+                    <div className="space-y-3">
+                      {layerDetails.map((layer, li) => (
+                        <div key={li} className="bg-white rounded-lg border border-gray-200 p-3">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700">{layer.name}</p>
+                              <p className="text-[10px] text-gray-400">{layer.desc}</p>
+                            </div>
+                          </div>
+                          {/* Neurons */}
+                          <div className="flex items-center gap-1.5 mb-2">
+                            {Array.from({ length: layer.neurons }, (_, ni) => {
+                              const activation = Math.sin((li + 1) * (ni + 1) * 1.3) * 0.5 + 0.5;
+                              const isActive = activeNeuron === `${li}-${ni}`;
+                              return (
+                                <button
+                                  key={ni}
+                                  onClick={() => setActiveNeuron(isActive ? null : `${li}-${ni}`)}
+                                  className={`relative w-8 h-8 rounded-full border-2 flex items-center justify-center text-[8px] font-mono font-bold transition-all cursor-pointer ${activation > 0.6 ? "bg-gray-900 text-white border-gray-900" : activation > 0.3 ? "bg-gray-400 text-white border-gray-400" : "bg-gray-100 text-gray-400 border-gray-200"} ${isActive ? "ring-2 ring-blue-400 ring-offset-1 scale-110" : "hover:scale-105"}`}
+                                >
+                                  {(activation).toFixed(1)}
+                                </button>
+                              );
+                            })}
+                            <span className="text-[9px] text-gray-300 ml-1">... ×4096</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 italic">💬 {layer.example}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Activation function interactive */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                      <p className="text-xs font-medium text-gray-700">활성화 함수 — 뉴런의 ON/OFF 스위치</p>
+                      <p className="text-[10px] text-gray-500">각 뉴런은 입력값을 받아 활성화 함수를 통과시킵니다. 음수 입력은 차단(OFF)하고, 양수만 통과(ON)시킵니다.</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-gray-500 w-12">입력값:</span>
+                        <input
+                          type="range" min="-2" max="2" step="0.1"
+                          value={reluInput}
+                          onChange={(e) => setReluInput(parseFloat(e.target.value))}
+                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs font-mono font-bold w-10 text-right">{reluInput.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="text-center">
+                          <p className="text-[9px] text-gray-400">ReLU 출력</p>
+                          <p className={`text-lg font-mono font-bold ${reluInput > 0 ? "text-emerald-600" : "text-gray-300"}`}>{Math.max(0, reluInput).toFixed(1)}</p>
+                        </div>
+                        <ArrowRight size={12} className="text-gray-300" />
+                        <div className="text-center">
+                          <p className="text-[9px] text-gray-400">GELU 출력</p>
+                          <p className={`text-lg font-mono font-bold ${reluInput > -0.5 ? "text-blue-600" : "text-gray-300"}`}>{(reluInput * (0.5 * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (reluInput + 0.044715 * Math.pow(reluInput, 3)))))).toFixed(2)}</p>
+                        </div>
+                        <div className="flex-1 text-[10px] text-gray-500">
+                          {reluInput <= 0 ? "💤 부장님: '이 정보는 무시!'" : reluInput < 1 ? "🤔 부장님: '음, 약간 참고할게'" : "🔥 부장님: '이건 핵심 정보다!'"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> GPT-4는 약 120개 레이어, Claude는 수십 개 레이어를 가집니다. 앞쪽 레이어는 "단어가 뭐지?" 수준이고, 뒤쪽 레이어는 "이 사람이 퇴사하고 싶은 건지 반차를 쓰고 싶은 건지" 수준의 추론을 합니다. 부장님의 뇌도 마찬가지로 — 소리 인식 → 단어 이해 → 상황 판단 → 결론 도출 순서로 처리합니다.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> FFN의 은닉 차원은 보통 임베딩의 4배 (예: 8,192 × 4 = 32,768). GPT-4 전체 파라미터 수는 약 1.8조 개로 추정. 이 파라미터 하나하나가 부장님의 "경험에서 온 직감" 하나하나입니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -459,6 +869,107 @@ const Tab2 = () => {
             <button onClick={() => setShowResult(!showResult)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
               {showResult ? "숨기기" : "확률 계산 🎰"}
             </button>
+            <DeepDive>
+              {(() => {
+                const [temperature, setTemperature] = useState(1.0);
+                const rawLogits = [3.2, 1.5, -0.5, -1.8, 0.3];
+                const labels = ["반차", "외근", "야근", "퇴사", "회의"];
+                const computeSoftmax = (logits, temp) => {
+                  const scaled = logits.map(l => l / Math.max(temp, 0.01));
+                  const maxVal = Math.max(...scaled);
+                  const exps = scaled.map(s => Math.exp(s - maxVal));
+                  const sum = exps.reduce((a, b) => a + b, 0);
+                  return exps.map(e => e / sum);
+                };
+                const probs = computeSoftmax(rawLogits, temperature);
+                const topK = 3;
+                const topP = 0.9;
+                const sorted = probs.map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
+                let cumP = 0;
+                const topPCutoff = sorted.findIndex(item => { cumP += item.p; return cumP >= topP; });
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">Temperature, Top-K, Top-P — 부장님의 직감 조절기</p>
+                    <p className="text-xs text-gray-500">소프트맥스 전에 "얼마나 확신을 가지고 답할지" 조절하는 파라미터들입니다. 실제 ChatGPT, Claude에서 설정할 수 있는 값입니다.</p>
+
+                    {/* Temperature slider */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-gray-700 w-24">Temperature:</span>
+                        <input
+                          type="range" min="0.1" max="2.0" step="0.1"
+                          value={temperature}
+                          onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
+                        />
+                        <span className="text-sm font-mono font-bold w-8 text-right">{temperature.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <span className={`px-2 py-0.5 rounded ${temperature < 0.5 ? "bg-blue-100 text-blue-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🧊 차갑게 (정확)</span>
+                        <span className={`px-2 py-0.5 rounded ${temperature >= 0.8 && temperature <= 1.2 ? "bg-gray-200 text-gray-700 font-bold" : "bg-gray-50 text-gray-400"}`}>⚖️ 보통</span>
+                        <span className={`px-2 py-0.5 rounded ${temperature > 1.5 ? "bg-red-100 text-red-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🔥 뜨겁게 (창의적)</span>
+                      </div>
+
+                      {/* Probability bars */}
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-gray-400 font-mono">softmax(logits / {temperature.toFixed(1)}) =</p>
+                        {labels.map((label, i) => {
+                          const prob = probs[i];
+                          const rank = sorted.findIndex(s => s.i === i);
+                          const isTopK = rank < topK;
+                          const isTopP = rank <= topPCutoff;
+                          return (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="text-[10px] font-medium text-gray-600 w-10">{label}</span>
+                              <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden relative">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${prob > 0.4 ? "bg-gray-900" : prob > 0.15 ? "bg-gray-600" : "bg-gray-300"}`}
+                                  style={{ width: `${Math.max(prob * 100, 1)}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-mono font-bold w-12 text-right">{(prob * 100).toFixed(1)}%</span>
+                              <div className="flex gap-0.5 w-12">
+                                {isTopK && <span className="text-[8px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded">K</span>}
+                                {isTopP && <span className="text-[8px] px-1 py-0.5 bg-emerald-100 text-emerald-600 rounded">P</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Interpretation */}
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-600">
+                          {temperature < 0.5
+                            ? "🧊 부장님이 매우 확신에 찬 상태입니다. \"무조건 반차야!\" — 다른 가능성은 거의 무시합니다."
+                            : temperature <= 1.2
+                            ? "⚖️ 부장님이 합리적으로 판단합니다. \"반차가 유력하지만 외근일 수도...\" — 상위 후보를 균형 있게 고려합니다."
+                            : "🔥 부장님이 열린 마음입니다. \"반차? 외근? 회의? 다 가능해!\" — 예상치 못한 답이 나올 수 있습니다."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Top-K, Top-P explanation */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-[10px] font-bold text-blue-700 mb-1">Top-K = {topK}</p>
+                        <p className="text-[10px] text-blue-600">상위 {topK}개 후보만 남기고 나머지 제거</p>
+                        <p className="text-[10px] text-gray-500 mt-1">부장님: "가능성 낮은 건 무시!"</p>
+                      </div>
+                      <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <p className="text-[10px] font-bold text-emerald-700 mb-1">Top-P = {topP}</p>
+                        <p className="text-[10px] text-emerald-600">누적 확률 {topP * 100}%까지만 포함</p>
+                        <p className="text-[10px] text-gray-500 mt-1">부장님: "90%까지 커버하면 충분해"</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>실무 팁:</strong> 코드 생성 시 temperature=0.2 (정확한 답 필요), 창작 글쓰기 시 temperature=0.8~1.2 (다양한 표현 필요), 브레인스토밍 시 temperature=1.5+ (뜻밖의 아이디어). ChatGPT에서 "같은 질문에 다른 답이 나오는 이유"가 바로 이 temperature와 샘플링 때문입니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -491,6 +1002,112 @@ const Tab2 = () => {
               다음 단어 예측 🔄
             </button>
             {iteration >= 2 && <button onClick={() => setIteration(0)} className="ml-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-800"><RotateCcw size={14} className="inline mr-1" />리셋</button>}
+            <DeepDive>
+              {(() => {
+                const [genStep, setGenStep] = useState(0);
+                const generationSteps = [
+                  {
+                    context: ["저", "내일", "오후에"],
+                    candidates: [
+                      { word: "반차", prob: 42 },
+                      { word: "회의", prob: 18 },
+                      { word: "출장", prob: 15 },
+                      { word: "퇴근", prob: 12 },
+                      { word: "병원", prob: 8 },
+                    ],
+                    chosen: "반차",
+                    explanation: "어텐션이 '한숨+오후'에 집중 → '쉬고 싶다' 의도 포착"
+                  },
+                  {
+                    context: ["저", "내일", "오후에", "반차"],
+                    candidates: [
+                      { word: "쓰겠", prob: 55 },
+                      { word: "내겠", prob: 20 },
+                      { word: "쓸게", prob: 12 },
+                      { word: "쓸까", prob: 8 },
+                      { word: "넣겠", prob: 5 },
+                    ],
+                    chosen: "쓰겠",
+                    explanation: "'반차' 다음에 높은 확률로 오는 동사 패턴 학습"
+                  },
+                  {
+                    context: ["저", "내일", "오후에", "반차", "쓰겠"],
+                    candidates: [
+                      { word: "습니다", prob: 72 },
+                      { word: "는데요", prob: 15 },
+                      { word: "어요", prob: 8 },
+                      { word: "다", prob: 3 },
+                      { word: "는데", prob: 2 },
+                    ],
+                    chosen: "습니다",
+                    explanation: "직장 상사에게 보고하는 존댓말 문맥 → '습니다' 확률 급등"
+                  },
+                ];
+                const currentStep = generationSteps[Math.min(genStep, generationSteps.length - 1)];
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">토큰별 생성 과정 — 부장님이 한 글자씩 예측하는 법</p>
+                    <p className="text-xs text-gray-500">LLM은 한 번에 전체 문장을 만들지 않습니다. 매번 "지금까지의 맥락"을 보고 "다음 한 토큰"만 예측하는 과정을 반복합니다.</p>
+
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                      {/* Current context */}
+                      <div>
+                        <p className="text-[10px] text-gray-400 mb-2">현재 컨텍스트 (Step {genStep + 1}/{generationSteps.length})</p>
+                        <div className="flex gap-1.5 flex-wrap items-center">
+                          {currentStep.context.map((t, i) => (
+                            <span key={i} className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold border ${i >= currentStep.context.length - (genStep > 0 ? 1 : 0) && genStep > 0 ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-gray-50 border-gray-200 text-gray-700"}`}>{t}</span>
+                          ))}
+                          <span className="text-xs text-gray-300 animate-pulse">▌</span>
+                        </div>
+                      </div>
+
+                      {/* Candidate probabilities */}
+                      <div>
+                        <p className="text-[10px] text-gray-400 mb-2">다음 토큰 후보 확률 분포</p>
+                        <div className="space-y-1.5">
+                          {currentStep.candidates.map((c, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className={`text-[10px] font-mono w-14 text-right ${c.word === currentStep.chosen ? "font-bold text-blue-700" : "text-gray-500"}`}>{c.word}</span>
+                              <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${c.word === currentStep.chosen ? "bg-blue-500" : "bg-gray-300"}`}
+                                  style={{ width: `${c.prob}%`, transitionDelay: `${i * 100}ms` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-mono w-8 text-right text-gray-500">{c.prob}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Explanation */}
+                      <div className="p-2 bg-blue-50 rounded-lg">
+                        <p className="text-[10px] text-blue-700">💬 부장님 추론: {currentStep.explanation}</p>
+                      </div>
+
+                      {/* KV Cache note */}
+                      {genStep > 0 && (
+                        <div className="p-2 bg-purple-50 rounded-lg border border-purple-100">
+                          <p className="text-[10px] text-purple-700"><strong>KV 캐시:</strong> "저", "내일", "오후에"는 이미 이전 스텝에서 계산했으므로 다시 계산하지 않습니다. 새로 추가된 "{currentStep.context[currentStep.context.length - 1]}"만 처리하면 됩니다. 이것이 ChatGPT가 긴 답변에서도 속도를 유지하는 비결입니다.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setGenStep(Math.max(0, genStep - 1))} disabled={genStep === 0} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">이전</button>
+                      <button onClick={() => setGenStep(Math.min(generationSteps.length - 1, genStep + 1))} disabled={genStep >= generationSteps.length - 1} className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30">다음 토큰 생성</button>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "저 내일 오후에 반차 쓰겠습니다"라는 7토큰 답변을 만들려면, 전체 모델(임베딩→어텐션→FFN→소프트맥스)이 7번 돌아갑니다. Claude가 긴 답변을 쓸 때 글자가 하나씩 나타나는 이유가 바로 이것입니다 — 실시간으로 한 토큰씩 생성 중이기 때문입니다.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4는 초당 약 40~80 토큰 생성. 1,000자 답변 ≈ 약 500~700 토큰 ≈ 약 10초. 각 토큰 생성마다 1.8조 개 파라미터가 전부 동원됩니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
@@ -564,21 +1181,165 @@ const Tab2 = () => {
                 <RotateCcw size={14} /> 처음부터
               </button>
             )}
+            <DeepDive>
+              {(() => {
+                const [epoch, setEpoch] = useState(0);
+                const [lr, setLr] = useState(0.01);
+                const maxEpochs = 8;
+                const lossHistory = Array.from({ length: maxEpochs }, (_, i) => {
+                  const base = 2.5 * Math.exp(-lr * 50 * (i + 1)) + 0.1;
+                  const noise = Math.sin(i * 3) * 0.05;
+                  return Math.max(0.05, base + noise);
+                });
+                const accuracyHistory = lossHistory.map(l => Math.min(98, Math.max(5, (1 - l / 2.5) * 100)));
+                const weightUpdates = [
+                  { name: '"한숨→반차"', before: 0.92, after: (idx) => Math.max(0.1, 0.92 - lr * 50 * (idx + 1) * 0.08) },
+                  { name: '"한숨→퇴사"', before: 0.05, after: (idx) => Math.min(0.9, 0.05 + lr * 50 * (idx + 1) * 0.1) },
+                  { name: '"오후→반차"', before: 0.75, after: (idx) => Math.max(0.2, 0.75 - lr * 50 * (idx + 1) * 0.06) },
+                ];
+
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700 font-medium">경사하강법 & 학습률 — 부장님이 실수에서 배우는 속도</p>
+                    <p className="text-xs text-gray-500">역전파는 "오차를 줄이는 방향"으로 가중치를 조금씩 수정합니다. 학습률(Learning Rate)은 "한 번에 얼마나 크게 수정할지"를 결정합니다.</p>
+
+                    {/* Learning Rate slider */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-gray-700 w-24">학습률 (LR):</span>
+                        <input
+                          type="range" min="0.001" max="0.1" step="0.001"
+                          value={lr}
+                          onChange={(e) => { setLr(parseFloat(e.target.value)); setEpoch(0); }}
+                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
+                        />
+                        <span className="text-xs font-mono font-bold w-12 text-right">{lr.toFixed(3)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <span className={`px-2 py-0.5 rounded ${lr < 0.005 ? "bg-blue-100 text-blue-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🐢 너무 느림</span>
+                        <span className={`px-2 py-0.5 rounded ${lr >= 0.005 && lr <= 0.03 ? "bg-emerald-100 text-emerald-700 font-bold" : "bg-gray-50 text-gray-400"}`}>✅ 적절</span>
+                        <span className={`px-2 py-0.5 rounded ${lr > 0.05 ? "bg-red-100 text-red-700 font-bold" : "bg-gray-50 text-gray-400"}`}>💥 발산 위험</span>
+                      </div>
+                    </div>
+
+                    {/* Loss graph (text-based) */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                      <p className="text-xs font-medium text-gray-700">학습 곡선 — 에포크별 손실(Loss) 변화</p>
+                      <div className="space-y-1">
+                        {lossHistory.slice(0, epoch + 1).map((loss, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono text-gray-400 w-14">EP {i + 1}</span>
+                            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${loss > 1.5 ? "bg-red-500" : loss > 0.5 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                style={{ width: `${Math.min(100, loss / 2.5 * 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-[9px] font-mono w-10 text-right">{loss.toFixed(2)}</span>
+                            <span className="text-[9px] font-mono text-gray-400 w-12 text-right">{accuracyHistory[i].toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEpoch(Math.min(maxEpochs - 1, epoch + 1))}
+                          disabled={epoch >= maxEpochs - 1}
+                          className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30"
+                        >
+                          다음 에포크 학습
+                        </button>
+                        <button onClick={() => setEpoch(0)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">리셋</button>
+                      </div>
+                    </div>
+
+                    {/* Weight changes */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                      <p className="text-xs font-medium text-gray-700">가중치 변화 추적</p>
+                      {weightUpdates.map((w, i) => {
+                        const afterVal = epoch > 0 ? w.after(epoch - 1) : w.before;
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-[10px]">
+                            <span className="text-gray-600 w-24 font-mono">{w.name}</span>
+                            <span className="font-mono text-gray-400 w-8">{w.before.toFixed(2)}</span>
+                            <ArrowRight size={10} className="text-gray-300" />
+                            <span className={`font-mono font-bold w-8 ${Math.abs(afterVal - w.before) > 0.3 ? "text-emerald-600" : "text-gray-600"}`}>{afterVal.toFixed(2)}</span>
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${Math.abs(afterVal - w.before) / 0.9 * 100}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {epoch > 0 && (
+                        <p className="text-[10px] text-gray-500 italic mt-2">
+                          💬 부장님 (에포크 {epoch}): {epoch < 3 ? '"아직 헷갈리지만 방향은 잡았어..."' : epoch < 6 ? '"이제 좀 감이 오는데?"' : '"이제 완벽해! 한숨 = 퇴사 신호!"'}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> GPT-4 학습에는 약 수천 GPU × 수개월이 소요되었고, 비용은 1억 달러 이상으로 추정됩니다. 수조 개의 토큰에서 수조 번의 역전파가 일어났습니다. 부장님이 30년 직장 경험을 쌓는 것과 같되, 부장님보다 수백만 배 많은 "경험"을 합니다.</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> Adam 옵티마이저의 학습률은 보통 1e-4 ~ 3e-4. GPT-4는 약 13조 토큰으로 학습. 한 번의 학습(에포크)이 아닌 수만 번의 스텝으로 가중치를 조정합니다. 학습 후에도 RLHF(인간 피드백 강화학습)로 추가 튜닝합니다.</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DeepDive>
           </div>
         );
       }
     },
   ];
 
-  // Game logic
-  const gameWords = ["부장님", "이번", "프로젝트", "예산이"];
-  const keyWords = new Set(["프로젝트", "예산이"]);
-  const predictionOptions = [
-    { word: "부족합니다", prob: 65, correct: true },
-    { word: "남았습니다", prob: 20, correct: false },
-    { word: "좋습니다", prob: 10, correct: false },
-    { word: "삭제됐습니다", prob: 5, correct: false },
+  // Game logic — multi-round
+  const rounds = [
+    {
+      speaker: "김대리",
+      context: "월요일 아침, 김대리가 커피를 들고 부장님 자리로 다가옵니다.",
+      words: ["부장님", "이번", "프로젝트", "예산이"],
+      keyWords: new Set(["프로젝트", "예산이"]),
+      predictions: [
+        { word: "부족합니다", prob: 65, correct: true },
+        { word: "남았습니다", prob: 20, correct: false },
+        { word: "좋습니다", prob: 10, correct: false },
+        { word: "삭제됐습니다", prob: 5, correct: false },
+      ],
+      explanation: "'프로젝트'와 '예산이'가 핵심 어텐션 포인트입니다. 직장에서 예산 언급은 보통 부족함을 호소할 때가 많습니다.",
+      difficulty: "쉬움"
+    },
+    {
+      speaker: "박과장",
+      context: "점심시간 직후, 박과장이 회의실에서 나오며 혼잣말을 합니다.",
+      words: ["아까", "회의에서", "대표님이", "우리", "팀", "성과를"],
+      keyWords: new Set(["대표님이", "성과를"]),
+      predictions: [
+        { word: "칭찬하셨어", prob: 45, correct: false },
+        { word: "지적하셨어", prob: 35, correct: true },
+        { word: "물어보셨어", prob: 15, correct: false },
+        { word: "발표하셨어", prob: 5, correct: false },
+      ],
+      explanation: "'대표님이' + '성과를' 조합에서, 회의 직후 혼잣말을 하는 맥락이 중요합니다. 좋은 소식이면 혼잣말보다는 동료에게 바로 알리죠. 부정적 맥락 어텐션이 더 높습니다.",
+      difficulty: "보통"
+    },
+    {
+      speaker: "이사원",
+      context: "퇴근 10분 전, 이사원이 노트북을 닫으며 옆 동료에게 말합니다.",
+      words: ["오늘", "저녁에", "갑자기", "부장님이", "내일", "아침까지", "보고서를"],
+      keyWords: new Set(["갑자기", "내일", "아침까지", "보고서를"]),
+      predictions: [
+        { word: "제출하래요", prob: 50, correct: true },
+        { word: "검토하래요", prob: 25, correct: false },
+        { word: "수정하래요", prob: 15, correct: false },
+        { word: "준비하래요", prob: 10, correct: false },
+      ],
+      explanation: "'갑자기' + '내일 아침까지' + '보고서를' — 긴급성(갑자기), 마감(아침까지), 대상(보고서)의 3중 어텐션이 형성됩니다. 퇴근 전 급한 업무 지시는 '제출'이 가장 높은 확률입니다. 이것이 멀티헤드 어텐션의 힘입니다.",
+      difficulty: "어려움"
+    },
   ];
+  const [currentRound, setCurrentRound] = useState(0);
+  const [roundScores, setRoundScores] = useState([]);
+  const round = rounds[currentRound];
 
   useEffect(() => {
     if (gameStarted && gamePhase === "attention" && timeLeft > 0) {
@@ -605,10 +1366,21 @@ const Tab2 = () => {
   const handlePrediction = (option) => {
     setSelectedPrediction(option);
     clearTimeout(timerRef.current);
-    const attentionScore = [...selectedWords].filter(w => keyWords.has(w)).length * 25;
+    const attentionScore = [...selectedWords].filter(w => round.keyWords.has(w)).length * Math.round(50 / round.keyWords.size);
     const predScore = option.correct ? 50 : 0;
-    setGameScore(attentionScore + predScore);
+    const score = Math.min(100, attentionScore + predScore);
+    setGameScore(score);
     setGamePhase("result");
+  };
+
+  const nextRound = () => {
+    setRoundScores(prev => [...prev, gameScore]);
+    setCurrentRound(prev => prev + 1);
+    setGamePhase("attention");
+    setSelectedWords(new Set());
+    setSelectedPrediction(null);
+    setTimeLeft(100);
+    setGameScore(null);
   };
 
   const resetGame = () => {
@@ -618,6 +1390,8 @@ const Tab2 = () => {
     setSelectedPrediction(null);
     setTimeLeft(100);
     setGameScore(null);
+    setCurrentRound(0);
+    setRoundScores([]);
   };
 
   const StepContent = steps[step]?.content;
@@ -670,11 +1444,48 @@ const Tab2 = () => {
       <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
         <GameHeader icon={Gamepad2} title="실전 게임 — 부장님 시뮬레이터" />
 
+        {/* Round indicator */}
+        {gameStarted && currentRound < rounds.length && (
+          <div className="flex items-center gap-2 mb-4">
+            {rounds.map((r, i) => (
+              <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium ${i === currentRound ? "bg-gray-900 text-white" : i < currentRound ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-400"}`}>
+                <span>R{i + 1}</span>
+                <span className="hidden sm:inline">({r.difficulty})</span>
+                {i < currentRound && roundScores[i] !== undefined && <span className="font-mono">{roundScores[i]}점</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
         {!gameStarted ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-500 mb-4">새로운 문장이 들어왔습니다! 핵심 단어를 찾고 다음 단어를 예측하세요.</p>
+            <p className="text-sm text-gray-500 mb-2">부장님이 되어 직원들의 말에서 핵심을 파악하고 다음 단어를 예측하세요!</p>
+            <p className="text-xs text-gray-400 mb-4">총 {rounds.length}라운드 — 점점 어려워집니다</p>
             <button onClick={() => setGameStarted(true)} className="px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
               <Play size={16} className="inline mr-2" /> 게임 시작
+            </button>
+          </div>
+        ) : currentRound >= rounds.length ? (
+          /* Final result */
+          <div className="space-y-4 text-center py-6" style={{ animation: "fadeIn 0.5s ease-out" }}>
+            <div className="text-4xl mb-2">🏆</div>
+            <div className="text-2xl font-bold text-gray-900">{Math.round([...roundScores, gameScore].filter(s => s !== null).reduce((a, b) => a + b, 0) / rounds.length)}점</div>
+            <p className="text-sm text-gray-600">
+              {[...roundScores].reduce((a, b) => a + b, 0) / roundScores.length >= 75 ? "부장님 급 눈치왕! AI 어텐션 마스터!" : [...roundScores].reduce((a, b) => a + b, 0) / roundScores.length >= 50 ? "꽤 괜찮은 눈치! 조금만 더 연습하면 부장님!" : "눈치 수련이 필요합니다..."}
+            </p>
+            <div className="space-y-2 mt-4 max-w-xs mx-auto">
+              {rounds.map((r, i) => (
+                <div key={i} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">R{i + 1}: {r.speaker} ({r.difficulty})</span>
+                  <span className={`font-mono font-bold ${roundScores[i] >= 75 ? "text-emerald-600" : roundScores[i] >= 50 ? "text-amber-600" : "text-red-500"}`}>{roundScores[i]}점</span>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 mt-4 text-left max-w-sm mx-auto">
+              <p className="text-xs text-blue-800"><strong>AI 해석:</strong> 이 게임에서 당신이 한 것이 바로 LLM의 핵심 동작입니다. 핵심 단어 선택 = 셀프 어텐션, 다음 단어 예측 = 소프트맥스 + 자기회귀. 문장이 길어질수록(라운드가 올라갈수록) 어텐션 포인트가 많아지는 것을 느꼈을 겁니다 — AI도 마찬가지입니다.</p>
+            </div>
+            <button onClick={resetGame} className="flex items-center gap-1.5 px-5 py-2.5 text-sm text-gray-500 hover:text-gray-800 mx-auto mt-2">
+              <RotateCcw size={14} /> 처음부터 다시 하기
             </button>
           </div>
         ) : (
@@ -690,11 +1501,14 @@ const Tab2 = () => {
               </div>
             </div>
 
+            {/* Context */}
+            <p className="text-xs text-gray-400 italic">{round.context}</p>
+
             {/* Sentence */}
             <div className="bg-gray-50 rounded-xl p-5">
-              <p className="text-xs text-gray-400 mb-3">💬 김대리:</p>
+              <p className="text-xs text-gray-400 mb-3">💬 {round.speaker}:</p>
               <div className="flex gap-2 flex-wrap">
-                {gameWords.map((w, i) => (
+                {round.words.map((w, i) => (
                   <button
                     key={i}
                     onClick={() => {
@@ -720,7 +1534,7 @@ const Tab2 = () => {
               <div className="space-y-3" style={{ animation: "fadeIn 0.5s ease-out" }}>
                 <p className="text-sm text-gray-600 font-medium">다음 단어로 가장 적절한 것은?</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {predictionOptions.map((opt, i) => (
+                  {round.predictions.map((opt, i) => (
                     <button key={i} onClick={() => handlePrediction(opt)} className="p-3 bg-white rounded-xl border border-gray-200 hover:border-gray-400 text-sm text-gray-700 text-left transition-all">
                       <span className="font-medium">{opt.word}</span>
                       <span className="text-xs text-gray-400 ml-2">{opt.prob}%</span>
@@ -739,13 +1553,29 @@ const Tab2 = () => {
                     {gameScore >= 75 ? "🎉 훌륭한 눈치! 부장님 레벨!" : gameScore >= 50 ? "👍 나쁘지 않아요!" : "😅 눈치가 아직..."}
                   </p>
                   <div className="mt-3 text-xs text-gray-500 space-y-1">
-                    <p>어텐션 점수: {[...selectedWords].filter(w => keyWords.has(w)).length}/{keyWords.size} 핵심 단어 (정답: 프로젝트, 예산이)</p>
+                    <p>어텐션 점수: {[...selectedWords].filter(w => round.keyWords.has(w)).length}/{round.keyWords.size} 핵심 단어 (정답: {[...round.keyWords].join(", ")})</p>
                     <p>예측: {selectedPrediction ? (selectedPrediction.correct ? "정답! ✅" : `"${selectedPrediction.word}" - 오답 ❌`) : "시간 초과 ⏰"}</p>
                   </div>
                 </div>
-                <button onClick={resetGame} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800 mx-auto">
-                  <RotateCcw size={14} /> 다시 하기
-                </button>
+                {/* Explanation */}
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-1">🧠 부장님의 어텐션 분석</p>
+                  <p className="text-xs text-gray-500">{round.explanation}</p>
+                </div>
+                <div className="flex justify-center gap-2">
+                  {currentRound < rounds.length - 1 ? (
+                    <button onClick={nextRound} className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
+                      다음 라운드 <ArrowRight size={14} />
+                    </button>
+                  ) : (
+                    <button onClick={() => { setRoundScores(prev => [...prev, gameScore]); setCurrentRound(rounds.length); }} className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
+                      최종 결과 보기 <Award size={14} />
+                    </button>
+                  )}
+                  <button onClick={resetGame} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
+                    <RotateCcw size={14} /> 처음부터
+                  </button>
+                </div>
               </div>
             )}
           </div>
