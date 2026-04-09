@@ -1742,6 +1742,52 @@ const Tab3 = ({ onScore }) => {
 
   return (
     <div className="space-y-6">
+      {/* 도입부 — 전력산업에 AI가 필요한 이유 */}
+      <Card t={t}>
+        <div className="text-center mb-2">
+          <span className="text-3xl">⚡</span>
+        </div>
+        <h3 className="text-lg font-bold text-center text-slate-900 mb-2">왜 전력산업에 AI가 필요할까요?</h3>
+        <p className="text-sm text-center text-slate-500 mb-5">사실 전력 관리는 AI가 가장 빛을 발하는 분야 중 하나입니다.</p>
+
+        <div className="space-y-3 mb-5">
+          <div className="p-4 rounded-xl" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <p className="text-sm font-bold text-slate-800 mb-2">🤯 전력은 '저장'이 거의 안 됩니다</p>
+            <p className="text-xs text-slate-600 leading-relaxed">배터리 기술이 발전했지만, 우리나라 전체 전력을 저장하려면 현재 기술로는 <strong>수백조 원</strong>이 필요합니다. 그래서 전력은 <strong>"쓰는 만큼 딱 맞춰서 만들어야"</strong> 합니다. 많이 만들면 낭비, 적게 만들면 정전. 이 균형을 매 순간 맞추는 게 핵심입니다.</p>
+          </div>
+
+          <div className="p-4 rounded-xl" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <p className="text-sm font-bold text-slate-800 mb-2">👷 지금까지는 사람이 했습니다</p>
+            <p className="text-xs text-slate-600 leading-relaxed">"내일 기온이 33도니까 에어컨 수요가 늘겠지" — 이렇게 <strong>경험과 감</strong>으로 수요를 예측해왔습니다. 하지만 갑작스러운 폭염, 한파, 대규모 공장 가동, 전기차 충전 급증 같은 <strong>돌발 상황</strong>에서는 사람의 예측이 크게 빗나갈 수 있습니다.</p>
+          </div>
+
+          <div className="p-4 rounded-xl" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <p className="text-sm font-bold text-slate-800 mb-2">🤖 AI는 뭐가 다른가요?</p>
+            <p className="text-xs text-slate-600 leading-relaxed">AI는 <strong>과거 10년치 기상 데이터, 요일별 전력 패턴, 산업 가동 스케줄, SNS 이벤트 정보</strong>까지 수천 개의 변수를 동시에 분석합니다. 사람이 "기온"과 "요일" 2개만 볼 때, AI는 2,000개를 봅니다. 아까 배운 신경망에서 뉴런 2개와 2,000개의 차이, 기억나시죠?</p>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-white" style={{ border: `1px solid ${t.border}` }}>
+          <p className="text-xs font-bold text-slate-700 mb-2">📊 실제 효과 — 숫자로 보면</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-xl font-bold" style={{ color: t.accent }}>97%</p>
+              <p className="text-[10px] text-slate-500">AI 수요 예측 정확도</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold" style={{ color: t.accent }}>30%↓</p>
+              <p className="text-[10px] text-slate-500">설비 점검 비용 절감</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold" style={{ color: t.accent }}>50%↓</p>
+              <p className="text-[10px] text-slate-500">정전 사고 감소</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400 text-center mt-4">아래에서 직접 수동 예측 vs AI 예측을 체험해보세요. 차이를 몸으로 느끼실 겁니다!</p>
+      </Card>
+
       <Card t={t}>
         <SecHead icon={BookOpen} label="전력망의 미래 — 수동 vs AI 예측 비교" t={t} />
         <p className="text-sm text-slate-500 mb-6">시나리오를 선택해 수동 예측과 AI 예측의 차이를 비교해 보세요.</p>
