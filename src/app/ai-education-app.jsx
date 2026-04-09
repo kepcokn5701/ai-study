@@ -1068,6 +1068,7 @@ const NeuralNetworkPlayground = () => {
   const epochRef = useRef(0);
   const lossRef = useRef(1.0);
   const trainingRef = useRef(false);
+  const [networkVersion, setNetworkVersion] = useState(0);
 
   // 데이터 생성
   const generateData = useCallback((type) => {
@@ -1245,11 +1246,18 @@ const NeuralNetworkPlayground = () => {
   }, [forward, showDecisionBoundary]);
 
   // 네트워크 다이어그램 렌더링 (오른쪽 패널)
-  const renderNetworkDiagram = useCallback((w) => {
-    if (!w) return null;
-    const layers = [2, ...w.hidden.map(h => h.length), 1];
-    const layerLabels = ["입력", ...w.hidden.map((_, i) => `은닉 ${i + 1}`), "출력"];
-    const maxNeurons = Math.max(...layers);
+  // 구조는 hiddenLayers/hiddenNeurons state 기반, 색상만 weightsRef 참조
+  const renderNetworkDiagram = useCallback(() => {
+    const layers = [2];
+    const layerLabels = ["입력"];
+    for (let i = 0; i < hiddenLayers; i++) {
+      layers.push(hiddenNeurons);
+      layerLabels.push(`은닉 ${i + 1}`);
+    }
+    layers.push(1);
+    layerLabels.push("출력");
+
+    const w = weightsRef.current;
     const width = 260;
     const height = 180;
     const layerGap = width / (layers.length + 1);
@@ -1273,10 +1281,12 @@ const NeuralNetworkPlayground = () => {
       for (let ni = 0; ni < positions[li].length; ni++) {
         for (let nj = 0; nj < positions[li + 1].length; nj++) {
           let weight = 0;
-          if (li < w.hidden.length) {
-            weight = w.hidden[li][nj] ? w.hidden[li][nj][ni] || 0 : 0;
-          } else {
-            weight = w.output[ni] || 0;
+          if (w) {
+            if (li < (w.hidden?.length || 0)) {
+              weight = w.hidden[li]?.[nj]?.[ni] || 0;
+            } else {
+              weight = w.output?.[ni] || 0;
+            }
           }
           const absW = Math.min(Math.abs(weight), 3) / 3;
           const color = weight > 0 ? `rgba(59, 130, 246, ${0.15 + absW * 0.7})` : `rgba(249, 115, 22, ${0.15 + absW * 0.7})`;
@@ -1313,7 +1323,7 @@ const NeuralNetworkPlayground = () => {
         {labels}
       </svg>
     );
-  }, []);
+  }, [hiddenLayers, hiddenNeurons, networkVersion]);
 
   // 초기화
   useEffect(() => {
@@ -1328,6 +1338,7 @@ const NeuralNetworkPlayground = () => {
     setIsTraining(false);
     trainingRef.current = false;
     if (animRef.current) cancelAnimationFrame(animRef.current);
+    setNetworkVersion(v => v + 1);
     renderCanvas(w, data);
   }, [dataType, hiddenNeurons, hiddenLayers, generateData, initWeights, renderCanvas]);
 
@@ -1354,6 +1365,7 @@ const NeuralNetworkPlayground = () => {
       if (frame % 3 === 0) {
         setEpoch(epochRef.current);
         setLoss(l);
+        setNetworkVersion(v => v + 1);
         renderCanvas(w, data);
       }
       animRef.current = requestAnimationFrame(loop);
@@ -1378,6 +1390,7 @@ const NeuralNetworkPlayground = () => {
     lossRef.current = 1.0;
     setEpoch(0);
     setLoss(1.0);
+    setNetworkVersion(v => v + 1);
     setTimeout(() => renderCanvas(w, data), 50);
   };
 
@@ -1469,7 +1482,7 @@ const NeuralNetworkPlayground = () => {
           {/* 네트워크 구조 */}
           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">네트워크 구조</p>
-            {renderNetworkDiagram(weightsRef.current)}
+            {renderNetworkDiagram()}
             <p className="text-[10px] text-gray-400 mt-1">선 색상 = 가중치 (파랑: +, 주황: −) / 굵기 = 영향력</p>
           </div>
 
