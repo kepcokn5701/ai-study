@@ -917,6 +917,41 @@ const Tab2 = ({ onScore }) => {
 
   return (
     <div className="space-y-6">
+      {/* 비유 안내 카드 */}
+      <Card t={t}>
+        <div className="text-center mb-2">
+          <span className="text-3xl">🎭</span>
+        </div>
+        <h3 className="text-lg font-bold text-center text-slate-900 mb-2">지금부터 회사생활로 배우는 AI 동작원리</h3>
+        <p className="text-sm text-center text-slate-500 mb-5">어려운 AI 용어, 회사 상황에 빗대면 쉽게 이해됩니다.</p>
+
+        <div className="grid sm:grid-cols-2 gap-3 mb-5">
+          <div className="p-4 rounded-xl" style={{ background: "rgba(2,132,199,0.06)", border: "1px solid rgba(2,132,199,0.15)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <Bot size={18} style={{ color: t.accent }} />
+              <span className="text-sm font-bold text-slate-800">부장님 = AI</span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">부장님은 직원들의 말을 듣고, 다음에 무슨 말이 나올지 <strong>예측</strong>합니다. AI(LLM)도 똑같이 앞의 단어를 보고 다음 단어를 예측하는 방식으로 작동합니다.</p>
+          </div>
+          <div className="p-4 rounded-xl" style={{ background: "rgba(2,132,199,0.06)", border: "1px solid rgba(2,132,199,0.15)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <User size={18} style={{ color: t.accent }} />
+              <span className="text-sm font-bold text-slate-800">직원의 실제 말 = 정답 데이터</span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">직원이 실제로 한 말이 <strong>정답(학습 데이터)</strong>입니다. 부장님(AI)은 이 정답과 자기 예측을 비교하면서 점점 예측 능력을 키워갑니다.</p>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl" style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.07)" }}>
+          <p className="text-xs font-bold text-slate-700 mb-2">📖 이런 순서로 진행됩니다</p>
+          <div className="text-xs text-slate-600 space-y-1.5 leading-relaxed">
+            <p><strong className="font-mono" style={{ color: t.accent }}>개념 학습 (7단계)</strong> — 부장님이 직원의 말을 어떻게 분석하고 예측하는지, AI의 핵심 동작 원리를 하나씩 따라갑니다.</p>
+            <p><strong className="font-mono" style={{ color: t.accent }}>실전 게임</strong> — 직접 부장님이 되어 핵심 단어를 고르고 다음 말을 예측해봅니다. 당신의 선택이 곧 AI의 '어텐션'과 '예측'입니다.</p>
+            <p><strong className="font-mono" style={{ color: t.accent }}>신경망 시각화</strong> — AI 내부의 뉴런과 학습 과정을 눈으로 직접 관찰합니다.</p>
+          </div>
+        </div>
+      </Card>
+
       <Card t={t}>
         <SecHead icon={BookOpen} label="부장님의 눈치 게임 — LLM 작동 원리 7단계" t={t} />
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
