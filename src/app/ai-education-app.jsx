@@ -1583,6 +1583,457 @@ const Tab2 = () => {
           </div>
         )}
       </div>
+
+      {/* ─── 인터랙티브 신경망 시각화 ─── */}
+      <NeuralNetworkPlayground />
+    </div>
+  );
+};
+
+// ─── Neural Network Playground (한국어 간소화 버전) ────
+const NeuralNetworkPlayground = () => {
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+  const [isTraining, setIsTraining] = useState(false);
+  const [epoch, setEpoch] = useState(0);
+  const [loss, setLoss] = useState(1.0);
+  const [learningRate, setLearningRate] = useState(0.03);
+  const [hiddenNeurons, setHiddenNeurons] = useState(4);
+  const [hiddenLayers, setHiddenLayers] = useState(1);
+  const [dataType, setDataType] = useState("circle"); // circle, xor
+  const [showDecisionBoundary, setShowDecisionBoundary] = useState(true);
+  const weightsRef = useRef(null);
+  const dataRef = useRef(null);
+  const epochRef = useRef(0);
+  const lossRef = useRef(1.0);
+  const trainingRef = useRef(false);
+
+  // 데이터 생성
+  const generateData = useCallback((type) => {
+    const points = [];
+    const n = 120;
+    if (type === "circle") {
+      for (let i = 0; i < n; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const isInner = i < n / 2;
+        const r = isInner ? Math.random() * 0.4 : 0.6 + Math.random() * 0.4;
+        const x = Math.cos(angle) * r + (Math.random() - 0.5) * 0.1;
+        const y = Math.sin(angle) * r + (Math.random() - 0.5) * 0.1;
+        points.push({ x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)), label: isInner ? 0 : 1 });
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        const x = Math.random() * 2 - 1;
+        const y = Math.random() * 2 - 1;
+        const label = (x > 0) !== (y > 0) ? 1 : 0;
+        const nx = x + (Math.random() - 0.5) * 0.15;
+        const ny = y + (Math.random() - 0.5) * 0.15;
+        points.push({ x: Math.max(-1, Math.min(1, nx)), y: Math.max(-1, Math.min(1, ny)), label });
+      }
+    }
+    return points;
+  }, []);
+
+  // 가중치 초기화
+  const initWeights = useCallback((layers, neurons) => {
+    const w = { hidden: [], biasH: [], output: [], biasO: [] };
+    let prevSize = 2;
+    for (let l = 0; l < layers; l++) {
+      const layerW = [];
+      const layerB = [];
+      for (let j = 0; j < neurons; j++) {
+        const neuronW = [];
+        for (let i = 0; i < prevSize; i++) {
+          neuronW.push((Math.random() - 0.5) * 1.5);
+        }
+        layerW.push(neuronW);
+        layerB.push((Math.random() - 0.5) * 0.5);
+      }
+      w.hidden.push(layerW);
+      w.biasH.push(layerB);
+      prevSize = neurons;
+    }
+    for (let i = 0; i < prevSize; i++) {
+      w.output.push((Math.random() - 0.5) * 1.5);
+    }
+    w.biasO = [(Math.random() - 0.5) * 0.5];
+    return w;
+  }, []);
+
+  // 시그모이드
+  const sigmoid = (x) => 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, x))));
+
+  // 순전파
+  const forward = useCallback((x, y, w) => {
+    const activations = []; // 각 히든레이어의 활성값
+    let input = [x, y];
+    for (let l = 0; l < w.hidden.length; l++) {
+      const layerOut = [];
+      for (let j = 0; j < w.hidden[l].length; j++) {
+        let sum = w.biasH[l][j];
+        for (let i = 0; i < input.length; i++) {
+          sum += input[i] * w.hidden[l][j][i];
+        }
+        layerOut.push(sigmoid(sum));
+      }
+      activations.push(layerOut);
+      input = layerOut;
+    }
+    let outSum = w.biasO[0];
+    for (let i = 0; i < input.length; i++) {
+      outSum += input[i] * w.output[i];
+    }
+    const output = sigmoid(outSum);
+    return { activations, output };
+  }, []);
+
+  // 역전파 + 가중치 업데이트
+  const trainStep = useCallback((data, w, lr) => {
+    let totalLoss = 0;
+    // 미니배치 SGD
+    const batchSize = Math.min(16, data.length);
+    const batch = [];
+    for (let i = 0; i < batchSize; i++) {
+      batch.push(data[Math.floor(Math.random() * data.length)]);
+    }
+
+    for (const point of batch) {
+      const { activations, output } = forward(point.x, point.y, w);
+      const error = output - point.label;
+      totalLoss += error * error;
+
+      // 출력층 그래디언트
+      const dOutput = error * output * (1 - output);
+
+      // 마지막 히든레이어 → 출력
+      const lastHidden = activations[activations.length - 1];
+      for (let i = 0; i < w.output.length; i++) {
+        w.output[i] -= lr * dOutput * lastHidden[i];
+      }
+      w.biasO[0] -= lr * dOutput;
+
+      // 히든레이어 역전파
+      let dNext = w.output.map((ow) => dOutput * ow);
+
+      for (let l = w.hidden.length - 1; l >= 0; l--) {
+        const dCurrent = [];
+        const prevInput = l > 0 ? activations[l - 1] : null;
+        for (let j = 0; j < w.hidden[l].length; j++) {
+          const a = activations[l][j];
+          const dH = dNext[j] * a * (1 - a);
+          dCurrent.push(dH);
+          for (let i = 0; i < w.hidden[l][j].length; i++) {
+            const inp = prevInput ? prevInput[i] : (i === 0 ? point.x : point.y);
+            w.hidden[l][j][i] -= lr * dH * inp;
+          }
+          w.biasH[l][j] -= lr * dH;
+        }
+        if (l > 0) {
+          dNext = [];
+          for (let i = 0; i < w.hidden[l - 1].length; i++) {
+            let sum = 0;
+            for (let j = 0; j < w.hidden[l].length; j++) {
+              sum += dCurrent[j] * w.hidden[l][j][i];
+            }
+            dNext.push(sum);
+          }
+        }
+      }
+    }
+    return totalLoss / batchSize;
+  }, [forward]);
+
+  // 캔버스 렌더링
+  const renderCanvas = useCallback((w, data) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    ctx.clearRect(0, 0, size, size);
+
+    // 결정 경계 (배경 그라데이션)
+    if (showDecisionBoundary && w) {
+      const res = 4;
+      for (let px = 0; px < size; px += res) {
+        for (let py = 0; py < size; py += res) {
+          const x = (px / size) * 2 - 1;
+          const y = (py / size) * 2 - 1;
+          const { output } = forward(x, y, w);
+          const r = Math.round(255 * output);
+          const b = Math.round(255 * (1 - output));
+          ctx.fillStyle = `rgba(${r}, 100, ${b}, 0.3)`;
+          ctx.fillRect(px, py, res, res);
+        }
+      }
+    }
+
+    // 데이터 포인트
+    if (data) {
+      for (const p of data) {
+        const px = ((p.x + 1) / 2) * size;
+        const py = ((p.y + 1) / 2) * size;
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = p.label === 1 ? "#f97316" : "#3b82f6";
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }, [forward, showDecisionBoundary]);
+
+  // 네트워크 다이어그램 렌더링 (오른쪽 패널)
+  const renderNetworkDiagram = useCallback((w) => {
+    if (!w) return null;
+    const layers = [2, ...w.hidden.map(h => h.length), 1];
+    const layerLabels = ["입력", ...w.hidden.map((_, i) => `은닉 ${i + 1}`), "출력"];
+    const maxNeurons = Math.max(...layers);
+    const width = 260;
+    const height = 180;
+    const layerGap = width / (layers.length + 1);
+
+    const neurons = [];
+    const connections = [];
+
+    // 뉴런 위치
+    const positions = layers.map((count, li) => {
+      const x = layerGap * (li + 1);
+      const arr = [];
+      for (let ni = 0; ni < count; ni++) {
+        const y = (height / (count + 1)) * (ni + 1);
+        arr.push({ x, y });
+      }
+      return arr;
+    });
+
+    // 연결선 + 가중치 색상
+    for (let li = 0; li < layers.length - 1; li++) {
+      for (let ni = 0; ni < positions[li].length; ni++) {
+        for (let nj = 0; nj < positions[li + 1].length; nj++) {
+          let weight = 0;
+          if (li < w.hidden.length) {
+            weight = w.hidden[li][nj] ? w.hidden[li][nj][ni] || 0 : 0;
+          } else {
+            weight = w.output[ni] || 0;
+          }
+          const absW = Math.min(Math.abs(weight), 3) / 3;
+          const color = weight > 0 ? `rgba(59, 130, 246, ${0.15 + absW * 0.7})` : `rgba(249, 115, 22, ${0.15 + absW * 0.7})`;
+          connections.push(
+            <line key={`c-${li}-${ni}-${nj}`} x1={positions[li][ni].x} y1={positions[li][ni].y} x2={positions[li + 1][nj].x} y2={positions[li + 1][nj].y} stroke={color} strokeWidth={0.5 + absW * 2.5} />
+          );
+        }
+      }
+    }
+
+    // 뉴런 원
+    positions.forEach((layer, li) => {
+      layer.forEach((pos, ni) => {
+        neurons.push(
+          <circle key={`n-${li}-${ni}`} cx={pos.x} cy={pos.y} r={li === 0 || li === layers.length - 1 ? 10 : 8} fill={li === 0 ? "#e0e7ff" : li === layers.length - 1 ? "#fef3c7" : "#f0fdf4"} stroke={li === 0 ? "#6366f1" : li === layers.length - 1 ? "#f59e0b" : "#22c55e"} strokeWidth={1.5} />
+        );
+        if (li === 0) {
+          neurons.push(
+            <text key={`t-${li}-${ni}`} x={pos.x} y={pos.y + 1} textAnchor="middle" fontSize="8" fontWeight="bold" fill="#4338ca">{ni === 0 ? "X" : "Y"}</text>
+          );
+        }
+      });
+    });
+
+    // 레이어 라벨
+    const labels = positions.map((layer, li) => (
+      <text key={`l-${li}`} x={layer[0].x} y={height - 2} textAnchor="middle" fontSize="7" fill="#9ca3af">{layerLabels[li]}</text>
+    ));
+
+    return (
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="max-h-[180px]">
+        {connections}
+        {neurons}
+        {labels}
+      </svg>
+    );
+  }, []);
+
+  // 초기화
+  useEffect(() => {
+    const data = generateData(dataType);
+    const w = initWeights(hiddenLayers, hiddenNeurons);
+    dataRef.current = data;
+    weightsRef.current = w;
+    epochRef.current = 0;
+    lossRef.current = 1.0;
+    setEpoch(0);
+    setLoss(1.0);
+    setIsTraining(false);
+    trainingRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    renderCanvas(w, data);
+  }, [dataType, hiddenNeurons, hiddenLayers, generateData, initWeights, renderCanvas]);
+
+  // 학습 루프
+  useEffect(() => {
+    if (!isTraining) return;
+    trainingRef.current = true;
+    let frame = 0;
+    const loop = () => {
+      if (!trainingRef.current) return;
+      const w = weightsRef.current;
+      const data = dataRef.current;
+      if (!w || !data) return;
+
+      // 한 프레임당 여러 스텝
+      let l = 0;
+      for (let i = 0; i < 5; i++) {
+        l = trainStep(data, w, learningRate);
+      }
+      epochRef.current += 5;
+      lossRef.current = l;
+
+      frame++;
+      if (frame % 3 === 0) {
+        setEpoch(epochRef.current);
+        setLoss(l);
+        renderCanvas(w, data);
+      }
+      animRef.current = requestAnimationFrame(loop);
+    };
+    animRef.current = requestAnimationFrame(loop);
+    return () => {
+      trainingRef.current = false;
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [isTraining, learningRate, trainStep, renderCanvas]);
+
+  // 리셋
+  const handleReset = () => {
+    setIsTraining(false);
+    trainingRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    const data = generateData(dataType);
+    const w = initWeights(hiddenLayers, hiddenNeurons);
+    dataRef.current = data;
+    weightsRef.current = w;
+    epochRef.current = 0;
+    lossRef.current = 1.0;
+    setEpoch(0);
+    setLoss(1.0);
+    setTimeout(() => renderCanvas(w, data), 50);
+  };
+
+  const lossColor = loss < 0.1 ? "text-emerald-600" : loss < 0.25 ? "text-amber-600" : "text-red-500";
+
+  return (
+    <div className="mt-8 p-6 bg-white rounded-2xl border border-gray-200 shadow-sm" style={{ animation: "fadeIn 0.5s ease-out" }}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <Network size={16} className="text-indigo-500" />
+        </div>
+        <span className="text-xs font-semibold tracking-widest uppercase text-indigo-400">INTERACTIVE</span>
+      </div>
+      <h3 className="text-lg font-bold text-gray-900 mb-1">직접 눈으로 보는 AI 학습 과정</h3>
+      <p className="text-xs text-gray-500 mb-5">아래에서 설정을 바꿔보면서, AI가 데이터의 패턴을 어떻게 학습하는지 관찰해보세요.</p>
+
+      {/* 컨트롤 패널 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div>
+          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">데이터 모양</label>
+          <div className="flex gap-1.5 mt-1.5">
+            <button onClick={() => { if (isTraining) { setIsTraining(false); trainingRef.current = false; } setDataType("circle"); }} className={`flex-1 px-2.5 py-1.5 text-xs rounded-lg border transition-all ${dataType === "circle" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}>
+              ⭕ 원형
+            </button>
+            <button onClick={() => { if (isTraining) { setIsTraining(false); trainingRef.current = false; } setDataType("xor"); }} className={`flex-1 px-2.5 py-1.5 text-xs rounded-lg border transition-all ${dataType === "xor" ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}>
+              ✖ 대각선
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">은닉층 수</label>
+          <div className="flex items-center gap-2 mt-1.5">
+            <button onClick={() => { if (!isTraining && hiddenLayers > 1) setHiddenLayers(hiddenLayers - 1); }} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 text-sm disabled:opacity-30" disabled={isTraining || hiddenLayers <= 1}>−</button>
+            <span className="text-sm font-bold text-gray-800 w-4 text-center">{hiddenLayers}</span>
+            <button onClick={() => { if (!isTraining && hiddenLayers < 3) setHiddenLayers(hiddenLayers + 1); }} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 text-sm disabled:opacity-30" disabled={isTraining || hiddenLayers >= 3}>+</button>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">뉴런 수 (층당)</label>
+          <div className="flex items-center gap-2 mt-1.5">
+            <button onClick={() => { if (!isTraining && hiddenNeurons > 2) setHiddenNeurons(hiddenNeurons - 1); }} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 text-sm disabled:opacity-30" disabled={isTraining || hiddenNeurons <= 2}>−</button>
+            <span className="text-sm font-bold text-gray-800 w-4 text-center">{hiddenNeurons}</span>
+            <button onClick={() => { if (!isTraining && hiddenNeurons < 8) setHiddenNeurons(hiddenNeurons + 1); }} className="w-7 h-7 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 text-sm disabled:opacity-30" disabled={isTraining || hiddenNeurons >= 8}>+</button>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">학습 속도</label>
+          <input type="range" min="0.001" max="0.1" step="0.001" value={learningRate} onChange={(e) => setLearningRate(parseFloat(e.target.value))} className="w-full mt-2 accent-indigo-500" />
+          <div className="text-[10px] text-gray-400 text-center">{learningRate.toFixed(3)}</div>
+        </div>
+      </div>
+
+      {/* 메인 영역 */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* 캔버스 */}
+        <div className="flex-1">
+          <div className="relative bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+            <canvas ref={canvasRef} width={320} height={320} className="w-full aspect-square" />
+            <div className="absolute top-2 left-2 flex gap-2">
+              <span className="inline-flex items-center gap-1 text-[10px] bg-white/90 backdrop-blur px-2 py-1 rounded-full border border-gray-200">
+                <span className="w-2 h-2 rounded-full bg-blue-500" /> 파랑 팀
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] bg-white/90 backdrop-blur px-2 py-1 rounded-full border border-gray-200">
+                <span className="w-2 h-2 rounded-full bg-orange-500" /> 주황 팀
+              </span>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2 text-center">배경 색이 변하는 것 = AI가 '여기는 파랑, 여기는 주황' 이라고 판단하는 영역</p>
+        </div>
+
+        {/* 오른쪽 정보 패널 */}
+        <div className="sm:w-[280px] space-y-3">
+          {/* 학습 상태 */}
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex justify-between items-center text-xs mb-2">
+              <span className="text-gray-500">반복 횟수</span>
+              <span className="font-mono font-bold text-gray-800">{epoch.toLocaleString()}회</span>
+            </div>
+            <div className="flex justify-between items-center text-xs mb-2">
+              <span className="text-gray-500">오답률 (Loss)</span>
+              <span className={`font-mono font-bold ${lossColor}`}>{loss.toFixed(4)}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="h-1.5 rounded-full transition-all duration-300" style={{ width: `${Math.max(2, (1 - Math.min(loss, 1)) * 100)}%`, backgroundColor: loss < 0.1 ? "#22c55e" : loss < 0.25 ? "#f59e0b" : "#ef4444" }} />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1.5">{loss < 0.05 ? "거의 완벽하게 학습했어요!" : loss < 0.15 ? "꽤 잘 구분하고 있어요!" : loss < 0.3 ? "조금씩 패턴을 찾는 중..." : "아직 학습 초기 단계입니다"}</p>
+          </div>
+
+          {/* 네트워크 구조 */}
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">네트워크 구조</p>
+            {renderNetworkDiagram(weightsRef.current)}
+            <p className="text-[10px] text-gray-400 mt-1">선 색상 = 가중치 (파랑: +, 주황: −) / 굵기 = 영향력</p>
+          </div>
+
+          {/* 버튼 */}
+          <div className="flex gap-2">
+            <button onClick={() => setIsTraining(!isTraining)} className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl transition-all ${isTraining ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" : "bg-gray-900 text-white hover:bg-gray-800"}`}>
+              {isTraining ? <><X size={14} /> 학습 멈추기</> : <><Play size={14} /> 학습 시작</>}
+            </button>
+            <button onClick={handleReset} disabled={isTraining} className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-xl hover:border-gray-400 disabled:opacity-30">
+              <RotateCcw size={14} /> 초기화
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 설명 박스 */}
+      <div className="mt-5 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+        <p className="text-xs font-medium text-indigo-800 mb-2">이게 뭔가요?</p>
+        <div className="text-xs text-indigo-700 space-y-1.5">
+          <p><strong>파랑 점과 주황 점</strong> = 두 종류의 데이터 (예: 정상 설비 vs 고장 설비)</p>
+          <p><strong>배경 색 변화</strong> = AI가 "이 영역은 파랑(정상), 이 영역은 주황(고장)"이라고 판단하는 구역</p>
+          <p><strong>학습 시작</strong>을 누르면 AI가 데이터를 반복해서 보면서 점점 정확하게 구분선을 그려갑니다</p>
+          <p><strong>뉴런 수</strong>를 늘리면 AI가 더 복잡한 패턴을 학습할 수 있고, <strong>학습 속도</strong>를 높이면 빨리 배우지만 불안정할 수 있습니다</p>
+        </div>
+      </div>
     </div>
   );
 };
