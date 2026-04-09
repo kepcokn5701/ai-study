@@ -1485,14 +1485,14 @@ const NeuralNetworkPlayground = () => {
             <canvas ref={canvasRef} width={320} height={320} className="w-full aspect-square" />
             <div className="absolute top-2 left-2 flex gap-2">
               <span className="inline-flex items-center gap-1 text-[10px] bg-white/90 backdrop-blur px-2 py-1 rounded-full border border-gray-200">
-                <span className="w-2 h-2 rounded-full bg-blue-500" /> 파랑 팀
+                <span className="w-2 h-2 rounded-full bg-blue-500" /> 🐱 고양이
               </span>
               <span className="inline-flex items-center gap-1 text-[10px] bg-white/90 backdrop-blur px-2 py-1 rounded-full border border-gray-200">
-                <span className="w-2 h-2 rounded-full bg-orange-500" /> 주황 팀
+                <span className="w-2 h-2 rounded-full bg-orange-500" /> 🐶 개
               </span>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-2 text-center">배경 색이 변하는 것 = AI가 '여기는 파랑, 여기는 주황' 이라고 판단하는 영역</p>
+          <p className="text-[10px] text-gray-400 mt-2 text-center">배경 색이 변하는 것 = AI가 '여기는 고양이, 여기는 개' 라고 판단하는 영역</p>
         </div>
 
         {/* 오른쪽 정보 패널 */}
@@ -1532,23 +1532,37 @@ const NeuralNetworkPlayground = () => {
         </div>
       </div>
 
-      {/* 설명 박스 — 비전공자용 상세 가이드 */}
+      {/* 설명 박스 — 비전공자용 상세 가이드 (개 vs 고양이 비유) */}
       <div className="mt-6 space-y-4">
+        {/* 0. 상황 설정 */}
+        <div className="p-5 bg-indigo-50 rounded-xl border border-indigo-200">
+          <p className="text-sm font-bold text-indigo-900 mb-3">상황을 상상해보세요</p>
+          <div className="text-xs text-indigo-800 leading-relaxed space-y-2">
+            <p>누군가 여러분에게 <strong>수천 장의 동물 사진</strong>을 주면서 이렇게 말합니다.</p>
+            <div className="p-3 bg-white rounded-lg border border-indigo-200 text-sm text-center font-medium text-indigo-900">"이 사진들을 보고, 앞으로 새로운 사진이 오면 <strong>개인지 고양이인지</strong> 맞춰봐."</div>
+            <p>여러분이라면 어떻게 구분하시겠어요? 아마 <strong>귀 모양, 주둥이 길이, 눈 크기</strong> 같은 특징을 보겠죠. AI도 <strong>정확히 같은 방식</strong>으로 학습합니다. 위의 시각화가 바로 그 과정을 보여주는 것입니다!</p>
+          </div>
+        </div>
+
         {/* 1. 화면 읽는 법 */}
         <div className="p-5 bg-indigo-50 rounded-xl border border-indigo-200">
           <p className="text-sm font-bold text-indigo-900 mb-3">이 화면, 어떻게 보는 건가요?</p>
           <div className="text-xs text-indigo-800 space-y-3 leading-relaxed">
             <div>
-              <p className="font-bold mb-1">🔵🟠 점 = 데이터 (AI가 배울 '문제집')</p>
-              <p className="text-indigo-700">파랑 점과 주황 점은 <strong>두 종류의 데이터</strong>입니다. 실무로 비유하면 파랑 = "정상 설비", 주황 = "고장 설비"라고 생각하세요. AI는 이 점들을 보고 "어떤 것이 정상이고 어떤 것이 고장인지" 구분하는 법을 배웁니다.</p>
+              <p className="font-bold mb-1">🐱🐶 점 = 동물 사진 데이터</p>
+              <p className="text-indigo-700"><span className="text-blue-600 font-bold">파랑 점(🐱)</span> 하나하나가 <strong>고양이 사진 한 장</strong>이고, <span className="text-orange-600 font-bold">주황 점(🐶)</span> 하나하나가 <strong>개 사진 한 장</strong>입니다. 점의 위치는 그 사진의 특징을 나타냅니다 — 가로축(X)은 <strong>귀가 얼마나 뾰족한지</strong>, 세로축(Y)은 <strong>주둥이가 얼마나 긴지</strong>라고 생각하세요.</p>
             </div>
             <div>
               <p className="font-bold mb-1">🎨 배경 색 변화 = AI의 '판단 지도'</p>
-              <p className="text-indigo-700">배경이 <span className="text-blue-600 font-bold">파랗게</span> 변하는 곳은 AI가 "여기는 정상!"이라고 판단하는 영역이고, <span className="text-orange-600 font-bold">주황</span>으로 변하는 곳은 "여기는 고장!"이라고 판단하는 영역입니다. <strong>학습이 진행될수록</strong> 이 색 구분이 점점 또렷해지면서, 실제 점의 색과 배경 색이 일치하게 됩니다. 그게 바로 "AI가 패턴을 학습했다"는 뜻입니다.</p>
+              <p className="text-indigo-700">배경이 <span className="text-blue-600 font-bold">파랗게</span> 변하는 곳은 AI가 <strong>"이 특징이면 고양이!"</strong>라고 판단하는 영역이고, <span className="text-orange-600 font-bold">주황</span>으로 변하는 곳은 <strong>"이 특징이면 개!"</strong>라고 판단하는 영역입니다. 학습이 진행될수록 배경 색이 실제 점의 색과 일치해갑니다 — 그게 바로 <strong>"AI가 개와 고양이를 구분하는 법을 배웠다"</strong>는 뜻입니다.</p>
+            </div>
+            <div>
+              <p className="font-bold mb-1">🤔 경계가 애매한 부분 = 포메라니안 같은 사진</p>
+              <p className="text-indigo-700">파랑과 주황이 섞여 있는 곳이 있죠? 그 부분은 <strong>"귀가 좀 뾰족한데 주둥이도 짧은" 애매한 사진</strong>입니다. 포메라니안처럼 고양이 같은 개, 혹은 먼치킨처럼 개 같은 고양이라고 생각하면 됩니다. AI도 이런 애매한 데이터를 구분하는 게 가장 어렵습니다!</p>
             </div>
             <div>
               <p className="font-bold mb-1">🔄 반복 횟수 / 오답률 = AI의 '성적표'</p>
-              <p className="text-indigo-700"><strong>반복 횟수</strong>는 AI가 같은 데이터를 몇 번이나 반복 학습했는지를 나타냅니다. 사람이 문제집을 여러 번 푸는 것과 같아요. <strong>오답률(Loss)</strong>은 AI가 얼마나 틀리고 있는지를 보여주는 점수입니다. 1.0에서 시작해서 0에 가까워질수록 거의 완벽하게 구분하고 있다는 뜻입니다.</p>
+              <p className="text-indigo-700"><strong>반복 횟수</strong>는 AI가 같은 사진들을 몇 번이나 반복해서 봤는지입니다. 사람이 문제집을 여러 번 푸는 것과 같아요. <strong>오답률(Loss)</strong>은 "고양이를 개라고 잘못 답한 정도"입니다. 1.0이면 완전 엉터리, 0에 가까우면 거의 완벽합니다.</p>
             </div>
           </div>
         </div>
@@ -1559,15 +1573,15 @@ const NeuralNetworkPlayground = () => {
           <div className="text-xs text-emerald-800 space-y-3 leading-relaxed">
             <div>
               <p className="font-bold mb-1">🧠 뉴런 = 뇌세포 하나</p>
-              <p className="text-emerald-700">우리 뇌에는 약 860억 개의 <strong>뉴런(신경세포)</strong>이 있습니다. 각 뉴런은 주변 정보를 받아서 "이게 중요해? 안 중요해?"를 판단한 뒤, 다음 뉴런에게 신호를 전달합니다. AI의 뉴런도 마찬가지입니다. 오른쪽 네트워크 구조에서 보이는 <strong>초록색 동그라미 하나하나가 뉴런</strong>입니다. 뉴런이 많을수록 AI가 더 복잡한 판단을 할 수 있습니다.</p>
+              <p className="text-emerald-700">우리 뇌에는 약 860억 개의 <strong>뉴런(신경세포)</strong>이 있습니다. 각 뉴런은 정보를 받아서 "이게 중요해?"를 판단한 뒤 다음 뉴런에게 전달합니다. 예를 들어 고양이 사진을 볼 때, 어떤 뉴런은 <strong>"귀가 뾰족하다!"</strong>에 반응하고, 다른 뉴런은 <strong>"눈이 동그랗다!"</strong>에 반응합니다. 오른쪽 네트워크의 <strong>초록색 동그라미 하나하나가 뉴런</strong>입니다.</p>
             </div>
             <div>
-              <p className="font-bold mb-1">🔗 연결선 = 시냅스</p>
-              <p className="text-emerald-700">뇌에서 뉴런과 뉴런은 <strong>시냅스</strong>라는 연결로 이어져 있습니다. 네트워크 구조의 <strong>선(연결)</strong>이 바로 시냅스입니다. 선이 <span className="text-blue-600 font-bold">파랗고 굵으면</span> "이 연결이 중요하다(강한 양의 영향)"는 뜻이고, <span className="text-orange-600 font-bold">주황이고 굵으면</span> "반대 방향으로 중요하다(강한 음의 영향)"는 뜻입니다. AI가 학습하면서 이 선의 굵기(가중치)를 계속 조정합니다.</p>
+              <p className="font-bold mb-1">🔗 연결선 = 시냅스 (뉴런 사이의 연결)</p>
+              <p className="text-emerald-700">뇌에서 뉴런과 뉴런은 <strong>시냅스</strong>라는 연결로 이어져 있습니다. 네트워크의 <strong>선</strong>이 바로 시냅스입니다. 선이 <span className="text-blue-600 font-bold">파랗고 굵으면</span> "이 연결이 강하다(귀 뾰족함 → 고양이 확률 UP!)"는 뜻이고, <span className="text-orange-600 font-bold">주황이고 굵으면</span> "반대 방향(귀 뾰족함 → 개 확률 DOWN)"이라는 뜻입니다.</p>
             </div>
             <div>
               <p className="font-bold mb-1">📦 은닉층 = 뇌의 '생각 단계'</p>
-              <p className="text-emerald-700">사람이 판단할 때 한 번에 결론 내리지 않고 여러 단계로 생각하듯이, AI도 여러 단계를 거칩니다. <strong>입력층</strong>(X, Y 좌표 = 데이터를 받는 곳) → <strong>은닉층</strong>(중간에서 고민하는 곳) → <strong>출력층</strong>(최종 판단)으로 이어집니다. 은닉층을 늘리면 더 깊이 고민할 수 있어서 복잡한 패턴도 찾아낼 수 있지만, 너무 많으면 오히려 헷갈릴 수도 있습니다.</p>
+              <p className="text-emerald-700"><strong>입력층</strong>(귀 모양, 주둥이 길이 등 특징을 받는 곳) → <strong>은닉층</strong>("귀가 뾰족하고 주둥이가 짧으면... 고양이인가?" 중간에서 고민하는 곳) → <strong>출력층</strong>("개다!" 또는 "고양이다!" 최종 판단). 은닉층을 늘리면 "귀도 보고, 눈도 보고, 꼬리도 보고" 더 복잡한 특징을 조합할 수 있습니다.</p>
             </div>
           </div>
         </div>
@@ -1578,19 +1592,19 @@ const NeuralNetworkPlayground = () => {
           <div className="text-xs text-amber-800 space-y-3 leading-relaxed">
             <div>
               <p className="font-bold mb-1">📝 1단계: 일단 찍어본다 (초기 상태)</p>
-              <p className="text-amber-700">처음에 AI는 아무것도 모릅니다. 연결선(시냅스)의 굵기가 랜덤이라서, 배경 색이 엉망으로 칠해져 있죠. 시험 문제를 하나도 안 읽고 답을 찍는 것과 같습니다.</p>
+              <p className="text-amber-700">처음에 AI는 아무것도 모릅니다. 사진을 보여줘도 개인지 고양이인지 <strong>동전 던지기 수준으로 찍습니다.</strong> 배경 색이 엉망인 이유입니다.</p>
             </div>
             <div>
               <p className="font-bold mb-1">❌ 2단계: 오답 확인 (오답률 계산)</p>
-              <p className="text-amber-700">AI는 자기가 찍은 답과 정답을 비교합니다. "파랑 점이 있는 곳을 주황이라고 했네? 틀렸잖아!" — 이 틀린 정도가 바로 <strong>오답률(Loss)</strong>입니다.</p>
+              <p className="text-amber-700">"이 사진은 고양이인데 개라고 했네? 틀렸잖아!" — AI는 자기 예측과 정답을 비교합니다. 이 <strong>틀린 정도가 오답률(Loss)</strong>입니다.</p>
             </div>
             <div>
               <p className="font-bold mb-1">🔧 3단계: 연결 조정 (역전파)</p>
-              <p className="text-amber-700">틀린 만큼 연결선의 굵기(가중치)를 조금씩 수정합니다. "이 뉴런이 너무 강하게 반응했으니 줄이고, 저 뉴런은 더 키워야겠다." 이걸 <strong>역전파(Backpropagation)</strong>라고 합니다.</p>
+              <p className="text-amber-700">틀린 만큼 연결선의 굵기를 수정합니다. "귀 뾰족함에 너무 반응 안 했으니 올리고, 색깔에 너무 의존했으니 줄이자." 이게 <strong>역전파(Backpropagation)</strong>입니다.</p>
             </div>
             <div>
               <p className="font-bold mb-1">🔁 4단계: 수천~수만 번 반복</p>
-              <p className="text-amber-700">1~3단계를 수천 번 반복하면, AI는 점점 정확해집니다. <strong>학습 시작</strong>을 누르고 반복 횟수가 올라가면서 배경 색이 정리되는 걸 직접 관찰해보세요!</p>
+              <p className="text-amber-700">1~3단계를 수천 번 반복하면, AI는 점점 <strong>"귀 뾰족 + 주둥이 짧음 = 고양이"</strong> 같은 패턴을 찾아냅니다. <strong>학습 시작</strong>을 눌러서 배경 색이 정리되는 걸 직접 관찰해보세요!</p>
             </div>
           </div>
         </div>
@@ -1600,7 +1614,7 @@ const NeuralNetworkPlayground = () => {
           <p className="text-sm font-bold text-slate-900 mb-3">그런데 ChatGPT 같은 진짜 AI는 이것보다 얼마나 큰가요?</p>
           <div className="text-xs text-slate-700 space-y-3 leading-relaxed">
             <div>
-              <p className="text-slate-600">위에서 직접 만져본 이 네트워크는 뉴런이 최대 <strong>약 20개</strong> 수준입니다. 실제 AI 모델은 이런 뉴런이 상상할 수 없이 많습니다.</p>
+              <p className="text-slate-600">위에서 만져본 네트워크는 뉴런 최대 <strong>약 20개</strong>로, 특징 2개(귀, 주둥이)만 봅니다. 실제 AI는 사진의 <strong>수백만 개 픽셀</strong>을 한 번에 분석합니다.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -1608,36 +1622,36 @@ const NeuralNetworkPlayground = () => {
                   <tr className="border-b border-slate-300">
                     <th className="text-left py-1.5 pr-3 font-bold text-slate-800">AI 모델</th>
                     <th className="text-left py-1.5 pr-3 font-bold text-slate-800">파라미터 수</th>
-                    <th className="text-left py-1.5 font-bold text-slate-800">비유</th>
+                    <th className="text-left py-1.5 font-bold text-slate-800">개/고양이 비유</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-600">
                   <tr className="border-b border-slate-100">
                     <td className="py-1.5 pr-3 font-medium">이 실습 도구</td>
                     <td className="py-1.5 pr-3">~50개</td>
-                    <td className="py-1.5">종이비행기</td>
+                    <td className="py-1.5">귀 모양만 보고 판단</td>
                   </tr>
                   <tr className="border-b border-slate-100">
                     <td className="py-1.5 pr-3 font-medium">Llama 3 8B</td>
                     <td className="py-1.5 pr-3">80억 개</td>
-                    <td className="py-1.5">전투기</td>
+                    <td className="py-1.5">사진 전체 + 품종까지 맞춤</td>
                   </tr>
                   <tr className="border-b border-slate-100">
                     <td className="py-1.5 pr-3 font-medium">GPT-4</td>
                     <td className="py-1.5 pr-3">약 1.8조 개 (추정)</td>
-                    <td className="py-1.5">우주왕복선</td>
+                    <td className="py-1.5">사진 보고 성격까지 설명</td>
                   </tr>
                   <tr>
                     <td className="py-1.5 pr-3 font-medium">사람의 뇌</td>
                     <td className="py-1.5 pr-3">시냅스 약 100조 개</td>
-                    <td className="py-1.5">아직 넘지 못한 벽</td>
+                    <td className="py-1.5">냄새, 소리까지 종합 판단</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200">
               <p className="font-bold text-slate-800 mb-1">💡 "Llama 3 <strong>8B</strong>"에서 8B는 뭔가요?</p>
-              <p className="text-slate-600"><strong>B = Billion(10억)</strong>입니다. 즉 8B = 80억 개의 파라미터(연결선의 굵기, 즉 가중치)를 가진 모델이라는 뜻입니다. 위 네트워크 구조에서 본 선 하나하나의 굵기가 '파라미터 1개'인데, 그게 80억 개 있다고 생각하면 됩니다. 파라미터가 많을수록 AI가 더 복잡한 패턴을 학습할 수 있지만, 그만큼 학습에 필요한 데이터와 컴퓨팅 자원도 어마어마하게 늘어납니다.</p>
+              <p className="text-slate-600"><strong>B = Billion(10억)</strong>입니다. 즉 8B = 80억 개의 파라미터(연결선의 굵기)를 가진 모델이라는 뜻입니다. 위 네트워크에서 본 선 하나하나가 '파라미터 1개'인데, 그게 80억 개라고 생각하면 됩니다. 이 실습 도구는 "귀랑 주둥이"만 보지만, 80억 개의 파라미터가 있으면 <strong>털 질감, 눈 색깔, 체형, 꼬리 모양</strong>까지 전부 분석할 수 있는 거죠.</p>
             </div>
           </div>
         </div>
@@ -1646,9 +1660,9 @@ const NeuralNetworkPlayground = () => {
         <div className="p-5 bg-violet-50 rounded-xl border border-violet-200">
           <p className="text-sm font-bold text-violet-900 mb-3">직접 실험해보세요!</p>
           <div className="text-xs text-violet-800 space-y-2 leading-relaxed">
-            <p>🧪 <strong>실험 1:</strong> 뉴런 수를 <strong>2개</strong>로 줄이고 원형 데이터로 학습해보세요. 잘 구분하나요? 그 다음 <strong>6개</strong>로 늘려보세요. 차이가 느껴질 겁니다.</p>
-            <p>🧪 <strong>실험 2:</strong> 데이터를 <strong>대각선(✖)</strong>으로 바꾸고 은닉층 1개로 학습해보세요. 잘 안 됩니다! 은닉층을 <strong>2개</strong>로 늘리면 어떤가요?</p>
-            <p>🧪 <strong>실험 3:</strong> 학습 속도를 <strong>0.1 (최대)</strong>로 올려보세요. 빨리 배우지만 오답률이 들쭉날쭉할 겁니다. <strong>0.005</strong>로 낮추면 느리지만 안정적입니다.</p>
+            <p>🧪 <strong>실험 1:</strong> 뉴런 수를 <strong>2개</strong>로 줄이고 원형 데이터로 학습해보세요. "귀 모양"만 보고 판단하는 수준이라 잘 안 맞을 겁니다. <strong>6개</strong>로 늘리면? 훨씬 정확해집니다!</p>
+            <p>🧪 <strong>실험 2:</strong> 데이터를 <strong>대각선(✖)</strong>으로 바꾸고 은닉층 1개로 학습해보세요. 잘 안 됩니다! 이건 "귀가 뾰족한 개"와 "주둥이가 긴 고양이"가 섞여 있어서, <strong>은닉층 2개</strong>로 늘려야 복합 판단이 가능합니다.</p>
+            <p>🧪 <strong>실험 3:</strong> 학습 속도를 <strong>최대(0.1)</strong>로 올려보세요. "이 사진 개다! 아니 고양이다! 아니 개다!" 하면서 오답률이 들쭉날쭉합니다. <strong>0.005</strong>로 낮추면 느리지만 안정적이에요.</p>
             <p className="text-violet-600 mt-2">→ 이런 조절을 실제 AI 개발에서는 <strong>"하이퍼파라미터 튜닝"</strong>이라고 합니다. AI 엔지니어들이 하는 핵심 작업 중 하나입니다!</p>
           </div>
         </div>
