@@ -8,7 +8,8 @@ import {
   Lightbulb, TrendingUp, Gauge, BookOpen, Gamepad2,
   ThumbsUp, ThumbsDown, Eye, Network, RefreshCw,
   MessageSquare, Bot, Globe, Send, Blocks,
-  CircuitBoard, Binary, Trophy, Flame, Star, Award, Lock
+  CircuitBoard, Binary, Trophy, Flame, Star, Award, Lock, X,
+  ChevronDown, Layers, SlidersHorizontal
 } from "lucide-react";
 
 // ─── Design Tokens ────────────────────────────────────
