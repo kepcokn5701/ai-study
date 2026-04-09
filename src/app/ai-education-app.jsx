@@ -2,278 +2,568 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Brain, Cpu, Zap, Shield, Sparkles, ChevronRight, ChevronDown,
-  Folder, FolderOpen, User, FileText, Target, ArrowRight, ArrowLeft,
-  RotateCcw, Play, CheckCircle2, XCircle, AlertTriangle, Lock,
-  Unlock, Lightbulb, Timer, TrendingUp, TrendingDown, Activity,
-  Gauge, BookOpen, Gamepad2, GripVertical, ThumbsUp, ThumbsDown,
-  Award, Star, Eye, Layers, Network, Settings, RefreshCw, X,
-  Check, MessageSquare, Bot, ServerCrash, Globe, Send, Blocks,
-  CircuitBoard, Workflow, Binary, SlidersHorizontal, Volume2
+  Brain, Cpu, Zap, Shield, Sparkles, ChevronRight,
+  User, FileText, Target, ArrowRight, ArrowLeft,
+  RotateCcw, Play, CheckCircle2, XCircle, AlertTriangle,
+  Lightbulb, TrendingUp, Gauge, BookOpen, Gamepad2,
+  ThumbsUp, ThumbsDown, Eye, Network, RefreshCw,
+  MessageSquare, Bot, Globe, Send, Blocks,
+  CircuitBoard, Binary, Trophy, Flame, Star, Award, Lock
 } from "lucide-react";
 
-// ─── Shared Components ────────────────────────────────
-const SectionDivider = ({ conceptTitle, gameTitle }) => null;
+// ─── Design Tokens ────────────────────────────────────
+const T = {
+  concept: {
+    accent: "#7c3aed", dim: "rgba(124,58,237,0.08)",
+    border: "rgba(124,58,237,0.2)",
+    grad: "linear-gradient(135deg,#6d28d9,#a78bfa)",
+    glow: "rgba(124,58,237,0.2)",
+  },
+  how: {
+    accent: "#0284c7", dim: "rgba(2,132,199,0.08)",
+    border: "rgba(2,132,199,0.2)",
+    grad: "linear-gradient(135deg,#0369a1,#38bdf8)",
+    glow: "rgba(2,132,199,0.2)",
+  },
+  apply: {
+    accent: "#ea580c", dim: "rgba(234,88,12,0.08)",
+    border: "rgba(234,88,12,0.2)",
+    grad: "linear-gradient(135deg,#c2410c,#fb923c)",
+    glow: "rgba(234,88,12,0.2)",
+  },
+  prompt: {
+    accent: "#059669", dim: "rgba(5,150,105,0.08)",
+    border: "rgba(5,150,105,0.2)",
+    grad: "linear-gradient(135deg,#047857,#34d399)",
+    glow: "rgba(5,150,105,0.2)",
+  },
+  ethics: {
+    accent: "#dc2626", dim: "rgba(220,38,38,0.08)",
+    border: "rgba(220,38,38,0.2)",
+    grad: "linear-gradient(135deg,#b91c1c,#f87171)",
+    glow: "rgba(220,38,38,0.2)",
+  },
+};
 
-const DeepDive = ({ children }) => {
-  const [open, setOpen] = useState(false);
+// ─── Shared UI Components ─────────────────────────────
+const Card = ({ children, t, game = false, className = "" }) => (
+  <div
+    className={`rounded-2xl overflow-hidden ${className}`}
+    style={{
+      background: "#ffffff",
+      border: `1px solid ${game && t ? t.border : "rgba(0,0,0,0.07)"}`,
+      boxShadow: game && t
+        ? `0 4px 24px ${t.glow}, 0 1px 4px rgba(0,0,0,0.06)`
+        : "0 2px 16px rgba(0,0,0,0.07)",
+    }}
+  >
+    {game && t && <div className="h-[3px]" style={{ background: t.grad }} />}
+    <div className="p-6 sm:p-8">{children}</div>
+  </div>
+);
+
+const SecHead = ({ icon: Icon, label, t }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+      style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+      <Icon size={18} style={{ color: t.accent }} />
+    </div>
+    <div>
+      <p className="text-[10px] font-black tracking-[0.2em] uppercase mb-0.5"
+        style={{ color: t.accent }}>CONCEPT</p>
+      <h3 className="text-base font-bold text-slate-800">{label}</h3>
+    </div>
+  </div>
+);
+
+const GameHead = ({ icon: Icon, label, t }) => (
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+      style={{ background: t.grad, boxShadow: `0 4px 12px ${t.glow}` }}>
+      <Icon size={18} className="text-white" />
+    </div>
+    <div className="flex-1">
+      <p className="text-[10px] font-black tracking-[0.2em] uppercase mb-0.5"
+        style={{ color: t.accent }}>INTERACTIVE GAME</p>
+      <h3 className="text-base font-bold text-slate-800">{label}</h3>
+    </div>
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+      style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+      <Gamepad2 size={12} style={{ color: t.accent }} />
+      <span className="text-[10px] font-bold" style={{ color: t.accent }}>PLAY</span>
+    </div>
+  </div>
+);
+
+const PBtn = ({ children, onClick, disabled, t, className = "", icon: Icon }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
+    style={{
+      background: disabled ? "#cbd5e1" : t.grad,
+      boxShadow: disabled ? "none" : `0 4px 16px ${t.glow}`,
+    }}
+    onMouseEnter={e => { if (!disabled) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${t.glow}`; } }}
+    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = disabled ? "none" : `0 4px 16px ${t.glow}`; }}
+  >
+    {Icon && <Icon size={15} />}{children}
+  </button>
+);
+
+const GBtn = ({ children, onClick, className = "" }) => (
+  <button
+    onClick={onClick}
+    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-800 transition-all duration-200 ${className}`}
+    style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.09)" }}
+    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.04)"; e.currentTarget.style.background = "#f1f5f9"; }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.09)"; e.currentTarget.style.background = "#f8fafc"; }}
+  >
+    {children}
+  </button>
+);
+
+const ScoreBadge = ({ score, total, t }) => {
+  const pct = Math.round((score / total) * 100);
+  const variant = pct === 100 ? "perfect" : pct >= 70 ? "good" : pct >= 50 ? "ok" : "low";
+  const colors = {
+    perfect: { bg: "rgba(5,150,105,0.1)", border: "rgba(5,150,105,0.3)", text: "#059669" },
+    good: { bg: "rgba(217,119,6,0.1)", border: "rgba(217,119,6,0.3)", text: "#d97706" },
+    ok: { bg: "rgba(234,88,12,0.1)", border: "rgba(234,88,12,0.3)", text: "#ea580c" },
+    low: { bg: "rgba(220,38,38,0.1)", border: "rgba(220,38,38,0.3)", text: "#dc2626" },
+  };
+  const c = colors[variant];
   return (
-    <div className="mt-6">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2.5 w-full rounded-xl text-sm font-medium transition-all border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-700"
-      >
-        <Layers size={14} />
-        <span>{open ? "딥다이브 접기" : "실제로는 이렇게 동작합니다"}</span>
-        <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="mt-4 p-5 bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-gray-200 space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600">DEEP DIVE</span>
-          </div>
-          {children}
-        </div>
-      )}
+    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl"
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+      {pct === 100 && <Trophy size={14} style={{ color: c.text }} />}
+      <span className="text-sm font-black" style={{ color: c.text }}>{score}/{total}</span>
+      {pct === 100 && <span className="text-xs font-bold" style={{ color: c.text }}>퍼펙트!</span>}
     </div>
   );
 };
 
-const ConceptHeader = ({ icon: Icon, title }) => (
-  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-      <Icon size={16} className="text-gray-500" />
-    </div>
-    <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">{title}</span>
-  </div>
-);
+// ─── TAB 1: AI Concepts & History ─────────────────────
+const Tab1 = ({ onScore }) => {
+  const t = T.concept;
+  const [openConcept, setOpenConcept] = useState(null);
+  const [activeEra, setActiveEra] = useState(null);
+  const [activeMilestone, setActiveMilestone] = useState(null);
 
-const GameHeader = ({ icon: Icon, title }) => (
-  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-    <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-      <Icon size={16} className="text-white" />
-    </div>
-    <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">{title}</span>
-  </div>
-);
+  // Quiz game state
+  const [qIndex, setQIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [results, setResults] = useState([]);
+  const [gameOver, setGameOver] = useState(false);
 
-const Badge = ({ children, variant = "default" }) => {
-  const styles = {
-    default: "bg-gray-100 text-gray-600",
-    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    error: "bg-red-50 text-red-700 border border-red-200",
-    warning: "bg-amber-50 text-amber-700 border border-amber-200",
-    info: "bg-blue-50 text-blue-700 border border-blue-200"
-  };
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${styles[variant]}`}>
-      {children}
-    </span>
-  );
-};
-
-// ─── TAB 1: AI Concepts & History ────────────────────
-const Tab1 = () => {
-  const [expanded, setExpanded] = useState(new Set());
-  const [gameAnswers, setGameAnswers] = useState({});
-  const [gameSubmitted, setGameSubmitted] = useState(false);
-
-  const orgData = {
-    id: "ai",
-    label: "AI 본부",
-    role: "전체 본부",
-    icon: Brain,
-    desc: "인간의 지능을 모방하는 모든 기술의 총칭입니다. 규칙 기반 시스템부터 최신 생성형 AI까지, 사람처럼 생각하고 판단하는 모든 프로그램이 여기에 속합니다.",
-    example: "예: 스팸 필터, 자동 번역, 음성 인식, 자율주행 등",
-    children: [{
-      id: "ml",
-      label: "머신러닝 팀",
-      role: "팀",
-      icon: TrendingUp,
-      desc: "사람이 일일이 규칙을 짜주는 대신, 데이터를 주고 '스스로 패턴을 찾아라!'라고 시키는 기술입니다. 마치 신입사원에게 과거 보고서를 잔뜩 주고 알아서 요령을 터득하게 하는 것과 같습니다.",
-      example: "예: 전력 수요 예측, 고장 장비 탐지, 고객 이탈 예측",
-      children: [{
-        id: "dl",
-        label: "딥러닝 파트",
-        role: "파트",
-        icon: Network,
-        desc: "머신러닝의 '엘리트 부대'입니다. 인간의 뇌 신경망을 모방한 수십~수백 층의 네트워크로 복잡한 패턴을 학습합니다. 데이터가 많을수록 더 똑똑해지는 것이 특징입니다.",
-        example: "예: 이미지 인식, 음성 인식, 자연어 처리",
-        children: [{
-          id: "genai",
-          label: "생성형 AI (LLM)",
-          role: "에이스 사원",
-          icon: Sparkles,
-          desc: "딥러닝의 에이스! 기존 AI가 '분류·예측'에 그쳤다면, 생성형 AI는 글, 그림, 코드 등 새로운 콘텐츠를 '창작'합니다. ChatGPT, Claude 등이 여기에 해당합니다.",
-          example: "예: 보고서 초안 작성, 코드 생성, 이미지 생성, 요약",
-          children: []
-        }]
-      }]
-    }]
-  };
-
-  const toggleExpand = (id) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const OrgNode = ({ node, depth = 0 }) => {
-    const isOpen = expanded.has(node.id);
-    const hasChildren = node.children && node.children.length > 0;
-    const Icon = node.icon;
-    const depthColors = [
-      "border-gray-300 bg-white",
-      "border-gray-200 bg-gray-50/50",
-      "border-gray-200 bg-gray-50/30",
-      "border-gray-200 bg-gray-50/20"
-    ];
-
-    return (
-      <div className={`${depth > 0 ? "ml-4 sm:ml-8" : ""}`}>
-        <div
-          onClick={() => { toggleExpand(node.id); }}
-          className={`border ${depthColors[depth]} rounded-xl p-4 cursor-pointer transition-all duration-300 hover:shadow-md ${isOpen ? "shadow-sm" : ""}`}
-        >
-          <div className="flex items-center gap-3">
-            {hasChildren ? (
-              <div className={`transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`}>
-                <ChevronRight size={16} className="text-gray-400" />
-              </div>
-            ) : <div className="w-4" />}
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${depth === 0 ? "bg-gray-900 text-white" : depth === 1 ? "bg-gray-700 text-white" : depth === 2 ? "bg-gray-500 text-white" : "bg-gray-900 text-white"}`}>
-              <Icon size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-gray-900 text-sm sm:text-base">{node.label}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">{node.role}</span>
-              </div>
-            </div>
-          </div>
-          <div className={`overflow-hidden transition-all duration-500 ${isOpen ? "max-h-40 opacity-100 mt-3" : "max-h-0 opacity-0"}`}>
-            <div className="pl-[52px] sm:pl-[56px]">
-              <p className="text-sm text-gray-600 leading-relaxed">{node.desc}</p>
-              <p className="text-xs text-gray-400 mt-1.5">{node.example}</p>
-            </div>
-          </div>
-        </div>
-        {hasChildren && (
-          <div className={`overflow-hidden transition-all duration-500 ${isOpen ? "max-h-[2000px] opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
-            {node.children.map(child => <OrgNode key={child.id} node={child} depth={depth + 1} />)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const tasks = [
-    { id: "t1", text: "정해진 규칙대로 스팸 메일을 자동 차단", answer: "program", emoji: "📧" },
-    { id: "t2", text: "과거 10년간의 전력 수요 데이터를 분석해 내일 수요를 예측", answer: "ml", emoji: "📊" },
-    { id: "t3", text: "이번 폭염 대비 대국민 절전 안내문 초안 작성", answer: "genai", emoji: "✍️" },
-    { id: "t4", text: "송전탑 사진을 보고 결함 부위를 자동 탐지", answer: "ml", emoji: "🔍" },
-    { id: "t5", text: "IF-THEN 규칙으로 전압이 낮으면 알람 울리기", answer: "program", emoji: "🚨" },
-    { id: "t6", text: "신입사원 교육 자료를 질의응답 챗봇으로 변환", answer: "genai", emoji: "💬" },
+  // ── 개념 데이터 ──
+  const concepts = [
+    {
+      id: "algo", num: "01", name: "알고리즘", emoji: "📋", tag: "기초", tagColor: "#64748b",
+      tagline: "문제를 푸는 단계별 레시피",
+      desc: "컴퓨터가 문제를 어떻게 풀지 정해놓은 순서와 규칙의 집합입니다. 라면 끓이는 조리법처럼, 단계를 순서대로 따라가면 원하는 결과가 나옵니다. 모든 AI 기술의 가장 기초가 됩니다.",
+      example: "신호등이 빨간색이면 멈추고, 초록색이면 가라 → IF-THEN 알고리즘",
+    },
+    {
+      id: "prog", num: "02", name: "프로그램 (규칙 기반 AI)", emoji: "🖥️", tag: "기초", tagColor: "#64748b",
+      tagline: "사람이 모든 규칙을 직접 코드로 작성",
+      desc: "알고리즘을 코드로 구현한 것입니다. 초기 AI는 사람이 모든 규칙을 직접 작성했습니다. 빠르고 정확하지만, 예상 밖의 상황이 오면 속수무책입니다. 유연성이 없는 것이 가장 큰 한계입니다.",
+      example: "스팸 필터 (특정 단어가 있으면 차단), 계산기, 신호등 제어 시스템",
+    },
+    {
+      id: "ml", num: "03", name: "머신러닝 (ML)", emoji: "📊", tag: "핵심", tagColor: "#818cf8",
+      tagline: "데이터를 주면 스스로 패턴을 찾는 AI",
+      desc: "사람이 규칙을 짜는 대신, 수많은 데이터를 보여주면 AI가 스스로 패턴을 학습합니다. 신입사원에게 수천 개의 과거 보고서를 주고 요령을 터득하게 하는 것과 같습니다. 데이터 품질이 성능을 결정합니다.",
+      example: "전력 수요 예측, 고장 설비 탐지, 스팸 자동 분류, 영화 추천",
+    },
+    {
+      id: "dl", num: "04", name: "딥러닝 (DL)", emoji: "🧠", tag: "핵심", tagColor: "#60a5fa",
+      tagline: "뇌 신경망을 모방한 고급 머신러닝",
+      desc: "머신러닝의 진화형입니다. 인간 뇌의 뉴런 연결을 모방해 수십~수백 층의 레이어로 복잡한 패턴을 스스로 학습합니다. 데이터와 컴퓨팅 파워가 많을수록 강력해지며, 이미지·음성 인식에서 인간을 능가합니다.",
+      example: "얼굴 인식, 자율주행, 음성 비서(Siri·Bixby), 번역기",
+    },
+    {
+      id: "ai", num: "05", name: "AI (인공지능)", emoji: "🤖", tag: "개념", tagColor: "#a78bfa",
+      tagline: "인간의 지능을 모방하는 모든 기술의 총칭",
+      desc: "알고리즘부터 머신러닝, 딥러닝, 생성형 AI까지 모두 포함하는 가장 넓은 개념입니다. '사람처럼 생각하고 판단하고 학습하는 모든 컴퓨터 프로그램'이 AI입니다. 좁은 AI(특정 작업)와 넓은 AI(범용)로 구분합니다.",
+      example: "시리, 알렉사, 자율주행차, 바둑 AI, ChatGPT 모두 AI",
+    },
+    {
+      id: "llm", num: "06", name: "LLM (대형 언어 모델)", emoji: "💬", tag: "최신", tagColor: "#34d399",
+      tagline: "수천억 단어를 학습한 언어 전문가 AI",
+      desc: "Large Language Model. 인터넷의 방대한 텍스트를 학습해 사람처럼 글을 읽고 씁니다. 트랜스포머 아키텍처 기반이며, 파라미터(신경망 가중치) 수가 많을수록 더 지능적입니다. 현재 AI 붐의 핵심 기술입니다.",
+      example: "GPT-4(OpenAI), Claude(Anthropic), Gemini(Google), Llama(Meta)",
+    },
+    {
+      id: "agent", num: "07", name: "AI 에이전트 (Agent)", emoji: "🦾", tag: "최신", tagColor: "#fb923c",
+      tagline: "목표를 주면 스스로 계획하고 행동하는 AI",
+      desc: "단순히 질문에 답하는 것을 넘어, 도구(검색·코드실행·파일조작·API호출)를 사용하며 여러 단계를 스스로 계획해 임무를 완수합니다. LLM에 '손발'이 생긴 것입니다. 복잡한 업무 자동화가 가능합니다.",
+      example: "리서치 에이전트(자동 조사·정리), 코딩 에이전트, 이메일 자동 처리 AI",
+    },
+    {
+      id: "agi", num: "08", name: "AGI (범용 인공지능)", emoji: "🌐", tag: "미래", tagColor: "#fbbf24",
+      tagline: "인간과 동등하게 모든 분야를 수행하는 AI",
+      desc: "Artificial General Intelligence. 현재 AI는 특정 분야만 잘하는 '좁은 AI'입니다. AGI는 인간처럼 어떤 지적 과제든 수행하며 새로운 분야도 스스로 학습합니다. 아직 달성되지 않았으며 2030년대를 목표로 연구 중입니다.",
+      example: "의사·변호사·과학자 역할을 동시에, 새로운 분야도 혼자 터득",
+    },
+    {
+      id: "asi", num: "09", name: "ASI (초인공지능)", emoji: "🚀", tag: "미래", tagColor: "#f87171",
+      tagline: "모든 면에서 인간을 초월하는 AI",
+      desc: "Artificial Super Intelligence. AGI를 넘어 창의성·감성·과학적 발견 등 모든 분야에서 최고의 인간 전문가를 압도하는 수준의 AI입니다. SF영화의 AI가 여기에 해당합니다. 달성 시 인류에 미치는 영향은 예측 불가능합니다.",
+      example: "아직 존재하지 않음 — 이론적 개념 (닉 보스트롬의 '수퍼인텔리전스' 참고)",
+    },
   ];
 
-  const targets = [
-    { id: "program", label: "일반 프로그램 / 초기 AI", icon: Cpu, desc: "규칙 기반" },
-    { id: "ml", label: "머신러닝 / 딥러닝", icon: Network, desc: "데이터 학습" },
-    { id: "genai", label: "생성형 AI", icon: Sparkles, desc: "콘텐츠 창작" },
+  const eras = [
+    {
+      id: "rule", period: "1950–1980s", label: "규칙 기반 AI", emoji: "🧩",
+      color: "#a78bfa", desc: "사람이 모든 규칙을 직접 코딩. IF-THEN 논리로만 동작했습니다.",
+      milestones: [
+        { year: 1950, event: "튜링 테스트 제안", who: "앨런 튜링", desc: "'기계가 생각할 수 있는가?'를 판별하는 테스트 제안. AI의 씨앗이 뿌려지다.", icon: "🧠" },
+        { year: 1956, event: "AI 탄생 선언", who: "존 매카시", desc: "다트머스 회의에서 'Artificial Intelligence' 용어 최초 사용. AI라는 학문 분야 공식 탄생.", icon: "🎓" },
+        { year: 1966, event: "최초 챗봇 ELIZA 개발", who: "조지프 바이젠바움", desc: "규칙 기반으로 사람과 대화하는 최초의 챗봇. 하지만 규칙 이외의 상황엔 속수무책.", icon: "💬" },
+      ],
+    },
+    {
+      id: "ml", period: "1980s–2010s", label: "머신러닝 시대", emoji: "📊",
+      color: "#818cf8", desc: "데이터를 주면 AI가 스스로 패턴을 학습. 사람이 규칙을 짤 필요가 없어졌습니다.",
+      milestones: [
+        { year: 1989, event: "역전파 알고리즘 대중화", who: "제프리 힌튼", desc: "신경망 학습의 핵심 알고리즘이 실용화. 이후 딥러닝의 아버지로 불리게 됨.", icon: "⚙️" },
+        { year: 1997, event: "딥블루, 체스 챔피언 격파", who: "IBM", desc: "가리 카스파로프(세계 체스 챔피언)를 AI가 최초로 이김. 인류에게 큰 충격.", icon: "♟️" },
+        { year: 2006, event: "딥러닝 기반 연구 재점화", who: "제프리 힌튼 팀", desc: "오랜 'AI 겨울'을 끝내고 심층 신경망이 다시 주목받기 시작.", icon: "🔥" },
+      ],
+    },
+    {
+      id: "dl", period: "2010s", label: "딥러닝 혁명", emoji: "⚡",
+      color: "#60a5fa", desc: "수백 층의 인공 신경망으로 이미지·음성 인식에서 인간을 뛰어넘기 시작합니다.",
+      milestones: [
+        { year: 2012, event: "알렉스넷, 이미지 인식 혁명", who: "제프리 힌튼 팀", desc: "이미지 인식 대회 오류율을 절반으로 줄이며 딥러닝의 시대 개막. 업계 판도가 뒤집힘.", icon: "👁️" },
+        { year: 2016, event: "알파고, 이세돌 4:1 격파", who: "구글 딥마인드", desc: "복잡성이 무한에 가까운 바둑에서 AI가 세계 챔피언을 이김. 전 세계 충격.", icon: "⚫" },
+        { year: 2017, event: "트랜스포머 논문 발표", who: "구글 리서치", desc: "'Attention is All You Need' 논문으로 현재 모든 LLM의 기반이 되는 아키텍처 탄생.", icon: "🔬" },
+      ],
+    },
+    {
+      id: "genai", period: "2020s~", label: "생성형 AI 시대", emoji: "✨",
+      color: "#f472b6", desc: "글·그림·코드를 스스로 '창작'하는 AI. 지금 우리가 매일 사용하는 AI입니다.",
+      milestones: [
+        { year: 2020, event: "GPT-3 공개", who: "OpenAI", desc: "1,750억 파라미터의 초거대 언어모델 등장. 사람과 구분하기 어려운 글쓰기 능력 시연.", icon: "📝" },
+        { year: 2022, event: "ChatGPT 출시, AI 대중화", who: "OpenAI", desc: "출시 5일 만에 100만 사용자, 2개월에 1억 명 달성. AI가 일반인의 손으로.", icon: "🚀" },
+        { year: 2024, event: "AI 춘추전국시대", who: "Anthropic·Google·Meta 등", desc: "Claude, Gemini 등 다양한 AI가 등장. 멀티모달·에이전트 AI로 진화 중.", icon: "🌍" },
+      ],
+    },
   ];
 
-  const handleAssign = (taskId, targetId) => {
-    if (gameSubmitted) return;
-    setGameAnswers(prev => ({ ...prev, [taskId]: targetId }));
+  const activeEraData = eras.find(e => e.id === activeEra);
+
+  const selectMilestone = (eraId, msIdx) => {
+    const key = `${eraId}-${msIdx}`;
+    setActiveMilestone(prev => prev === key ? null : key);
   };
 
-  const handleSubmit = () => setGameSubmitted(true);
-  const handleReset = () => { setGameAnswers({}); setGameSubmitted(false); };
+  // Quiz (개념 + 역사 혼합)
+  const questions = [
+    { q: "사람이 모든 규칙을 직접 코드로 작성하는 방식의 AI는?", opts: ["머신러닝", "딥러닝", "규칙 기반 AI", "LLM"], answer: 2, emoji: "🖥️" },
+    { q: "데이터를 주면 스스로 패턴을 찾아 학습하는 AI 기술은?", opts: ["알고리즘", "머신러닝", "AGI", "AI 에이전트"], answer: 1, emoji: "📊" },
+    { q: "인간 뇌의 뉴런 연결을 모방해 만든 AI 기술은?", opts: ["규칙 기반 AI", "머신러닝", "딥러닝", "프로그램"], answer: 2, emoji: "🧠" },
+    { q: "GPT-4, Claude, Gemini가 해당하는 AI 유형은?", opts: ["AGI", "알고리즘", "규칙 기반 AI", "LLM"], answer: 3, emoji: "💬" },
+    { q: "목표를 주면 도구를 사용해 스스로 계획·실행하는 AI는?", opts: ["LLM", "AI 에이전트", "딥러닝", "머신러닝"], answer: 1, emoji: "🦾" },
+    { q: "인간과 동등하게 모든 분야를 수행하는 AI의 이름은?", opts: ["ASI", "AGI", "LLM", "AI 에이전트"], answer: 1, emoji: "🌐" },
+    { q: "모든 면에서 인간을 초월하는 이론적 AI 개념은?", opts: ["AGI", "GPT-4", "ASI", "딥러닝"], answer: 2, emoji: "🚀" },
+    { q: "바둑 세계 챔피언 이세돌을 이긴 AI의 이름은?", opts: ["딥블루", "AlexNet", "알파고", "GPT-3"], answer: 2, emoji: "⚫" },
+    { q: "현재 ChatGPT·Claude의 기반이 되는 핵심 아키텍처는?", opts: ["CNN", "RNN", "LSTM", "트랜스포머"], answer: 3, emoji: "🔬" },
+    { q: "ChatGPT가 100만 사용자를 달성하는 데 걸린 시간은?", opts: ["5일", "5주", "5개월", "5년"], answer: 0, emoji: "🚀" },
+    { q: "딥러닝이 이미지 인식 대회에서 처음 혁명적 성과를 낸 해는?", opts: ["2008년", "2010년", "2012년", "2016년"], answer: 2, emoji: "👁️" },
+    { q: "'Artificial Intelligence'라는 단어가 처음 등장한 회의는?", opts: ["MIT 세미나", "다트머스 회의 1956", "구글 I/O 2000", "NeurIPS 1987"], answer: 1, emoji: "🎓" },
+  ];
 
-  const score = gameSubmitted ? tasks.filter(t => gameAnswers[t.id] === t.answer).length : 0;
+  const handleAnswer = (optIdx) => {
+    if (selected !== null) return;
+    setSelected(optIdx);
+    const correct = optIdx === questions[qIndex].answer;
+    setTimeout(() => {
+      setResults(p => [...p, correct]);
+      if (qIndex + 1 >= questions.length) {
+        setGameOver(true);
+        const finalScore = [...results, correct].filter(Boolean).length;
+        onScore?.("concept", finalScore, questions.length);
+      } else {
+        setQIndex(p => p + 1);
+        setSelected(null);
+      }
+    }, 900);
+  };
+
+  const resetQuiz = () => { setQIndex(0); setSelected(null); setResults([]); setGameOver(false); };
+  const quizScore = results.filter(Boolean).length;
+  const curQ = questions[qIndex];
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <ConceptHeader icon={BookOpen} title="개념 쏙쏙 — AI 조직도" />
-        <p className="text-sm text-gray-500 mb-6">각 항목을 클릭하면 하위 조직과 설명이 펼쳐집니다.</p>
-        <OrgNode node={orgData} />
-      </div>
+    <div className="space-y-6">
+      {/* ── Card 1: AI 주요 개념 설명 ── */}
+      <Card t={t}>
+        <SecHead icon={Brain} label="AI 주요 개념 설명 — 기초부터 미래까지" t={t} />
+        <p className="text-sm text-slate-500 mb-5">각 항목을 클릭하면 쉬운 설명과 예시를 볼 수 있습니다.</p>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <GameHeader icon={Gamepad2} title="실전 게임 — 업무 분장 타이쿤" />
-        <p className="text-sm text-gray-500 mb-6">각 업무를 읽고, 가장 적합한 담당자를 선택하세요!</p>
-
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {targets.map(t => (
-            <div key={t.id} className="text-center p-3 rounded-xl border border-gray-100 bg-gray-50/50">
-              <t.icon size={20} className="mx-auto mb-1 text-gray-600" />
-              <div className="text-xs font-semibold text-gray-700">{t.label}</div>
-              <div className="text-[10px] text-gray-400">{t.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-3">
-          {tasks.map(task => {
-            const selected = gameAnswers[task.id];
-            const isCorrect = gameSubmitted && selected === task.answer;
-            const isWrong = gameSubmitted && selected && selected !== task.answer;
+        {/* 스펙트럼 바 */}
+        <div className="flex items-center gap-1 mb-5 text-[10px] font-bold">
+          {["기초", "기초", "핵심", "핵심", "개념", "최신", "최신", "미래", "미래"].map((tag, i) => {
+            const colors = { 기초: "#64748b", 핵심: "#818cf8", 개념: "#a78bfa", 최신: "#34d399", 미래: "#f87171" };
             return (
-              <div key={task.id} className={`p-4 rounded-xl border transition-all ${isCorrect ? "border-emerald-200 bg-emerald-50/50" : isWrong ? "border-red-200 bg-red-50/50" : "border-gray-100"}`}>
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-lg">{task.emoji}</span>
-                  <p className="text-sm text-gray-700 flex-1">{task.text}</p>
-                  {gameSubmitted && (isCorrect ? <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> : isWrong ? <XCircle size={18} className="text-red-500 shrink-0" /> : null)}
+              <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: colors[tag] }} />
+            );
+          })}
+        </div>
+        <div className="flex justify-between text-[10px] font-semibold text-slate-600 mb-5 -mt-2">
+          <span>기초 기술</span><span>최신 AI</span><span>미래 개념</span>
+        </div>
+
+        <div className="space-y-1.5">
+          {concepts.map((c) => {
+            const isOpen = openConcept === c.id;
+            return (
+              <div key={c.id}
+                onClick={() => setOpenConcept(isOpen ? null : c.id)}
+                className="rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
+                style={{
+                  background: isOpen ? `${c.tagColor}10` : "#f8fafc",
+                  border: `1px solid ${isOpen ? c.tagColor + "40" : "rgba(0,0,0,0.07)"}`,
+                }}>
+                <div className="flex items-center gap-3 p-3.5">
+                  {/* 번호 */}
+                  <span className="text-[10px] font-black font-mono w-6 shrink-0 text-center"
+                    style={{ color: c.tagColor }}>{c.num}</span>
+                  {/* 이모지 */}
+                  <span className="text-lg shrink-0">{c.emoji}</span>
+                  {/* 이름 + 태그라인 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-slate-800">{c.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: c.tagColor + "20", color: c.tagColor }}>{c.tag}</span>
+                    </div>
+                    {!isOpen && (
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">{c.tagline}</p>
+                    )}
+                  </div>
+                  {/* 화살표 */}
+                  <ChevronRight size={14} className="text-slate-600 shrink-0 transition-transform duration-300"
+                    style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0)" }} />
                 </div>
-                <div className="flex gap-2 ml-8">
-                  {targets.map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => handleAssign(task.id, t.id)}
-                      disabled={gameSubmitted}
-                      className={`flex-1 text-xs py-2 px-2 rounded-lg border transition-all ${selected === t.id ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"} ${gameSubmitted ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      {t.label.split("/")[0].trim()}
-                    </button>
-                  ))}
+                {/* 펼쳐진 내용 */}
+                <div className={`overflow-hidden transition-all duration-400 ${isOpen ? "max-h-60" : "max-h-0"}`}>
+                  <div className="px-4 pb-4 pl-[60px] space-y-2" style={{ animation: isOpen ? "fadeIn 0.3s ease-out" : "" }}>
+                    <p className="text-xs font-bold mb-1" style={{ color: c.tagColor }}>"{c.tagline}"</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">{c.desc}</p>
+                    <div className="rounded-lg p-2.5 mt-2" style={{ background: "#f1f5f9", border: "1px solid rgba(0,0,0,0.07)" }}>
+                      <p className="text-[10px] font-bold text-slate-500 mb-1">💡 실제 예시</p>
+                      <p className="text-xs text-slate-400">{c.example}</p>
+                    </div>
+                  </div>
                 </div>
-                {isWrong && <p className="text-xs text-red-500 mt-2 ml-8">정답: {targets.find(t => t.id === task.answer)?.label}</p>}
               </div>
             );
           })}
         </div>
+      </Card>
 
-        <div className="flex items-center gap-3 mt-6">
-          {!gameSubmitted ? (
-            <button onClick={handleSubmit} disabled={Object.keys(gameAnswers).length < tasks.length} className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl disabled:opacity-30 hover:bg-gray-800 transition-all">
-              제출하기
-            </button>
-          ) : (
-            <>
-              <Badge variant={score === tasks.length ? "success" : score >= 4 ? "warning" : "error"}>
-                {score}/{tasks.length}점
-              </Badge>
-              <button onClick={handleReset} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
-                <RotateCcw size={14} /> 다시 하기
-              </button>
-            </>
-          )}
+      {/* ── Card 2: AI 기술 역사 (기존 타임라인, 이동) ── */}
+      <Card t={t}>
+        <SecHead icon={BookOpen} label="AI 기술 역사 — 시대별 타임라인" t={t} />
+        <p className="text-sm text-slate-500 mb-6">시대를 클릭해 주요 사건을 확인하세요.</p>
+
+        {/* Era selector */}
+        <div className="relative mb-6">
+          {/* 연결선 */}
+          <div className="absolute top-6 left-6 right-6 h-px hidden sm:block"
+            style={{ background: "linear-gradient(90deg, #a78bfa, #818cf8, #60a5fa, #f472b6)" }} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {eras.map((era) => {
+              const isActive = activeEra === era.id;
+              return (
+                <button key={era.id}
+                  onClick={() => { setActiveEra(isActive ? null : era.id); setActiveMilestone(null); }}
+                  className="relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-300 text-center"
+                  style={{
+                    background: isActive ? `${era.color}18` : "#f8fafc",
+                    border: `1px solid ${isActive ? era.color + "50" : "rgba(0,0,0,0.07)"}`,
+                    boxShadow: isActive ? `0 0 24px ${era.color}30` : "none",
+                    transform: isActive ? "translateY(-2px)" : "translateY(0)",
+                  }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg z-10"
+                    style={{ background: isActive ? era.color : "#e2e8f0", border: `2px solid ${isActive ? era.color : "rgba(0,0,0,0.08)"}`, boxShadow: isActive ? `0 0 16px ${era.color}60` : "none" }}>
+                    {era.emoji}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold mb-0.5" style={{ color: isActive ? era.color : "#475569" }}>{era.period}</p>
+                    <p className="text-xs font-bold" style={{ color: isActive ? era.color : "#64748b" }}>{era.label}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+
+        {/* Era detail */}
+        {activeEraData && (
+          <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+            <div className="rounded-xl p-4 mb-4"
+              style={{ background: `${activeEraData.color}10`, border: `1px solid ${activeEraData.color}30` }}>
+              <p className="text-sm text-slate-600">{activeEraData.desc}</p>
+            </div>
+            <div className="space-y-2">
+              {activeEraData.milestones.map((ms, i) => {
+                const key = `${activeEraData.id}-${i}`;
+                const isOpen = activeMilestone === key;
+                return (
+                  <div key={i}
+                    onClick={() => selectMilestone(activeEraData.id, i)}
+                    className="rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
+                    style={{
+                      background: isOpen ? `${activeEraData.color}10` : "#f8fafc",
+                      border: `1px solid ${isOpen ? activeEraData.color + "40" : "rgba(0,0,0,0.07)"}`,
+                    }}>
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="w-12 text-center shrink-0">
+                        <span className="text-xs font-black font-mono" style={{ color: activeEraData.color }}>{ms.year}</span>
+                      </div>
+                      <div className="w-px h-8 shrink-0" style={{ background: activeEraData.color + "40" }} />
+                      <span className="text-lg shrink-0">{ms.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800">{ms.event}</p>
+                        <p className="text-xs text-slate-500">{ms.who}</p>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-600 shrink-0 transition-transform duration-300"
+                        style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0)" }} />
+                    </div>
+                    <div className={`overflow-hidden transition-all duration-400 ${isOpen ? "max-h-24" : "max-h-0"}`}>
+                      <div className="px-4 pb-4 pl-[72px]">
+                        <p className="text-sm text-slate-700 leading-relaxed">{ms.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {!activeEra && (
+          <div className="text-center py-6 text-slate-600 text-sm">
+            위의 시대를 클릭해서 주요 사건을 살펴보세요 👆
+          </div>
+        )}
+      </Card>
+
+      {/* ── 게임: AI 역사 퀴즈 ── */}
+      <Card t={t} game>
+        <GameHead icon={Gamepad2} label="AI 개념 & 역사 퀴즈 — 12문제 도전!" t={t} />
+
+        {!gameOver ? (
+          <div className="space-y-5">
+            {/* Progress */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(qIndex / questions.length) * 100}%`, background: t.grad }} />
+              </div>
+              <span className="text-xs font-mono font-bold shrink-0" style={{ color: t.accent }}>
+                {qIndex + 1}/{questions.length}
+              </span>
+            </div>
+
+            {/* Score streak */}
+            <div className="flex gap-1.5">
+              {questions.map((_, i) => (
+                <div key={i} className="flex-1 h-1.5 rounded-full transition-all duration-300"
+                  style={{
+                    background: i < results.length
+                      ? (results[i] ? "#34d399" : "#f87171")
+                      : i === qIndex ? t.accent : "rgba(0,0,0,0.06)",
+                  }} />
+              ))}
+            </div>
+
+            {/* Question */}
+            <div className="rounded-xl p-5 text-center"
+              style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+              <div className="text-3xl mb-3">{curQ.emoji}</div>
+              <p className="text-base font-bold text-slate-800 leading-snug">{curQ.q}</p>
+            </div>
+
+            {/* Options */}
+            <div className="grid grid-cols-2 gap-2">
+              {curQ.opts.map((opt, i) => {
+                const isSelected = selected === i;
+                const isCorrect = i === curQ.answer;
+                const showResult = selected !== null;
+                let bg = "#f8fafc";
+                let border = "rgba(0,0,0,0.08)";
+                let color = "#64748b";
+                let shadow = "none";
+                if (showResult) {
+                  if (isCorrect) { bg = "rgba(52,211,153,0.12)"; border = "rgba(52,211,153,0.4)"; color = "#34d399"; shadow = "0 0 16px rgba(52,211,153,0.2)"; }
+                  else if (isSelected) { bg = "rgba(248,113,113,0.12)"; border = "rgba(248,113,113,0.4)"; color = "#f87171"; }
+                } else if (isSelected) {
+                  bg = t.dim; border = t.border; color = t.accent; shadow = `0 0 12px ${t.glow}`;
+                }
+                return (
+                  <button key={i}
+                    onClick={() => handleAnswer(i)}
+                    disabled={selected !== null}
+                    className="p-3 rounded-xl text-sm font-semibold text-left transition-all duration-200"
+                    style={{ background: bg, border: `1px solid ${border}`, color, boxShadow: shadow }}>
+                    <span className="font-mono text-xs mr-2 opacity-50">{String.fromCharCode(65 + i)}.</span>
+                    {opt}
+                    {showResult && isCorrect && <CheckCircle2 size={13} className="inline ml-1.5" />}
+                    {showResult && isSelected && !isCorrect && <XCircle size={13} className="inline ml-1.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5" style={{ animation: "fadeIn 0.4s ease-out" }}>
+            <div className="p-6 rounded-xl text-center"
+              style={{
+                background: quizScore >= 5 ? "rgba(52,211,153,0.08)" : quizScore >= 3 ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)",
+                border: `1px solid ${quizScore >= 5 ? "rgba(52,211,153,0.3)" : quizScore >= 3 ? "rgba(251,191,36,0.3)" : "rgba(248,113,113,0.3)"}`,
+              }}>
+              {quizScore === questions.length && <Trophy size={32} style={{ color: "#34d399" }} className="mx-auto mb-3" />}
+              <div className="text-5xl font-black text-slate-800 mb-1">
+                {quizScore}<span className="text-2xl text-slate-500">/{questions.length}</span>
+              </div>
+              <p className="font-bold text-lg mb-1" style={{ color: quizScore >= 10 ? "#34d399" : quizScore >= 7 ? "#fbbf24" : "#f87171" }}>
+                {quizScore === questions.length ? "🏆 AI 전문가 인증!" : quizScore >= 10 ? "🎉 훌륭해요!" : quizScore >= 7 ? "👍 잘 했어요!" : "📚 개념 카드를 다시 보세요!"}
+              </p>
+              {/* Answer review */}
+              <div className="flex justify-center gap-2 mt-3">
+                {results.map((r, i) => (
+                  <div key={i} className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: r ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)" }}>
+                    {r ? <CheckCircle2 size={13} style={{ color: "#34d399" }} /> : <XCircle size={13} style={{ color: "#f87171" }} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <GBtn onClick={resetQuiz}><RotateCcw size={13} />다시 풀기</GBtn>
+              <GBtn onClick={() => setOpenConcept("algo")}>
+                <BookOpen size={13} />개념 복습
+              </GBtn>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
 
-// ─── TAB 2: How AI Works ─────────────────────────────
-const Tab2 = () => {
+// ─── TAB 2: How AI Works ──────────────────────────────
+const Tab2 = ({ onScore }) => {
+  const t = T.how;
   const [step, setStep] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [gamePhase, setGamePhase] = useState("attention"); // attention, predict, result
+  const [gamePhase, setGamePhase] = useState("attention");
   const [selectedWords, setSelectedWords] = useState(new Set());
   const [selectedPrediction, setSelectedPrediction] = useState(null);
   const [timeLeft, setTimeLeft] = useState(100);
@@ -282,1313 +572,484 @@ const Tab2 = () => {
 
   const steps = [
     {
-      title: "토큰화 (Tokenization)",
-      subtitle: "말 토막 내기",
-      icon: Blocks,
+      title: "토큰화 (Tokenization)", subtitle: "말 토막 내기", icon: Blocks,
       content: () => {
         const [tokenized, setTokenized] = useState(false);
         return (
-          <div className="space-y-6">
-            <div className="bg-gray-50 rounded-xl p-5">
-              <p className="text-sm text-gray-500 mb-3">김대리가 말합니다:</p>
-              <div className="relative">
-                {!tokenized ? (
-                  <p className="text-lg font-medium text-gray-800 tracking-wide">"저 내일 오후에..."</p>
-                ) : (
-                  <div className="flex gap-2 flex-wrap">
-                    {["저", "내일", "오후에", "..."].map((t, i) => (
-                      <span key={i} className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono font-semibold text-gray-800 shadow-sm" style={{ animationDelay: `${i * 150}ms`, animation: "slideUp 0.4s ease-out forwards", opacity: 0, transform: "translateY(10px)" }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+          <div className="space-y-5">
+            <div className="rounded-xl p-5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
+              <p className="text-xs text-slate-500 mb-3">👤 김대리가 말합니다:</p>
+              {!tokenized ? (
+                <p className="text-xl font-bold text-slate-800">"저 내일 오후에..."</p>
+              ) : (
+                <div className="flex gap-2 flex-wrap">
+                  {["저", "내일", "오후에", "..."].map((tk, i) => (
+                    <span key={i} className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-mono font-bold text-slate-800"
+                      style={{
+                        background: t.dim, border: `1px solid ${t.border}`,
+                        boxShadow: `0 0 12px ${t.glow}`,
+                        animation: `slideUp 0.4s ease-out ${i * 100}ms both`,
+                      }}>
+                      {tk}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-            <button onClick={() => setTokenized(!tokenized)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-              {tokenized ? "원문 보기" : "토큰화 실행 ✂️"}
-            </button>
-            <p className="text-sm text-gray-500 leading-relaxed">AI는 문장을 한꺼번에 이해하지 못합니다. 마치 긴 문장을 단어 카드로 잘라내듯, 텍스트를 작은 조각(토큰)으로 쪼개는 것이 첫 단계입니다.</p>
-            <DeepDive>
-              {(() => {
-                const [demoInput, setDemoInput] = useState("저 내일 오후에 반차 쓰겠습니다");
-                const bpeSteps = [
-                  { label: "원문 입력", tokens: [demoInput], desc: "부장님 귀에 문장이 통째로 들어옵니다" },
-                  { label: "공백 분리", tokens: demoInput.split(" "), desc: "먼저 띄어쓰기 단위로 거칠게 나눕니다" },
-                  { label: "서브워드 분해 (BPE)", tokens: (() => {
-                    const result = [];
-                    demoInput.split(" ").forEach(w => {
-                      if (w.length > 2) { result.push(w.slice(0, Math.ceil(w.length / 2)), w.slice(Math.ceil(w.length / 2))); }
-                      else { result.push(w); }
-                    });
-                    return result;
-                  })(), desc: "자주 등장하는 글자 조합(서브워드)으로 더 잘게 쪼갭니다" },
-                  { label: "토큰 ID 매핑", tokens: (() => {
-                    const result = [];
-                    let id = 3842;
-                    demoInput.split(" ").forEach(w => {
-                      if (w.length > 2) {
-                        result.push({ text: w.slice(0, Math.ceil(w.length / 2)), id: id });
-                        result.push({ text: w.slice(Math.ceil(w.length / 2)), id: id + 157 });
-                        id += 311;
-                      } else {
-                        result.push({ text: w, id: id });
-                        id += 248;
-                      }
-                    });
-                    return result;
-                  })(), desc: "각 조각에 고유 번호(ID)를 부여합니다 — AI는 숫자만 이해합니다" },
-                ];
-                const [bpeStep, setBpeStep] = useState(0);
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">BPE (Byte Pair Encoding) — 실제 토큰화 과정</p>
-                    <p className="text-xs text-gray-500">GPT, Claude 등 대부분의 LLM은 BPE 알고리즘을 사용합니다. 단어를 통째로 외우는 게 아니라, 자주 나오는 글자 조합을 학습해서 효율적으로 쪼갭니다.</p>
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span className="font-mono font-bold text-blue-600">Step {bpeStep + 1}/4</span>
-                        <span>—</span>
-                        <span className="font-medium">{bpeSteps[bpeStep].label}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 italic">{bpeSteps[bpeStep].desc}</p>
-                      <div className="flex gap-1.5 flex-wrap min-h-[48px] items-center">
-                        {bpeStep < 3 ? (
-                          bpeSteps[bpeStep].tokens.map((t, i) => (
-                            <span key={i} className={`px-3 py-1.5 rounded-md text-xs font-mono font-semibold border transition-all ${bpeStep === 0 ? "bg-gray-100 border-gray-200 text-gray-700" : bpeStep === 1 ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-purple-50 border-purple-200 text-purple-700"}`}>{t}</span>
-                          ))
-                        ) : (
-                          bpeSteps[3].tokens.map((t, i) => (
-                            <div key={i} className="flex flex-col items-center gap-0.5">
-                              <span className="px-3 py-1.5 rounded-md text-xs font-mono font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700">{t.text}</span>
-                              <span className="text-[9px] font-mono text-gray-400">ID: {t.id}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setBpeStep(Math.max(0, bpeStep - 1))} disabled={bpeStep === 0} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">이전</button>
-                      <button onClick={() => setBpeStep(Math.min(3, bpeStep + 1))} disabled={bpeStep === 3} className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30">다음 단계</button>
-                    </div>
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>왜 서브워드로 쪼갤까?</strong> "쓰겠습니다"를 통째로 외우면 사전이 수십만 개 필요합니다. 하지만 "쓰겠" + "습니다"로 나누면, "습니다"는 다른 문장("하겠습니다", "먹겠습니다")에서도 재활용됩니다. 부장님도 모든 말을 통째로 외우는 게 아니라, 패턴을 파악하는 것이죠.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4의 토큰 사전 크기는 약 100,000개, Claude는 약 100,000개입니다. 한국어 한 글자는 평균 1.5~2 토큰을 소모합니다. "저 내일 오후에 반차 쓰겠습니다"는 실제로 약 12~15토큰이 됩니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <PBtn t={t} onClick={() => setTokenized(!tokenized)}>
+              {tokenized ? "원문 보기" : "✂️ 토큰화 실행"}
+            </PBtn>
+            <p className="text-sm text-slate-600 leading-relaxed">AI는 문장을 한꺼번에 이해하지 못합니다. 텍스트를 작은 조각(토큰)으로 쪼개는 것이 첫 단계입니다.</p>
           </div>
         );
       }
     },
     {
-      title: "임베딩 (Embedding)",
-      subtitle: "뇌피셜 수치화",
-      icon: Binary,
+      title: "임베딩 (Embedding)", subtitle: "수치화", icon: Binary,
       content: () => {
-        const [showScores, setShowScores] = useState(false);
-        const embeddings = [
+        const [show, setShow] = useState(false);
+        const embs = [
           { token: "저", scores: [{ label: "주어 확률", val: 9 }, { label: "긴급도", val: 2 }] },
           { token: "내일", scores: [{ label: "시간 관련", val: 9 }, { label: "퇴근 임박", val: 3 }] },
           { token: "오후에", scores: [{ label: "퇴근 임박", val: 8 }, { label: "피곤함", val: 5 }] },
         ];
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">부장님이 김대리의 말을 수첩에 기록합니다. 각 단어에 수치(벡터)를 부여합니다.</p>
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 font-medium">
-                <FileText size={14} /> 부장님의 수첩 (엑셀)
-              </div>
-              {embeddings.map((emb, i) => (
-                <div key={i} className="bg-white rounded-lg border border-gray-100 p-3 flex items-center gap-4">
-                  <span className="font-mono font-semibold text-sm bg-gray-100 px-3 py-1 rounded-md text-gray-800">{emb.token}</span>
-                  <ArrowRight size={14} className="text-gray-300" />
-                  <div className="flex-1 flex gap-2 flex-wrap">
-                    {showScores && emb.scores.map((s, j) => (
-                      <div key={j} className="flex items-center gap-1.5 text-xs" style={{ animation: "fadeIn 0.3s ease-out forwards", animationDelay: `${(i * 2 + j) * 100}ms`, opacity: 0 }}>
-                        <span className="text-gray-500">{s.label}:</span>
-                        <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-gray-700 rounded-full transition-all duration-700" style={{ width: `${s.val * 10}%` }} />
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">각 단어에 수치(벡터)를 부여합니다. 컴퓨터가 이해할 수 있는 숫자로 변환하는 과정입니다.</p>
+            <div className="rounded-xl p-4 space-y-3" style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.07)" }}>
+              {embs.map((e, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg p-3"
+                  style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.12)" }}>
+                  <span className="font-mono font-bold px-3 py-1.5 rounded-lg text-sm text-slate-800"
+                    style={{ background: t.dim, border: `1px solid ${t.border}` }}>{e.token}</span>
+                  <ArrowRight size={12} className="text-slate-600 shrink-0" />
+                  <div className="flex-1 flex gap-3 flex-wrap">
+                    {show && e.scores.map((s, j) => (
+                      <div key={j} className="flex items-center gap-1.5 text-xs"
+                        style={{ animation: `fadeIn 0.3s ease-out ${(i * 2 + j) * 80}ms both` }}>
+                        <span className="text-slate-500">{s.label}</span>
+                        <div className="w-14 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.08)" }}>
+                          <div className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${s.val * 10}%`, background: t.grad }} />
                         </div>
-                        <span className="font-mono text-gray-700 font-semibold">{s.val}</span>
+                        <span className="font-mono font-bold" style={{ color: t.accent }}>{s.val}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-            <button onClick={() => setShowScores(!showScores)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-              {showScores ? "수치 숨기기" : "수치화 시작 📊"}
-            </button>
-            <DeepDive>
-              {(() => {
-                const [selectedWord, setSelectedWord] = useState(null);
-                const vectorSpace = [
-                  { word: "저", x: 20, y: 70, cluster: "인칭", color: "#3b82f6" },
-                  { word: "나", x: 25, y: 65, cluster: "인칭", color: "#3b82f6" },
-                  { word: "내일", x: 60, y: 30, cluster: "시간", color: "#f59e0b" },
-                  { word: "오후", x: 65, y: 25, cluster: "시간", color: "#f59e0b" },
-                  { word: "어제", x: 55, y: 35, cluster: "시간", color: "#f59e0b" },
-                  { word: "반차", x: 80, y: 60, cluster: "근무", color: "#10b981" },
-                  { word: "퇴근", x: 85, y: 55, cluster: "근무", color: "#10b981" },
-                  { word: "퇴사", x: 82, y: 75, cluster: "근무", color: "#10b981" },
-                  { word: "한숨", x: 40, y: 80, cluster: "감정", color: "#ef4444" },
-                  { word: "피곤", x: 35, y: 85, cluster: "감정", color: "#ef4444" },
-                ];
-                const dimensions = [
-                  { name: "시간 관련도", desc: "'내일', '오후'는 높고, '저'는 낮음" },
-                  { name: "감정 강도", desc: "'한숨', '피곤'이 높은 값" },
-                  { name: "행위 의도", desc: "'반차', '퇴사'에 강하게 반응" },
-                  { name: "주어 여부", desc: "'저', '나'만 높은 차원" },
-                ];
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">벡터 공간 — 단어가 숫자 좌표로 바뀌는 원리</p>
-                    <p className="text-xs text-gray-500">임베딩은 각 단어를 수백~수천 차원의 숫자 벡터로 변환합니다. 의미가 비슷한 단어는 가까이, 다른 단어는 멀리 배치됩니다. 아래는 부장님 수첩의 단어들을 2D로 축소해서 보여줍니다.</p>
-
-                    {/* 2D Vector Space */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-[10px] font-mono text-gray-400 mb-2">2D 벡터 공간 (실제로는 768~4096차원)</p>
-                      <div className="relative w-full h-56 bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-100 overflow-hidden">
-                        {/* Axis labels */}
-                        <span className="absolute bottom-1 right-2 text-[9px] text-gray-300 font-mono">차원 1</span>
-                        <span className="absolute top-1 left-2 text-[9px] text-gray-300 font-mono">차원 2</span>
-                        {/* Cluster circles */}
-                        <div className="absolute rounded-full border border-blue-100 bg-blue-50/30" style={{ left: "12%", top: "55%", width: "22%", height: "30%" }} />
-                        <div className="absolute rounded-full border border-amber-100 bg-amber-50/30" style={{ left: "45%", top: "12%", width: "28%", height: "35%" }} />
-                        <div className="absolute rounded-full border border-emerald-100 bg-emerald-50/30" style={{ left: "68%", top: "42%", width: "28%", height: "42%" }} />
-                        <div className="absolute rounded-full border border-red-100 bg-red-50/30" style={{ left: "22%", top: "68%", width: "28%", height: "30%" }} />
-                        {/* Words as dots */}
-                        {vectorSpace.map((item, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setSelectedWord(selectedWord === i ? null : i)}
-                            className={`absolute flex flex-col items-center gap-0.5 transition-all duration-300 cursor-pointer hover:scale-125 ${selectedWord === i ? "scale-125 z-10" : ""}`}
-                            style={{ left: `${item.x}%`, top: `${item.y}%`, transform: "translate(-50%, -50%)" }}
-                          >
-                            <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm transition-all ${selectedWord === i ? "w-4 h-4 ring-2 ring-offset-1" : ""}`} style={{ backgroundColor: item.color, ringColor: item.color }} />
-                            <span className="text-[9px] font-medium text-gray-600 whitespace-nowrap">{item.word}</span>
-                          </button>
-                        ))}
-                      </div>
-                      {/* Cluster legend */}
-                      <div className="flex gap-3 mt-2 flex-wrap">
-                        {[{ label: "인칭", color: "#3b82f6" }, { label: "시간", color: "#f59e0b" }, { label: "근무", color: "#10b981" }, { label: "감정", color: "#ef4444" }].map((c, i) => (
-                          <div key={i} className="flex items-center gap-1 text-[10px] text-gray-500">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
-                            {c.label}
-                          </div>
-                        ))}
-                      </div>
-                      {selectedWord !== null && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100" style={{ animation: "fadeIn 0.3s ease-out" }}>
-                          <p className="text-xs font-medium text-gray-700 mb-1.5">"{vectorSpace[selectedWord].word}"의 벡터 (4차원 축소)</p>
-                          <div className="flex gap-2 font-mono text-[10px]">
-                            {[0.73, -0.21, 0.55, 0.12].map((v, i) => {
-                              const jitter = ((selectedWord * 7 + i * 13) % 100) / 100 - 0.5;
-                              const val = Math.round((v + jitter) * 100) / 100;
-                              return <span key={i} className={`px-2 py-1 rounded ${val > 0 ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-700"}`}>{val > 0 ? "+" : ""}{val}</span>;
-                            })}
-                            <span className="text-gray-300 self-center">... ×768</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Dimension explanation */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
-                      <p className="text-xs font-medium text-gray-700">각 차원은 무엇을 의미할까?</p>
-                      <p className="text-xs text-gray-500">부장님 수첩의 열(컬럼)이 2개였다면, 실제 AI는 768~4096개입니다:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {dimensions.map((d, i) => (
-                          <div key={i} className="p-2 bg-gray-50 rounded-lg">
-                            <p className="text-[10px] font-semibold text-gray-700">차원 #{i + 1}: {d.name}</p>
-                            <p className="text-[10px] text-gray-400">{d.desc}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "반차"와 "퇴근"이 가까이 있는 건 AI가 수억 개의 문장에서 이 두 단어가 비슷한 맥락에 등장하는 것을 학습했기 때문입니다. 부장님이 수십 년 직장 경험으로 "반차"와 "퇴근"을 연결하는 것처럼, AI는 데이터에서 패턴을 찾습니다.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-3는 12,288차원, Claude는 약 8,192차원의 임베딩을 사용합니다. Word2Vec의 유명한 실험: vec("왕") - vec("남자") + vec("여자") ≈ vec("여왕"). 벡터 연산으로 의미가 계산됩니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <PBtn t={t} onClick={() => setShow(!show)}>{show ? "숨기기" : "📊 수치화 시작"}</PBtn>
           </div>
         );
       }
     },
     {
-      title: "셀프 어텐션 (Self-Attention)",
-      subtitle: "눈치 챙기기",
-      icon: Eye,
+      title: "셀프 어텐션 (Self-Attention)", subtitle: "문맥 파악", icon: Eye,
       content: () => {
-        const [showLinks, setShowLinks] = useState(false);
-        const words = ["저", "내일", "오후에"];
-        const context = "어제 김대리가 한숨을 쉬었다는 사실!";
+        const [show, setShow] = useState(false);
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">부장님은 단어들 사이의 관계와 숨겨진 문맥을 파악합니다.</p>
-            <div className="bg-gray-50 rounded-xl p-5">
-              <div className="flex items-center justify-center gap-4 mb-6 flex-wrap">
-                {words.map((w, i) => (
-                  <span key={i} className={`px-4 py-2 rounded-lg font-semibold text-sm border transition-all duration-500 ${showLinks && w === "오후에" ? "bg-gray-900 text-white border-gray-900 scale-110" : "bg-white border-gray-200 text-gray-700"}`}>
-                    {w}
-                  </span>
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">단어들 사이의 관계와 숨겨진 문맥을 파악합니다.</p>
+            <div className="rounded-xl p-5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
+              <div className="flex items-center justify-center gap-3 mb-5 flex-wrap">
+                {["저", "내일", "오후에"].map((w, i) => (
+                  <span key={i} className="px-4 py-2 rounded-lg font-bold text-sm transition-all duration-500"
+                    style={{
+                      background: show && w === "오후에" ? t.grad : t.dim,
+                      color: show && w === "오후에" ? "white" : "#1e293b",
+                      border: `1px solid ${show && w === "오후에" ? t.accent : t.border}`,
+                      boxShadow: show && w === "오후에" ? `0 0 20px ${t.glow}` : "none",
+                      transform: show && w === "오후에" ? "scale(1.1)" : "scale(1)",
+                    }}>{w}</span>
                 ))}
               </div>
-              {showLinks && (
-                <div className="space-y-3" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm">💨</span>
-                    <span className="text-sm text-gray-600">{context}</span>
+              {show && (
+                <div className="space-y-2" style={{ animation: "fadeIn 0.5s ease-out" }}>
+                  <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "#f8fafc" }}>
+                    <span>💨</span>
+                    <span className="text-sm text-slate-600">어제 김대리가 한숨을 쉬었다는 사실!</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                    <span className="text-lg">🔗</span>
-                    <div>
-                      <p className="text-sm font-medium text-red-700">"한숨" + "오후" → 어텐션 가중치 <span className="font-mono font-bold">0.92</span> (매우 강함)</p>
-                      <p className="text-xs text-red-500 mt-0.5">이 두 정보가 강하게 연결됩니다!</p>
-                    </div>
+                  <div className="p-3 rounded-lg" style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)" }}>
+                    <p className="text-sm font-bold" style={{ color: "#f87171" }}>
+                      🔗 "한숨" + "오후" → 어텐션 가중치 <span className="font-mono">0.92</span> (매우 강함)
+                    </p>
                   </div>
                 </div>
               )}
             </div>
-            <button onClick={() => setShowLinks(!showLinks)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-              {showLinks ? "초기화" : "문맥 연결 시작 🔗"}
-            </button>
-            <DeepDive>
-              {(() => {
-                const [activeHead, setActiveHead] = useState(0);
-                const tokens = ["저", "내일", "오후에", "한숨"];
-                const attentionHeads = [
-                  {
-                    name: "Head 1: 시간 관계",
-                    desc: "부장님의 첫 번째 시선 — '언제?'에 집중",
-                    matrix: [
-                      [0.1, 0.3, 0.5, 0.1],
-                      [0.1, 0.2, 0.6, 0.1],
-                      [0.1, 0.7, 0.1, 0.1],
-                      [0.1, 0.2, 0.3, 0.4],
-                    ]
-                  },
-                  {
-                    name: "Head 2: 감정 관계",
-                    desc: "부장님의 두 번째 시선 — '기분이 어때?'에 집중",
-                    matrix: [
-                      [0.2, 0.1, 0.1, 0.6],
-                      [0.1, 0.1, 0.2, 0.6],
-                      [0.1, 0.1, 0.3, 0.5],
-                      [0.3, 0.1, 0.2, 0.4],
-                    ]
-                  },
-                  {
-                    name: "Head 3: 주어-행위 관계",
-                    desc: "부장님의 세 번째 시선 — '누가 뭘 하려고?'에 집중",
-                    matrix: [
-                      [0.4, 0.1, 0.4, 0.1],
-                      [0.5, 0.1, 0.3, 0.1],
-                      [0.6, 0.1, 0.2, 0.1],
-                      [0.3, 0.1, 0.1, 0.5],
-                    ]
-                  }
-                ];
-                const head = attentionHeads[activeHead];
-                const getHeatColor = (val) => {
-                  if (val >= 0.6) return "bg-red-500 text-white";
-                  if (val >= 0.4) return "bg-orange-400 text-white";
-                  if (val >= 0.3) return "bg-yellow-300 text-gray-800";
-                  if (val >= 0.2) return "bg-yellow-100 text-gray-600";
-                  return "bg-gray-50 text-gray-400";
-                };
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">Q·K·V와 멀티헤드 어텐션 — 부장님의 다중 관점</p>
-                    <p className="text-xs text-gray-500">부장님이 김대리 말을 들을 때 동시에 여러 관점으로 분석합니다. 실제 AI도 마찬가지로 여러 "헤드"가 각기 다른 관계를 포착합니다.</p>
-
-                    {/* Q, K, V explanation */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-[10px] font-bold text-blue-700 mb-1">Q (Query)</p>
-                        <p className="text-[10px] text-blue-600">"내가 알고 싶은 것"</p>
-                        <p className="text-[10px] text-gray-500 mt-1">부장님: "이 단어가 뭘 궁금해하지?"</p>
-                      </div>
-                      <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <p className="text-[10px] font-bold text-emerald-700 mb-1">K (Key)</p>
-                        <p className="text-[10px] text-emerald-600">"내가 가진 정보 태그"</p>
-                        <p className="text-[10px] text-gray-500 mt-1">부장님: "이 단어가 어떤 정보를 제공하지?"</p>
-                      </div>
-                      <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                        <p className="text-[10px] font-bold text-purple-700 mb-1">V (Value)</p>
-                        <p className="text-[10px] text-purple-600">"실제 정보 내용"</p>
-                        <p className="text-[10px] text-gray-500 mt-1">부장님: "그래서 실제로 뭘 전달하지?"</p>
-                      </div>
-                    </div>
-
-                    {/* Multi-head tabs */}
-                    <div className="flex gap-1.5 mt-2">
-                      {attentionHeads.map((h, i) => (
-                        <button key={i} onClick={() => setActiveHead(i)} className={`px-3 py-1.5 text-[10px] font-medium rounded-lg transition-all ${i === activeHead ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                          Head {i + 1}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Attention heatmap */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <p className="text-xs font-medium text-gray-700 mb-1">{head.name}</p>
-                      <p className="text-[10px] text-gray-400 mb-3">{head.desc}</p>
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr>
-                              <th className="text-[9px] text-gray-400 p-1 text-left font-normal">Q↓ K→</th>
-                              {tokens.map((t, i) => (
-                                <th key={i} className="text-[10px] font-mono font-semibold text-gray-600 p-1 text-center">{t}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {tokens.map((t, i) => (
-                              <tr key={i}>
-                                <td className="text-[10px] font-mono font-semibold text-gray-600 p-1">{t}</td>
-                                {head.matrix[i].map((val, j) => (
-                                  <td key={j} className="p-1 text-center">
-                                    <span className={`inline-block w-full px-1 py-1 rounded text-[10px] font-mono font-bold ${getHeatColor(val)}`}>
-                                      {val.toFixed(2)}
-                                    </span>
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[9px] text-gray-400">약함</span>
-                        <div className="flex gap-0.5">
-                          {["bg-gray-100", "bg-yellow-100", "bg-yellow-300", "bg-orange-400", "bg-red-500"].map((c, i) => (
-                            <div key={i} className={`w-4 h-2 rounded-sm ${c}`} />
-                          ))}
-                        </div>
-                        <span className="text-[9px] text-gray-400">강함</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>왜 멀티헤드일까?</strong> 부장님이 "시간", "감정", "주어-행위" 세 가지를 동시에 파악하듯, GPT-4는 128개의 헤드가, Claude는 64~128개의 헤드가 각각 다른 관계를 동시에 포착합니다. 하나의 헤드만으로는 "내일 오후"의 시간 관계만 보고 "한숨"의 감정 신호를 놓칠 수 있습니다.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> 어텐션 계산: Attention(Q,K,V) = softmax(QK<sup>T</sup> / √d<sub>k</sub>)V. GPT-4는 약 128개 헤드 × 128차원 = 16,384차원. 모든 토큰 쌍의 관계를 계산하므로, 토큰 N개면 N² 번의 연산이 필요합니다 (이것이 긴 문장이 비싼 이유).</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <PBtn t={t} onClick={() => setShow(!show)}>{show ? "초기화" : "🔗 문맥 연결 시작"}</PBtn>
           </div>
         );
       }
     },
     {
-      title: "순전파 & FFN",
-      subtitle: "생각의 직진",
-      icon: CircuitBoard,
+      title: "순전파 & FFN", subtitle: "신경망 통과", icon: CircuitBoard,
       content: () => {
         const [running, setRunning] = useState(false);
-        const [activeLayer, setActiveLayer] = useState(-1);
-        const layers = ["입력층", "은닉층 1", "은닉층 2", "은닉층 3", "출력층"];
-
+        const [active, setActive] = useState(-1);
+        const layers = ["입력", "은닉 1", "은닉 2", "은닉 3", "출력"];
         useEffect(() => {
           if (running) {
             let i = 0;
-            const interval = setInterval(() => {
-              setActiveLayer(i);
-              i++;
-              if (i >= layers.length) { clearInterval(interval); }
-            }, 600);
-            return () => clearInterval(interval);
-          } else { setActiveLayer(-1); }
+            const iv = setInterval(() => { setActive(i++); if (i >= layers.length) clearInterval(iv); }, 500);
+            return () => clearInterval(iv);
+          } else setActive(-1);
         }, [running]);
-
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">정보들이 부장님의 뇌세포(신경망)를 차례로 통과하며 결론을 향해 전진합니다.</p>
-            <div className="bg-gray-50 rounded-xl p-5">
-              <div className="flex items-center justify-between gap-1 sm:gap-2">
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">정보들이 신경망 레이어를 차례로 통과하며 결론을 향해 전진합니다.</p>
+            <div className="rounded-xl p-5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {layers.map((l, i) => (
-                  <div key={i} className="flex items-center gap-1 sm:gap-2 flex-1">
-                    <div className={`flex-1 h-14 sm:h-16 rounded-xl border-2 flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all duration-500 ${i <= activeLayer ? "bg-gray-900 text-white border-gray-900 scale-105" : "bg-white text-gray-400 border-gray-200"}`}>
-                      <span className="hidden sm:inline">{l}</span>
-                      <span className="sm:hidden">{i === 0 ? "입력" : i === layers.length - 1 ? "출력" : `H${i}`}</span>
+                  <div key={i} className="flex items-center gap-1.5 sm:gap-2 flex-1">
+                    <div className="flex-1 h-16 rounded-xl flex items-center justify-center text-xs font-bold transition-all duration-500"
+                      style={{
+                        background: i <= active ? t.grad : "#f1f5f9",
+                        color: i <= active ? "white" : "#475569",
+                        border: `1px solid ${i <= active ? t.accent : "rgba(0,0,0,0.08)"}`,
+                        boxShadow: i <= active ? `0 0 20px ${t.glow}` : "none",
+                        transform: i === active ? "scale(1.05)" : "scale(1)",
+                      }}>
+                      {l}
                     </div>
                     {i < layers.length - 1 && (
-                      <ArrowRight size={12} className={`shrink-0 transition-colors duration-300 ${i < activeLayer ? "text-gray-900" : "text-gray-300"}`} />
+                      <ArrowRight size={12} style={{ color: i < active ? t.accent : "#374151", flexShrink: 0 }} />
                     )}
                   </div>
                 ))}
               </div>
-              {activeLayer >= layers.length - 1 && (
+              {active >= layers.length - 1 && (
                 <div className="mt-4 text-center" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                  <p className="text-sm font-medium text-gray-700">💡 계산 완료! 결론 도출 준비 중...</p>
+                  <p className="text-sm font-bold" style={{ color: t.accent }}>⚡ 계산 완료! 결론 도출 중...</p>
                 </div>
               )}
             </div>
-            <button onClick={() => setRunning(!running)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-              {running ? "리셋 🔄" : "순전파 시작 ⚡"}
-            </button>
-            <DeepDive>
-              {(() => {
-                const [activeNeuron, setActiveNeuron] = useState(null);
-                const [reluInput, setReluInput] = useState(0.5);
-                const layerDetails = [
-                  { name: "Layer 1 — 표면 인식", neurons: 6, desc: "글자 형태, 품사 구분", example: "부장님: '저'는 주어구나, '내일'은 시간이네" },
-                  { name: "Layer 6 — 문법 이해", neurons: 5, desc: "문장 구조, 어순 파악", example: "부장님: '저 + 내일 + 오후에' → 누군가 내일 뭔가를 할 예정" },
-                  { name: "Layer 12 — 의미 추론", neurons: 5, desc: "의도, 감정, 맥락 종합", example: "부장님: 한숨 + 내일 오후 = 뭔가 쉬고 싶다는 신호!" },
-                  { name: "Layer 24 — 최종 결론", neurons: 4, desc: "예측 후보 생성", example: "부장님: 반차(80%), 외근(15%), 퇴사(5%)" },
-                ];
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">FFN(Feed-Forward Network) — 뉴런이 실제로 하는 일</p>
-                    <p className="text-xs text-gray-500">어텐션으로 "어디를 볼지" 정했다면, FFN은 "봐서 어떤 결론을 내릴지" 계산합니다. 각 레이어가 점점 더 추상적인 개념을 학습합니다.</p>
-
-                    {/* Layer visualization */}
-                    <div className="space-y-3">
-                      {layerDetails.map((layer, li) => (
-                        <div key={li} className="bg-white rounded-lg border border-gray-200 p-3">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700">{layer.name}</p>
-                              <p className="text-[10px] text-gray-400">{layer.desc}</p>
-                            </div>
-                          </div>
-                          {/* Neurons */}
-                          <div className="flex items-center gap-1.5 mb-2">
-                            {Array.from({ length: layer.neurons }, (_, ni) => {
-                              const activation = Math.sin((li + 1) * (ni + 1) * 1.3) * 0.5 + 0.5;
-                              const isActive = activeNeuron === `${li}-${ni}`;
-                              return (
-                                <button
-                                  key={ni}
-                                  onClick={() => setActiveNeuron(isActive ? null : `${li}-${ni}`)}
-                                  className={`relative w-8 h-8 rounded-full border-2 flex items-center justify-center text-[8px] font-mono font-bold transition-all cursor-pointer ${activation > 0.6 ? "bg-gray-900 text-white border-gray-900" : activation > 0.3 ? "bg-gray-400 text-white border-gray-400" : "bg-gray-100 text-gray-400 border-gray-200"} ${isActive ? "ring-2 ring-blue-400 ring-offset-1 scale-110" : "hover:scale-105"}`}
-                                >
-                                  {(activation).toFixed(1)}
-                                </button>
-                              );
-                            })}
-                            <span className="text-[9px] text-gray-300 ml-1">... ×4096</span>
-                          </div>
-                          <p className="text-[10px] text-gray-500 italic">💬 {layer.example}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Activation function interactive */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                      <p className="text-xs font-medium text-gray-700">활성화 함수 — 뉴런의 ON/OFF 스위치</p>
-                      <p className="text-[10px] text-gray-500">각 뉴런은 입력값을 받아 활성화 함수를 통과시킵니다. 음수 입력은 차단(OFF)하고, 양수만 통과(ON)시킵니다.</p>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-gray-500 w-12">입력값:</span>
-                        <input
-                          type="range" min="-2" max="2" step="0.1"
-                          value={reluInput}
-                          onChange={(e) => setReluInput(parseFloat(e.target.value))}
-                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
-                        />
-                        <span className="text-xs font-mono font-bold w-10 text-right">{reluInput.toFixed(1)}</span>
-                      </div>
-                      <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="text-center">
-                          <p className="text-[9px] text-gray-400">ReLU 출력</p>
-                          <p className={`text-lg font-mono font-bold ${reluInput > 0 ? "text-emerald-600" : "text-gray-300"}`}>{Math.max(0, reluInput).toFixed(1)}</p>
-                        </div>
-                        <ArrowRight size={12} className="text-gray-300" />
-                        <div className="text-center">
-                          <p className="text-[9px] text-gray-400">GELU 출력</p>
-                          <p className={`text-lg font-mono font-bold ${reluInput > -0.5 ? "text-blue-600" : "text-gray-300"}`}>{(reluInput * (0.5 * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (reluInput + 0.044715 * Math.pow(reluInput, 3)))))).toFixed(2)}</p>
-                        </div>
-                        <div className="flex-1 text-[10px] text-gray-500">
-                          {reluInput <= 0 ? "💤 부장님: '이 정보는 무시!'" : reluInput < 1 ? "🤔 부장님: '음, 약간 참고할게'" : "🔥 부장님: '이건 핵심 정보다!'"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> GPT-4는 약 120개 레이어, Claude는 수십 개 레이어를 가집니다. 앞쪽 레이어는 "단어가 뭐지?" 수준이고, 뒤쪽 레이어는 "이 사람이 퇴사하고 싶은 건지 반차를 쓰고 싶은 건지" 수준의 추론을 합니다. 부장님의 뇌도 마찬가지로 — 소리 인식 → 단어 이해 → 상황 판단 → 결론 도출 순서로 처리합니다.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> FFN의 은닉 차원은 보통 임베딩의 4배 (예: 8,192 × 4 = 32,768). GPT-4 전체 파라미터 수는 약 1.8조 개로 추정. 이 파라미터 하나하나가 부장님의 "경험에서 온 직감" 하나하나입니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <PBtn t={t} onClick={() => setRunning(!running)}>{running ? "🔄 리셋" : "⚡ 순전파 시작"}</PBtn>
           </div>
         );
       }
     },
     {
-      title: "소프트맥스 (Softmax)",
-      subtitle: "머릿속 룰렛",
-      icon: Gauge,
+      title: "소프트맥스 (Softmax)", subtitle: "확률 변환", icon: Gauge,
       content: () => {
-        const [showResult, setShowResult] = useState(false);
-        const predictions = [
-          { label: "반차", prob: 80, color: "#1a1a1a" },
-          { label: "외근", prob: 15, color: "#6b7280" },
-          { label: "퇴사", prob: 5, color: "#d1d5db" },
+        const [show, setShow] = useState(false);
+        const preds = [
+          { label: "반차", prob: 80 }, { label: "외근", prob: 15 }, { label: "퇴사", prob: 5 },
         ];
+        const colors = [t.accent, "#818cf8", "#475569"];
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">최종 계산 결과가 확률 분포로 변환됩니다. 각 예측에 0~100%의 확률이 부여됩니다.</p>
-            <div className="bg-gray-50 rounded-xl p-5">
-              <div className="space-y-3">
-                {predictions.map((p, i) => (
-                  <div key={i} className="space-y-1.5">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium text-gray-700">{p.label}</span>
-                      <span className="font-mono font-semibold text-gray-900">{showResult ? `${p.prob}%` : "??%"}</span>
-                    </div>
-                    <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: showResult ? `${p.prob}%` : "0%", backgroundColor: p.color, transitionDelay: `${i * 200}ms` }} />
-                    </div>
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">최종 계산 결과가 확률 분포로 변환됩니다. 각 예측에 0~100%의 확률이 부여됩니다.</p>
+            <div className="rounded-xl p-5 space-y-4" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
+              {preds.map((p, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold text-slate-800">{p.label}</span>
+                    <span className="font-mono font-bold" style={{ color: colors[i] }}>{show ? `${p.prob}%` : "??"}</span>
                   </div>
-                ))}
-              </div>
-              {showResult && (
-                <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200 text-center" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                  <p className="text-sm text-gray-600">부장님 결론: <span className="font-bold text-gray-900">"김대리, 내일 반차 쓸 거지?"</span></p>
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+                    <div className="h-full rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        width: show ? `${p.prob}%` : "0%",
+                        background: colors[i],
+                        boxShadow: show ? `0 0 10px ${colors[i]}80` : "none",
+                        transitionDelay: `${i * 200}ms`,
+                      }} />
+                  </div>
+                </div>
+              ))}
+              {show && (
+                <div className="mt-2 p-3 rounded-lg text-center" style={{ background: "#f8fafc", animation: "fadeIn 0.5s ease-out" }}>
+                  <p className="text-sm text-slate-600">부장님 결론: <span className="font-bold text-slate-800">"김대리, 내일 반차 쓸 거지?"</span></p>
                 </div>
               )}
             </div>
-            <button onClick={() => setShowResult(!showResult)} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-              {showResult ? "숨기기" : "확률 계산 🎰"}
-            </button>
-            <DeepDive>
-              {(() => {
-                const [temperature, setTemperature] = useState(1.0);
-                const rawLogits = [3.2, 1.5, -0.5, -1.8, 0.3];
-                const labels = ["반차", "외근", "야근", "퇴사", "회의"];
-                const computeSoftmax = (logits, temp) => {
-                  const scaled = logits.map(l => l / Math.max(temp, 0.01));
-                  const maxVal = Math.max(...scaled);
-                  const exps = scaled.map(s => Math.exp(s - maxVal));
-                  const sum = exps.reduce((a, b) => a + b, 0);
-                  return exps.map(e => e / sum);
-                };
-                const probs = computeSoftmax(rawLogits, temperature);
-                const topK = 3;
-                const topP = 0.9;
-                const sorted = probs.map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
-                let cumP = 0;
-                const topPCutoff = sorted.findIndex(item => { cumP += item.p; return cumP >= topP; });
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">Temperature, Top-K, Top-P — 부장님의 직감 조절기</p>
-                    <p className="text-xs text-gray-500">소프트맥스 전에 "얼마나 확신을 가지고 답할지" 조절하는 파라미터들입니다. 실제 ChatGPT, Claude에서 설정할 수 있는 값입니다.</p>
-
-                    {/* Temperature slider */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-medium text-gray-700 w-24">Temperature:</span>
-                        <input
-                          type="range" min="0.1" max="2.0" step="0.1"
-                          value={temperature}
-                          onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
-                        />
-                        <span className="text-sm font-mono font-bold w-8 text-right">{temperature.toFixed(1)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className={`px-2 py-0.5 rounded ${temperature < 0.5 ? "bg-blue-100 text-blue-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🧊 차갑게 (정확)</span>
-                        <span className={`px-2 py-0.5 rounded ${temperature >= 0.8 && temperature <= 1.2 ? "bg-gray-200 text-gray-700 font-bold" : "bg-gray-50 text-gray-400"}`}>⚖️ 보통</span>
-                        <span className={`px-2 py-0.5 rounded ${temperature > 1.5 ? "bg-red-100 text-red-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🔥 뜨겁게 (창의적)</span>
-                      </div>
-
-                      {/* Probability bars */}
-                      <div className="space-y-2">
-                        <p className="text-[10px] text-gray-400 font-mono">softmax(logits / {temperature.toFixed(1)}) =</p>
-                        {labels.map((label, i) => {
-                          const prob = probs[i];
-                          const rank = sorted.findIndex(s => s.i === i);
-                          const isTopK = rank < topK;
-                          const isTopP = rank <= topPCutoff;
-                          return (
-                            <div key={i} className="flex items-center gap-2">
-                              <span className="text-[10px] font-medium text-gray-600 w-10">{label}</span>
-                              <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden relative">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${prob > 0.4 ? "bg-gray-900" : prob > 0.15 ? "bg-gray-600" : "bg-gray-300"}`}
-                                  style={{ width: `${Math.max(prob * 100, 1)}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-mono font-bold w-12 text-right">{(prob * 100).toFixed(1)}%</span>
-                              <div className="flex gap-0.5 w-12">
-                                {isTopK && <span className="text-[8px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded">K</span>}
-                                {isTopP && <span className="text-[8px] px-1 py-0.5 bg-emerald-100 text-emerald-600 rounded">P</span>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Interpretation */}
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600">
-                          {temperature < 0.5
-                            ? "🧊 부장님이 매우 확신에 찬 상태입니다. \"무조건 반차야!\" — 다른 가능성은 거의 무시합니다."
-                            : temperature <= 1.2
-                            ? "⚖️ 부장님이 합리적으로 판단합니다. \"반차가 유력하지만 외근일 수도...\" — 상위 후보를 균형 있게 고려합니다."
-                            : "🔥 부장님이 열린 마음입니다. \"반차? 외근? 회의? 다 가능해!\" — 예상치 못한 답이 나올 수 있습니다."}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Top-K, Top-P explanation */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-[10px] font-bold text-blue-700 mb-1">Top-K = {topK}</p>
-                        <p className="text-[10px] text-blue-600">상위 {topK}개 후보만 남기고 나머지 제거</p>
-                        <p className="text-[10px] text-gray-500 mt-1">부장님: "가능성 낮은 건 무시!"</p>
-                      </div>
-                      <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <p className="text-[10px] font-bold text-emerald-700 mb-1">Top-P = {topP}</p>
-                        <p className="text-[10px] text-emerald-600">누적 확률 {topP * 100}%까지만 포함</p>
-                        <p className="text-[10px] text-gray-500 mt-1">부장님: "90%까지 커버하면 충분해"</p>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>실무 팁:</strong> 코드 생성 시 temperature=0.2 (정확한 답 필요), 창작 글쓰기 시 temperature=0.8~1.2 (다양한 표현 필요), 브레인스토밍 시 temperature=1.5+ (뜻밖의 아이디어). ChatGPT에서 "같은 질문에 다른 답이 나오는 이유"가 바로 이 temperature와 샘플링 때문입니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <PBtn t={t} onClick={() => setShow(!show)}>{show ? "숨기기" : "🎰 확률 계산"}</PBtn>
           </div>
         );
       }
     },
     {
-      title: "자기회귀 (Auto-regression)",
-      subtitle: "꼬리 무는 예측",
-      icon: RefreshCw,
+      title: "자기회귀 (Auto-regression)", subtitle: "꼬리무는 예측", icon: RefreshCw,
       content: () => {
-        const [iteration, setIteration] = useState(0);
+        const [iter, setIter] = useState(0);
         const tokens = ["저", "내일", "오후에", "반차", "쓰겠습니다"];
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">예측된 단어를 붙이고, 다시 전체 문장으로 다음 단어를 예측하는 순환 구조입니다.</p>
-            <div className="bg-gray-50 rounded-xl p-5">
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">예측된 단어를 붙이고, 다시 전체 문장으로 다음 단어를 예측하는 순환 구조입니다.</p>
+            <div className="rounded-xl p-5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
               <div className="flex flex-wrap gap-2 mb-4">
-                {tokens.slice(0, 3 + iteration).map((t, i) => (
-                  <span key={i} className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${i >= 3 ? "bg-gray-900 text-white border-gray-900" : "bg-white border-gray-200 text-gray-700"}`} style={i >= 3 ? { animation: "slideUp 0.4s ease-out forwards" } : {}}>
-                    {t}
-                  </span>
+                {tokens.slice(0, 3 + iter).map((tk, i) => (
+                  <span key={i} className="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+                    style={{
+                      background: i >= 3 ? t.grad : "#f1f5f9",
+                      color: i >= 3 ? "white" : "#1e293b",
+                      border: `1px solid ${i >= 3 ? t.accent : "rgba(0,0,0,0.08)"}`,
+                      boxShadow: i >= 3 ? `0 0 12px ${t.glow}` : "none",
+                      animation: i >= 3 ? "slideUp 0.4s ease-out" : "",
+                    }}>{tk}</span>
                 ))}
-                {iteration < 2 && <span className="px-3 py-1.5 text-gray-300 text-sm animate-pulse">???</span>}
+                {iter < 2 && <span className="px-3 py-1.5 text-slate-600 text-sm animate-pulse font-mono">???</span>}
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <RefreshCw size={12} className={iteration > 0 ? "animate-spin" : ""} />
-                <span>{iteration === 0 ? "다음 단어를 예측해 보세요" : iteration === 1 ? "'반차'를 예측했습니다! 한 번 더!" : "완성! 순환 예측 종료 ✅"}</span>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <RefreshCw size={12} className={iter > 0 ? "animate-spin" : ""} />
+                <span>{iter === 0 ? "다음 단어를 예측해 보세요" : iter === 1 ? "✅ '반차' 예측! 한 번 더!" : "🎉 완성! 순환 예측 종료"}</span>
               </div>
             </div>
-            <button onClick={() => setIteration(prev => Math.min(prev + 1, 2))} disabled={iteration >= 2} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all disabled:opacity-30">
-              다음 단어 예측 🔄
-            </button>
-            {iteration >= 2 && <button onClick={() => setIteration(0)} className="ml-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-800"><RotateCcw size={14} className="inline mr-1" />리셋</button>}
-            <DeepDive>
-              {(() => {
-                const [genStep, setGenStep] = useState(0);
-                const generationSteps = [
-                  {
-                    context: ["저", "내일", "오후에"],
-                    candidates: [
-                      { word: "반차", prob: 42 },
-                      { word: "회의", prob: 18 },
-                      { word: "출장", prob: 15 },
-                      { word: "퇴근", prob: 12 },
-                      { word: "병원", prob: 8 },
-                    ],
-                    chosen: "반차",
-                    explanation: "어텐션이 '한숨+오후'에 집중 → '쉬고 싶다' 의도 포착"
-                  },
-                  {
-                    context: ["저", "내일", "오후에", "반차"],
-                    candidates: [
-                      { word: "쓰겠", prob: 55 },
-                      { word: "내겠", prob: 20 },
-                      { word: "쓸게", prob: 12 },
-                      { word: "쓸까", prob: 8 },
-                      { word: "넣겠", prob: 5 },
-                    ],
-                    chosen: "쓰겠",
-                    explanation: "'반차' 다음에 높은 확률로 오는 동사 패턴 학습"
-                  },
-                  {
-                    context: ["저", "내일", "오후에", "반차", "쓰겠"],
-                    candidates: [
-                      { word: "습니다", prob: 72 },
-                      { word: "는데요", prob: 15 },
-                      { word: "어요", prob: 8 },
-                      { word: "다", prob: 3 },
-                      { word: "는데", prob: 2 },
-                    ],
-                    chosen: "습니다",
-                    explanation: "직장 상사에게 보고하는 존댓말 문맥 → '습니다' 확률 급등"
-                  },
-                ];
-                const currentStep = generationSteps[Math.min(genStep, generationSteps.length - 1)];
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">토큰별 생성 과정 — 부장님이 한 글자씩 예측하는 법</p>
-                    <p className="text-xs text-gray-500">LLM은 한 번에 전체 문장을 만들지 않습니다. 매번 "지금까지의 맥락"을 보고 "다음 한 토큰"만 예측하는 과정을 반복합니다.</p>
-
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                      {/* Current context */}
-                      <div>
-                        <p className="text-[10px] text-gray-400 mb-2">현재 컨텍스트 (Step {genStep + 1}/{generationSteps.length})</p>
-                        <div className="flex gap-1.5 flex-wrap items-center">
-                          {currentStep.context.map((t, i) => (
-                            <span key={i} className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold border ${i >= currentStep.context.length - (genStep > 0 ? 1 : 0) && genStep > 0 ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-gray-50 border-gray-200 text-gray-700"}`}>{t}</span>
-                          ))}
-                          <span className="text-xs text-gray-300 animate-pulse">▌</span>
-                        </div>
-                      </div>
-
-                      {/* Candidate probabilities */}
-                      <div>
-                        <p className="text-[10px] text-gray-400 mb-2">다음 토큰 후보 확률 분포</p>
-                        <div className="space-y-1.5">
-                          {currentStep.candidates.map((c, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <span className={`text-[10px] font-mono w-14 text-right ${c.word === currentStep.chosen ? "font-bold text-blue-700" : "text-gray-500"}`}>{c.word}</span>
-                              <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-700 ${c.word === currentStep.chosen ? "bg-blue-500" : "bg-gray-300"}`}
-                                  style={{ width: `${c.prob}%`, transitionDelay: `${i * 100}ms` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-mono w-8 text-right text-gray-500">{c.prob}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Explanation */}
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <p className="text-[10px] text-blue-700">💬 부장님 추론: {currentStep.explanation}</p>
-                      </div>
-
-                      {/* KV Cache note */}
-                      {genStep > 0 && (
-                        <div className="p-2 bg-purple-50 rounded-lg border border-purple-100">
-                          <p className="text-[10px] text-purple-700"><strong>KV 캐시:</strong> "저", "내일", "오후에"는 이미 이전 스텝에서 계산했으므로 다시 계산하지 않습니다. 새로 추가된 "{currentStep.context[currentStep.context.length - 1]}"만 처리하면 됩니다. 이것이 ChatGPT가 긴 답변에서도 속도를 유지하는 비결입니다.</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button onClick={() => setGenStep(Math.max(0, genStep - 1))} disabled={genStep === 0} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30">이전</button>
-                      <button onClick={() => setGenStep(Math.min(generationSteps.length - 1, genStep + 1))} disabled={genStep >= generationSteps.length - 1} className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30">다음 토큰 생성</button>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "저 내일 오후에 반차 쓰겠습니다"라는 7토큰 답변을 만들려면, 전체 모델(임베딩→어텐션→FFN→소프트맥스)이 7번 돌아갑니다. Claude가 긴 답변을 쓸 때 글자가 하나씩 나타나는 이유가 바로 이것입니다 — 실시간으로 한 토큰씩 생성 중이기 때문입니다.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4는 초당 약 40~80 토큰 생성. 1,000자 답변 ≈ 약 500~700 토큰 ≈ 약 10초. 각 토큰 생성마다 1.8조 개 파라미터가 전부 동원됩니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            <div className="flex gap-3">
+              <PBtn t={t} onClick={() => setIter(p => Math.min(p + 1, 2))} disabled={iter >= 2}>
+                🔄 다음 단어 예측
+              </PBtn>
+              {iter >= 2 && <GBtn onClick={() => setIter(0)}><RotateCcw size={13} />리셋</GBtn>}
+            </div>
           </div>
         );
       }
     },
     {
-      title: "역전파 (Backpropagation)",
-      subtitle: "뼈저린 반성",
-      icon: RotateCcw,
+      title: "역전파 (Backpropagation)", subtitle: "뼈저린 반성", icon: RotateCcw,
       content: () => {
-        const [phase, setPhase] = useState(0); // 0: before, 1: shock, 2: fix
+        const [phase, setPhase] = useState(0);
         const [shake, setShake] = useState(false);
-
-        const handleReveal = () => {
-          setPhase(1);
-          setShake(true);
+        const reveal = () => {
+          setPhase(1); setShake(true);
           setTimeout(() => setShake(false), 600);
           setTimeout(() => setPhase(2), 1500);
         };
-
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">예측이 틀렸을 때 오차를 계산하고, 거꾸로 돌아가며 가중치를 수정합니다.</p>
-            <div className={`bg-gray-50 rounded-xl p-5 transition-all ${shake ? "animate-[shake_0.5s_ease-in-out]" : ""}`}>
+          <div className="space-y-5">
+            <p className="text-sm text-slate-500">예측이 틀렸을 때 오차를 계산하고, 역방향으로 가중치를 수정합니다.</p>
+            <div className={`rounded-xl p-5 ${shake ? "animate-[shake_0.5s]" : ""}`}
+              style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)" }}>
               {phase === 0 && (
-                <div className="text-center space-y-3">
-                  <p className="text-sm text-gray-600">부장님의 예측: <span className="font-bold">"반차 쓸 거지?" (80%)</span></p>
-                  <p className="text-gray-400 text-sm">그런데 김대리의 실제 대답은...</p>
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-slate-600">부장님의 예측: <span className="font-bold text-slate-800">"반차 쓸 거지?" (80%)</span></p>
+                  <p className="text-slate-500 text-sm">그런데 김대리의 실제 대답은...</p>
                 </div>
               )}
               {phase >= 1 && (
-                <div className="text-center space-y-4" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                  <div className="inline-block p-4 bg-red-50 rounded-xl border border-red-200">
-                    <p className="text-lg font-bold text-red-700">💥 "사직서 내겠습니다"</p>
+                <div className="text-center space-y-3" style={{ animation: "fadeIn 0.4s" }}>
+                  <div className="inline-block p-4 rounded-xl" style={{ background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)" }}>
+                    <p className="text-xl font-black" style={{ color: "#f87171" }}>💥 "사직서 내겠습니다"</p>
                   </div>
-                  <p className="text-sm text-red-500 font-medium">예측 실패! 오차율: 95%</p>
+                  <p className="text-sm font-bold" style={{ color: "#f87171" }}>예측 실패! 오차율: 95%</p>
                 </div>
               )}
               {phase >= 2 && (
-                <div className="mt-4 space-y-3" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                  <div className="p-3 bg-white rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-400 mb-2">🔧 가중치 수정 중...</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-500 w-32">"한숨 → 반차" 가중치:</span>
-                        <span className="line-through text-red-400">0.92</span>
-                        <ArrowRight size={10} />
-                        <span className="text-emerald-600 font-bold">0.3</span>
-                        <span className="text-gray-400">↓ 대폭 감소</span>
+                <div className="mt-4 space-y-3" style={{ animation: "fadeIn 0.5s" }}>
+                  <div className="p-4 rounded-lg space-y-2" style={{ background: "#f8fafc" }}>
+                    <p className="text-xs text-slate-500 mb-2">🔧 가중치 수정 중...</p>
+                    {[
+                      { label: '"한숨→반차" 가중치', from: "0.92", to: "0.3", dir: "↓" },
+                      { label: '"한숨→퇴사" 가중치', from: "0.05", to: "0.85", dir: "↑" },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500 w-36">{row.label}:</span>
+                        <span className="line-through text-slate-600 font-mono">{row.from}</span>
+                        <ArrowRight size={10} className="text-slate-600" />
+                        <span className="font-mono font-bold" style={{ color: "#34d399" }}>{row.to}</span>
+                        <span className="text-slate-500">{row.dir}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-500 w-32">"한숨 → 퇴사" 가중치:</span>
-                        <span className="line-through text-red-400">0.05</span>
-                        <ArrowRight size={10} />
-                        <span className="text-emerald-600 font-bold">0.85</span>
-                        <span className="text-gray-400">↑ 대폭 증가</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-sm text-amber-700">💡 부장님의 깨달음: <em>"요즘 세대는 피곤하면 반차가 아니라 퇴사구나..."</em></p>
+                  <div className="p-3 rounded-lg" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                    <p className="text-sm" style={{ color: "#fbbf24" }}>💡 <em>"요즘 세대는 피곤하면 반차가 아니라 퇴사구나..."</em></p>
                   </div>
                 </div>
               )}
             </div>
-            {phase === 0 ? (
-              <button onClick={handleReveal} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-                실제 답 공개 😱
-              </button>
-            ) : (
-              <button onClick={() => setPhase(0)} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
-                <RotateCcw size={14} /> 처음부터
-              </button>
-            )}
-            <DeepDive>
-              {(() => {
-                const [epoch, setEpoch] = useState(0);
-                const [lr, setLr] = useState(0.01);
-                const maxEpochs = 8;
-                const lossHistory = Array.from({ length: maxEpochs }, (_, i) => {
-                  const base = 2.5 * Math.exp(-lr * 50 * (i + 1)) + 0.1;
-                  const noise = Math.sin(i * 3) * 0.05;
-                  return Math.max(0.05, base + noise);
-                });
-                const accuracyHistory = lossHistory.map(l => Math.min(98, Math.max(5, (1 - l / 2.5) * 100)));
-                const weightUpdates = [
-                  { name: '"한숨→반차"', before: 0.92, after: (idx) => Math.max(0.1, 0.92 - lr * 50 * (idx + 1) * 0.08) },
-                  { name: '"한숨→퇴사"', before: 0.05, after: (idx) => Math.min(0.9, 0.05 + lr * 50 * (idx + 1) * 0.1) },
-                  { name: '"오후→반차"', before: 0.75, after: (idx) => Math.max(0.2, 0.75 - lr * 50 * (idx + 1) * 0.06) },
-                ];
-
-                return (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700 font-medium">경사하강법 & 학습률 — 부장님이 실수에서 배우는 속도</p>
-                    <p className="text-xs text-gray-500">역전파는 "오차를 줄이는 방향"으로 가중치를 조금씩 수정합니다. 학습률(Learning Rate)은 "한 번에 얼마나 크게 수정할지"를 결정합니다.</p>
-
-                    {/* Learning Rate slider */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-medium text-gray-700 w-24">학습률 (LR):</span>
-                        <input
-                          type="range" min="0.001" max="0.1" step="0.001"
-                          value={lr}
-                          onChange={(e) => { setLr(parseFloat(e.target.value)); setEpoch(0); }}
-                          className="flex-1 h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
-                        />
-                        <span className="text-xs font-mono font-bold w-12 text-right">{lr.toFixed(3)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className={`px-2 py-0.5 rounded ${lr < 0.005 ? "bg-blue-100 text-blue-700 font-bold" : "bg-gray-50 text-gray-400"}`}>🐢 너무 느림</span>
-                        <span className={`px-2 py-0.5 rounded ${lr >= 0.005 && lr <= 0.03 ? "bg-emerald-100 text-emerald-700 font-bold" : "bg-gray-50 text-gray-400"}`}>✅ 적절</span>
-                        <span className={`px-2 py-0.5 rounded ${lr > 0.05 ? "bg-red-100 text-red-700 font-bold" : "bg-gray-50 text-gray-400"}`}>💥 발산 위험</span>
-                      </div>
-                    </div>
-
-                    {/* Loss graph (text-based) */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                      <p className="text-xs font-medium text-gray-700">학습 곡선 — 에포크별 손실(Loss) 변화</p>
-                      <div className="space-y-1">
-                        {lossHistory.slice(0, epoch + 1).map((loss, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono text-gray-400 w-14">EP {i + 1}</span>
-                            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${loss > 1.5 ? "bg-red-500" : loss > 0.5 ? "bg-amber-500" : "bg-emerald-500"}`}
-                                style={{ width: `${Math.min(100, loss / 2.5 * 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-[9px] font-mono w-10 text-right">{loss.toFixed(2)}</span>
-                            <span className="text-[9px] font-mono text-gray-400 w-12 text-right">{accuracyHistory[i].toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setEpoch(Math.min(maxEpochs - 1, epoch + 1))}
-                          disabled={epoch >= maxEpochs - 1}
-                          className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30"
-                        >
-                          다음 에포크 학습
-                        </button>
-                        <button onClick={() => setEpoch(0)} className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">리셋</button>
-                      </div>
-                    </div>
-
-                    {/* Weight changes */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
-                      <p className="text-xs font-medium text-gray-700">가중치 변화 추적</p>
-                      {weightUpdates.map((w, i) => {
-                        const afterVal = epoch > 0 ? w.after(epoch - 1) : w.before;
-                        return (
-                          <div key={i} className="flex items-center gap-2 text-[10px]">
-                            <span className="text-gray-600 w-24 font-mono">{w.name}</span>
-                            <span className="font-mono text-gray-400 w-8">{w.before.toFixed(2)}</span>
-                            <ArrowRight size={10} className="text-gray-300" />
-                            <span className={`font-mono font-bold w-8 ${Math.abs(afterVal - w.before) > 0.3 ? "text-emerald-600" : "text-gray-600"}`}>{afterVal.toFixed(2)}</span>
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${Math.abs(afterVal - w.before) / 0.9 * 100}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {epoch > 0 && (
-                        <p className="text-[10px] text-gray-500 italic mt-2">
-                          💬 부장님 (에포크 {epoch}): {epoch < 3 ? '"아직 헷갈리지만 방향은 잡았어..."' : epoch < 6 ? '"이제 좀 감이 오는데?"' : '"이제 완벽해! 한숨 = 퇴사 신호!"'}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> GPT-4 학습에는 약 수천 GPU × 수개월이 소요되었고, 비용은 1억 달러 이상으로 추정됩니다. 수조 개의 토큰에서 수조 번의 역전파가 일어났습니다. 부장님이 30년 직장 경험을 쌓는 것과 같되, 부장님보다 수백만 배 많은 "경험"을 합니다.</p>
-                    </div>
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> Adam 옵티마이저의 학습률은 보통 1e-4 ~ 3e-4. GPT-4는 약 13조 토큰으로 학습. 한 번의 학습(에포크)이 아닌 수만 번의 스텝으로 가중치를 조정합니다. 학습 후에도 RLHF(인간 피드백 강화학습)로 추가 튜닝합니다.</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </DeepDive>
+            {phase === 0
+              ? <PBtn t={t} onClick={reveal}>😱 실제 답 공개</PBtn>
+              : <GBtn onClick={() => setPhase(0)}><RotateCcw size={13} />처음부터</GBtn>
+            }
           </div>
         );
       }
     },
   ];
 
-  // Game logic — multi-round
-  const rounds = [
-    {
-      speaker: "김대리",
-      context: "월요일 아침, 김대리가 커피를 들고 부장님 자리로 다가옵니다.",
-      words: ["부장님", "이번", "프로젝트", "예산이"],
-      keyWords: new Set(["프로젝트", "예산이"]),
-      predictions: [
-        { word: "부족합니다", prob: 65, correct: true },
-        { word: "남았습니다", prob: 20, correct: false },
-        { word: "좋습니다", prob: 10, correct: false },
-        { word: "삭제됐습니다", prob: 5, correct: false },
-      ],
-      explanation: "'프로젝트'와 '예산이'가 핵심 어텐션 포인트입니다. 직장에서 예산 언급은 보통 부족함을 호소할 때가 많습니다.",
-      difficulty: "쉬움"
-    },
-    {
-      speaker: "박과장",
-      context: "점심시간 직후, 박과장이 회의실에서 나오며 혼잣말을 합니다.",
-      words: ["아까", "회의에서", "대표님이", "우리", "팀", "성과를"],
-      keyWords: new Set(["대표님이", "성과를"]),
-      predictions: [
-        { word: "칭찬하셨어", prob: 45, correct: false },
-        { word: "지적하셨어", prob: 35, correct: true },
-        { word: "물어보셨어", prob: 15, correct: false },
-        { word: "발표하셨어", prob: 5, correct: false },
-      ],
-      explanation: "'대표님이' + '성과를' 조합에서, 회의 직후 혼잣말을 하는 맥락이 중요합니다. 좋은 소식이면 혼잣말보다는 동료에게 바로 알리죠. 부정적 맥락 어텐션이 더 높습니다.",
-      difficulty: "보통"
-    },
-    {
-      speaker: "이사원",
-      context: "퇴근 10분 전, 이사원이 노트북을 닫으며 옆 동료에게 말합니다.",
-      words: ["오늘", "저녁에", "갑자기", "부장님이", "내일", "아침까지", "보고서를"],
-      keyWords: new Set(["갑자기", "내일", "아침까지", "보고서를"]),
-      predictions: [
-        { word: "제출하래요", prob: 50, correct: true },
-        { word: "검토하래요", prob: 25, correct: false },
-        { word: "수정하래요", prob: 15, correct: false },
-        { word: "준비하래요", prob: 10, correct: false },
-      ],
-      explanation: "'갑자기' + '내일 아침까지' + '보고서를' — 긴급성(갑자기), 마감(아침까지), 대상(보고서)의 3중 어텐션이 형성됩니다. 퇴근 전 급한 업무 지시는 '제출'이 가장 높은 확률입니다. 이것이 멀티헤드 어텐션의 힘입니다.",
-      difficulty: "어려움"
-    },
+  const gameWords = ["부장님", "이번", "프로젝트", "예산이"];
+  const keyWords = new Set(["프로젝트", "예산이"]);
+  const predOptions = [
+    { word: "부족합니다", prob: 65, correct: true },
+    { word: "남았습니다", prob: 20, correct: false },
+    { word: "좋습니다", prob: 10, correct: false },
+    { word: "삭제됐습니다", prob: 5, correct: false },
   ];
-  const [currentRound, setCurrentRound] = useState(0);
-  const [roundScores, setRoundScores] = useState([]);
-  const round = rounds[currentRound];
 
   useEffect(() => {
     if (gameStarted && gamePhase === "attention" && timeLeft > 0) {
-      timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 2), 100);
+      timerRef.current = setTimeout(() => setTimeLeft(p => p - 2), 100);
       return () => clearTimeout(timerRef.current);
     }
-    if (timeLeft <= 0 && gamePhase === "attention") {
-      setGamePhase("predict");
-      setTimeLeft(100);
-    }
+    if (timeLeft <= 0 && gamePhase === "attention") { setGamePhase("predict"); setTimeLeft(100); }
   }, [gameStarted, gamePhase, timeLeft]);
 
   useEffect(() => {
     if (gamePhase === "predict" && timeLeft > 0) {
-      timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1.5), 100);
+      timerRef.current = setTimeout(() => setTimeLeft(p => p - 1.5), 100);
       return () => clearTimeout(timerRef.current);
     }
     if (timeLeft <= 0 && gamePhase === "predict" && !selectedPrediction) {
-      setGamePhase("result");
-      setGameScore(0);
+      setGamePhase("result"); setGameScore(0);
     }
   }, [gamePhase, timeLeft, selectedPrediction]);
 
-  const handlePrediction = (option) => {
-    setSelectedPrediction(option);
+  const handlePred = (opt) => {
+    setSelectedPrediction(opt);
     clearTimeout(timerRef.current);
-    const attentionScore = [...selectedWords].filter(w => round.keyWords.has(w)).length * Math.round(50 / round.keyWords.size);
-    const predScore = option.correct ? 50 : 0;
-    const score = Math.min(100, attentionScore + predScore);
+    const attnScore = [...selectedWords].filter(w => keyWords.has(w)).length * 25;
+    const score = attnScore + (opt.correct ? 50 : 0);
     setGameScore(score);
     setGamePhase("result");
-  };
-
-  const nextRound = () => {
-    setRoundScores(prev => [...prev, gameScore]);
-    setCurrentRound(prev => prev + 1);
-    setGamePhase("attention");
-    setSelectedWords(new Set());
-    setSelectedPrediction(null);
-    setTimeLeft(100);
-    setGameScore(null);
+    onScore?.("how", score, 100);
   };
 
   const resetGame = () => {
-    setGameStarted(false);
-    setGamePhase("attention");
-    setSelectedWords(new Set());
-    setSelectedPrediction(null);
-    setTimeLeft(100);
-    setGameScore(null);
-    setCurrentRound(0);
-    setRoundScores([]);
+    setGameStarted(false); setGamePhase("attention");
+    setSelectedWords(new Set()); setSelectedPrediction(null);
+    setTimeLeft(100); setGameScore(null);
   };
 
   const StepContent = steps[step]?.content;
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <ConceptHeader icon={BookOpen} title="개념 쏙쏙 — 부장님의 눈치 게임 👀" />
-        <p className="text-sm text-gray-500 mb-6">LLM의 작동 원리를 7단계로 체험하세요. 각 단계를 클릭해서 진행합니다.</p>
-
-        {/* Step nav */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+    <div className="space-y-6">
+      <Card t={t}>
+        <SecHead icon={BookOpen} label="부장님의 눈치 게임 — LLM 작동 원리 7단계" t={t} />
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
           {steps.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => setStep(i)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
-            >
+            <button key={i} onClick={() => setStep(i)}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200"
+              style={{
+                background: i === step ? t.grad : "#f1f5f9",
+                color: i === step ? "white" : "#64748b",
+                border: `1px solid ${i === step ? t.accent : "rgba(0,0,0,0.07)"}`,
+                boxShadow: i === step ? `0 0 16px ${t.glow}` : "none",
+              }}>
               <span className="font-mono">{i + 1}</span>
               <span className="hidden sm:inline">{s.subtitle}</span>
             </button>
           ))}
         </div>
-
-        {/* Step content */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-4">
-            {(() => { const Icon = steps[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+        <div className="mb-2">
+          <div className="flex items-center gap-3 mb-5">
+            {(() => { const Icon = steps[step].icon; return (
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+                <Icon size={16} style={{ color: t.accent }} />
+              </div>
+            ); })()}
             <div>
-              <h3 className="font-semibold text-gray-900">{steps[step].title}</h3>
-              <p className="text-xs text-gray-400">{steps[step].subtitle}</p>
+              <h3 className="font-bold text-slate-800">{steps[step].title}</h3>
+              <p className="text-xs text-slate-400">{steps[step].subtitle}</p>
             </div>
           </div>
           <StepContent />
         </div>
-
-        {/* Step navigation */}
-        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
-          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30 transition-colors">
-            <ArrowLeft size={14} /> 이전
-          </button>
-          <span className="text-xs text-gray-400 self-center">{step + 1} / {steps.length}</span>
-          <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} disabled={step === steps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30 transition-colors">
-            다음 <ArrowRight size={14} />
-          </button>
+        <div className="flex justify-between mt-6 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+          <GBtn onClick={() => setStep(Math.max(0, step - 1))} className={step === 0 ? "opacity-30 pointer-events-none" : ""}>
+            <ArrowLeft size={13} />이전
+          </GBtn>
+          <span className="text-xs text-slate-600 self-center font-mono">{step + 1}/{steps.length}</span>
+          <GBtn onClick={() => setStep(Math.min(steps.length - 1, step + 1))} className={step === steps.length - 1 ? "opacity-30 pointer-events-none" : ""}>
+            다음<ArrowRight size={13} />
+          </GBtn>
         </div>
-      </div>
+      </Card>
 
-      {/* Game section */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <GameHeader icon={Gamepad2} title="실전 게임 — 부장님 시뮬레이터" />
-
-        {/* Round indicator */}
-        {gameStarted && currentRound < rounds.length && (
-          <div className="flex items-center gap-2 mb-4">
-            {rounds.map((r, i) => (
-              <div key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium ${i === currentRound ? "bg-gray-900 text-white" : i < currentRound ? "bg-emerald-100 text-emerald-700" : "bg-gray-50 text-gray-400"}`}>
-                <span>R{i + 1}</span>
-                <span className="hidden sm:inline">({r.difficulty})</span>
-                {i < currentRound && roundScores[i] !== undefined && <span className="font-mono">{roundScores[i]}점</span>}
-              </div>
-            ))}
-          </div>
-        )}
-
+      <Card t={t} game>
+        <GameHead icon={Gamepad2} label="부장님 시뮬레이터 — 핵심 단어 잡기" t={t} />
         {!gameStarted ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-500 mb-2">부장님이 되어 직원들의 말에서 핵심을 파악하고 다음 단어를 예측하세요!</p>
-            <p className="text-xs text-gray-400 mb-4">총 {rounds.length}라운드 — 점점 어려워집니다</p>
-            <button onClick={() => setGameStarted(true)} className="px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
-              <Play size={16} className="inline mr-2" /> 게임 시작
-            </button>
-          </div>
-        ) : currentRound >= rounds.length ? (
-          /* Final result */
-          <div className="space-y-4 text-center py-6" style={{ animation: "fadeIn 0.5s ease-out" }}>
-            <div className="text-4xl mb-2">🏆</div>
-            <div className="text-2xl font-bold text-gray-900">{Math.round([...roundScores, gameScore].filter(s => s !== null).reduce((a, b) => a + b, 0) / rounds.length)}점</div>
-            <p className="text-sm text-gray-600">
-              {[...roundScores].reduce((a, b) => a + b, 0) / roundScores.length >= 75 ? "부장님 급 눈치왕! AI 어텐션 마스터!" : [...roundScores].reduce((a, b) => a + b, 0) / roundScores.length >= 50 ? "꽤 괜찮은 눈치! 조금만 더 연습하면 부장님!" : "눈치 수련이 필요합니다..."}
-            </p>
-            <div className="space-y-2 mt-4 max-w-xs mx-auto">
-              {rounds.map((r, i) => (
-                <div key={i} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">R{i + 1}: {r.speaker} ({r.difficulty})</span>
-                  <span className={`font-mono font-bold ${roundScores[i] >= 75 ? "text-emerald-600" : roundScores[i] >= 50 ? "text-amber-600" : "text-red-500"}`}>{roundScores[i]}점</span>
-                </div>
-              ))}
-            </div>
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 mt-4 text-left max-w-sm mx-auto">
-              <p className="text-xs text-blue-800"><strong>AI 해석:</strong> 이 게임에서 당신이 한 것이 바로 LLM의 핵심 동작입니다. 핵심 단어 선택 = 셀프 어텐션, 다음 단어 예측 = 소프트맥스 + 자기회귀. 문장이 길어질수록(라운드가 올라갈수록) 어텐션 포인트가 많아지는 것을 느꼈을 겁니다 — AI도 마찬가지입니다.</p>
-            </div>
-            <button onClick={resetGame} className="flex items-center gap-1.5 px-5 py-2.5 text-sm text-gray-500 hover:text-gray-800 mx-auto mt-2">
-              <RotateCcw size={14} /> 처음부터 다시 하기
-            </button>
+            <p className="text-sm text-slate-500 mb-6">핵심 단어를 빠르게 찾고 다음 단어를 예측하세요!</p>
+            <PBtn t={t} onClick={() => setGameStarted(true)} icon={Play}>게임 시작</PBtn>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Timer */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>{gamePhase === "attention" ? "⏱ 핵심 단어를 클릭!" : gamePhase === "predict" ? "⏱ 다음 단어를 예측!" : "결과"}</span>
-                <span>{gamePhase !== "result" ? `${Math.round(timeLeft)}%` : ""}</span>
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-semibold" style={{ color: t.accent }}>
+                <span>{gamePhase === "attention" ? "⏱ 핵심 단어 클릭!" : gamePhase === "predict" ? "⏱ 다음 단어 예측!" : "결과"}</span>
+                {gamePhase !== "result" && <span>{Math.round(timeLeft)}%</span>}
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-100 ${timeLeft > 30 ? "bg-gray-900" : "bg-red-500"}`} style={{ width: `${gamePhase !== "result" ? timeLeft : 0}%` }} />
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+                <div className="h-full rounded-full transition-all duration-100"
+                  style={{
+                    width: `${gamePhase !== "result" ? timeLeft : 0}%`,
+                    background: timeLeft > 30 ? t.grad : "linear-gradient(135deg,#b91c1c,#f87171)",
+                    boxShadow: `0 0 8px ${t.glow}`,
+                  }} />
               </div>
             </div>
 
-            {/* Context */}
-            <p className="text-xs text-gray-400 italic">{round.context}</p>
-
-            {/* Sentence */}
-            <div className="bg-gray-50 rounded-xl p-5">
-              <p className="text-xs text-gray-400 mb-3">💬 {round.speaker}:</p>
+            <div className="rounded-xl p-5" style={{ background: "rgba(56,189,248,0.05)", border: "1px solid rgba(56,189,248,0.12)" }}>
+              <p className="text-xs text-slate-500 mb-3">💬 김대리:</p>
               <div className="flex gap-2 flex-wrap">
-                {round.words.map((w, i) => (
-                  <button
-                    key={i}
+                {gameWords.map((w, i) => (
+                  <button key={i}
                     onClick={() => {
-                      if (gamePhase === "attention") {
-                        setSelectedWords(prev => {
-                          const next = new Set(prev);
-                          if (next.has(w)) next.delete(w); else next.add(w);
-                          return next;
-                        });
-                      }
+                      if (gamePhase === "attention")
+                        setSelectedWords(prev => { const n = new Set(prev); n.has(w) ? n.delete(w) : n.add(w); return n; });
                     }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${selectedWords.has(w) ? "bg-gray-900 text-white border-gray-900" : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"} ${gamePhase !== "attention" ? "cursor-default" : "cursor-pointer"}`}
-                  >
-                    {w}
-                  </button>
+                    className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200"
+                    style={{
+                      background: selectedWords.has(w) ? t.grad : "#f1f5f9",
+                      color: selectedWords.has(w) ? "white" : "#1e293b",
+                      border: `1px solid ${selectedWords.has(w) ? t.accent : "rgba(0,0,0,0.08)"}`,
+                      boxShadow: selectedWords.has(w) ? `0 0 16px ${t.glow}` : "none",
+                      cursor: gamePhase !== "attention" ? "default" : "pointer",
+                    }}>{w}</button>
                 ))}
-                <span className="px-4 py-2 text-gray-400 text-sm">???</span>
+                <span className="px-4 py-2 text-slate-600 text-sm font-mono animate-pulse">???</span>
               </div>
             </div>
 
-            {/* Prediction phase */}
             {gamePhase === "predict" && (
-              <div className="space-y-3" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                <p className="text-sm text-gray-600 font-medium">다음 단어로 가장 적절한 것은?</p>
+              <div className="space-y-3" style={{ animation: "fadeIn 0.4s ease-out" }}>
+                <p className="text-sm font-bold text-slate-800">다음 단어로 가장 적절한 것은?</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {round.predictions.map((opt, i) => (
-                    <button key={i} onClick={() => handlePrediction(opt)} className="p-3 bg-white rounded-xl border border-gray-200 hover:border-gray-400 text-sm text-gray-700 text-left transition-all">
-                      <span className="font-medium">{opt.word}</span>
-                      <span className="text-xs text-gray-400 ml-2">{opt.prob}%</span>
+                  {predOptions.map((opt, i) => (
+                    <button key={i} onClick={() => handlePred(opt)}
+                      className="p-3 rounded-xl text-sm text-left transition-all duration-200"
+                      style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.08)", color: "#1e293b" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.background = t.dim; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.background = "#f8fafc"; }}>
+                      <span className="font-bold">{opt.word}</span>
+                      <span className="text-xs text-slate-500 ml-2">{opt.prob}%</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Result */}
             {gamePhase === "result" && (
-              <div className="space-y-4" style={{ animation: "fadeIn 0.5s ease-out" }}>
-                <div className={`p-5 rounded-xl border text-center ${gameScore >= 75 ? "bg-emerald-50 border-emerald-200" : gameScore >= 50 ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}`}>
-                  <div className="text-3xl font-bold mb-1">{gameScore}점</div>
-                  <p className="text-sm text-gray-600">
-                    {gameScore >= 75 ? "🎉 훌륭한 눈치! 부장님 레벨!" : gameScore >= 50 ? "👍 나쁘지 않아요!" : "😅 눈치가 아직..."}
-                  </p>
-                  <div className="mt-3 text-xs text-gray-500 space-y-1">
-                    <p>어텐션 점수: {[...selectedWords].filter(w => round.keyWords.has(w)).length}/{round.keyWords.size} 핵심 단어 (정답: {[...round.keyWords].join(", ")})</p>
-                    <p>예측: {selectedPrediction ? (selectedPrediction.correct ? "정답! ✅" : `"${selectedPrediction.word}" - 오답 ❌`) : "시간 초과 ⏰"}</p>
+              <div className="space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
+                <div className="p-5 rounded-xl text-center"
+                  style={{
+                    background: gameScore >= 75 ? "rgba(52,211,153,0.08)" : gameScore >= 50 ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)",
+                    border: `1px solid ${gameScore >= 75 ? "rgba(52,211,153,0.3)" : gameScore >= 50 ? "rgba(251,191,36,0.3)" : "rgba(248,113,113,0.3)"}`,
+                  }}>
+                  <div className="text-4xl font-black text-slate-800 mb-1">{gameScore}<span className="text-xl text-slate-500">점</span></div>
+                  <p className="text-sm text-slate-600">{gameScore >= 75 ? "🎉 훌륭한 눈치! 부장님 레벨!" : gameScore >= 50 ? "👍 나쁘지 않아요!" : "😅 아직 눈치가..."}</p>
+                  <div className="mt-3 text-xs text-slate-500">
+                    <p>어텐션: {[...selectedWords].filter(w => keyWords.has(w)).length}/{keyWords.size} 핵심 단어</p>
+                    <p>예측: {selectedPrediction ? (selectedPrediction.correct ? "정답 ✅" : `"${selectedPrediction.word}" 오답 ❌`) : "시간 초과 ⏰"}</p>
                   </div>
                 </div>
-                {/* Explanation */}
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-1">🧠 부장님의 어텐션 분석</p>
-                  <p className="text-xs text-gray-500">{round.explanation}</p>
-                </div>
-                <div className="flex justify-center gap-2">
-                  {currentRound < rounds.length - 1 ? (
-                    <button onClick={nextRound} className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
-                      다음 라운드 <ArrowRight size={14} />
-                    </button>
-                  ) : (
-                    <button onClick={() => { setRoundScores(prev => [...prev, gameScore]); setCurrentRound(rounds.length); }} className="flex items-center gap-1.5 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
-                      최종 결과 보기 <Award size={14} />
-                    </button>
-                  )}
-                  <button onClick={resetGame} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
-                    <RotateCcw size={14} /> 처음부터
-                  </button>
-                </div>
+                <GBtn onClick={resetGame}><RotateCcw size={13} />다시 하기</GBtn>
               </div>
             )}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ─── 인터랙티브 신경망 시각화 ─── */}
       <NeuralNetworkPlayground />
     </div>
   );
 };
+
 
 // ─── Neural Network Playground (한국어 간소화 버전) ────
 const NeuralNetworkPlayground = () => {
@@ -2038,12 +1499,11 @@ const NeuralNetworkPlayground = () => {
   );
 };
 
-// ─── TAB 3: AI in Power Industry ─────────────────────
-const Tab3 = () => {
+// ─── TAB 3: AI in Power Industry ──────────────────────
+const Tab3 = ({ onScore }) => {
+  const t = T.apply;
   const [scenario, setScenario] = useState(null);
   const [showAi, setShowAi] = useState(false);
-
-  // Game state
   const [gameRunning, setGameRunning] = useState(false);
   const [aiMode, setAiMode] = useState(false);
   const [gameTime, setGameTime] = useState(0);
@@ -2056,44 +1516,27 @@ const Tab3 = () => {
   const gameRef = useRef(null);
 
   const scenarios = [
-    { id: "heat", label: "갑작스러운 폭염 🌡️", icon: "🌡️" },
-    { id: "factory", label: "대규모 공장 가동 🏭", icon: "🏭" },
+    { id: "heat", label: "갑작스러운 폭염", icon: "🌡️", desc: "에어컨 사용 급증으로 수요 예측 불가" },
+    { id: "factory", label: "대규모 공장 가동", icon: "🏭", desc: "갑작스러운 산업 수요 급증 발생" },
   ];
 
-  // Game loop
   useEffect(() => {
     if (gameRunning && !gameOver) {
       gameRef.current = setInterval(() => {
         setGameTime(prev => {
           const newTime = prev + 1;
-          if (newTime >= 100) {
-            clearInterval(gameRef.current);
-            setGameOver(true);
-            setSurvived(true);
-            return 100;
-          }
-
+          if (newTime >= 100) { clearInterval(gameRef.current); setGameOver(true); setSurvived(true); return 100; }
           const demand = 50 + Math.sin(newTime * 0.15) * 20 + Math.sin(newTime * 0.07) * 15 + (Math.random() - 0.5) * 10;
-          const clampedDemand = Math.max(10, Math.min(90, demand));
-
-          setDemandHistory(prev => [...prev.slice(-40), clampedDemand]);
-
-          if (aiMode) {
-            setSliderVal(clampedDemand);
-            setSupplyHistory(prev => [...prev.slice(-40), clampedDemand]);
-          } else {
-            setSupplyHistory(prev => [...prev.slice(-40), sliderVal]);
-            const diff = Math.abs(sliderVal - clampedDemand);
-            if (diff > 25) {
-              setScore(prev => {
-                const newScore = prev - 2;
-                if (newScore <= 0) {
-                  clearInterval(gameRef.current);
-                  setGameOver(true);
-                  setSurvived(false);
-                  return 0;
-                }
-                return newScore;
+          const d = Math.max(10, Math.min(90, demand));
+          setDemandHistory(p => [...p.slice(-40), d]);
+          if (aiMode) { setSliderVal(d); setSupplyHistory(p => [...p.slice(-40), d]); }
+          else {
+            setSupplyHistory(p => [...p.slice(-40), sliderVal]);
+            if (Math.abs(sliderVal - d) > 25) {
+              setScore(p => {
+                const ns = p - 2;
+                if (ns <= 0) { clearInterval(gameRef.current); setGameOver(true); setSurvived(false); return 0; }
+                return ns;
               });
             }
           }
@@ -2105,169 +1548,196 @@ const Tab3 = () => {
   }, [gameRunning, gameOver, aiMode, sliderVal]);
 
   const startGame = () => {
-    setGameRunning(true);
-    setGameOver(false);
-    setSurvived(false);
-    setGameTime(0);
-    setDemandHistory([]);
-    setSupplyHistory([]);
-    setScore(100);
-    setAiMode(false);
-    setSliderVal(50);
+    setGameRunning(true); setGameOver(false); setSurvived(false);
+    setGameTime(0); setDemandHistory([]); setSupplyHistory([]);
+    setScore(100); setAiMode(false); setSliderVal(50);
   };
 
-  const MiniChart = ({ data, color, height = 60 }) => {
-    if (data.length < 2) return <div style={{ height }} className="bg-gray-50 rounded-lg" />;
-    const max = 100;
-    const points = data.map((v, i) => `${(i / (data.length - 1)) * 100},${100 - (v / max) * 100}`).join(" ");
+  useEffect(() => {
+    if (gameOver) onScore?.("apply", survived ? score : 0, 100);
+  }, [gameOver]);
+
+  const MiniChart = ({ data, color }) => {
+    if (data.length < 2) return <div className="w-full h-full" style={{ background: "rgba(255,255,255,0.02)" }} />;
+    const pts = data.map((v, i) => `${(i / (data.length - 1)) * 100},${100 - v}`).join(" ");
     return (
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height }} className="w-full">
-        <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke"
+          style={{ filter: `drop-shadow(0 0 4px ${color}80)` }} />
       </svg>
     );
   };
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <ConceptHeader icon={BookOpen} title="개념 쏙쏙 — 전력망의 미래" />
-        <p className="text-sm text-gray-500 mb-6">시나리오를 선택해 수동 예측 vs AI 예측의 차이를 비교해 보세요.</p>
-
-        <div className="flex gap-3 mb-6">
+    <div className="space-y-6">
+      <Card t={t}>
+        <SecHead icon={BookOpen} label="전력망의 미래 — 수동 vs AI 예측 비교" t={t} />
+        <p className="text-sm text-slate-500 mb-6">시나리오를 선택해 수동 예측과 AI 예측의 차이를 비교해 보세요.</p>
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {scenarios.map(s => (
-            <button key={s.id} onClick={() => { setScenario(s.id); setShowAi(false); }} className={`flex-1 p-4 rounded-xl border text-sm transition-all ${scenario === s.id ? "bg-gray-900 text-white border-gray-900" : "bg-white border-gray-200 text-gray-600 hover:border-gray-400"}`}>
-              <span className="text-lg block mb-1">{s.icon}</span> {s.label}
+            <button key={s.id} onClick={() => { setScenario(s.id); setShowAi(false); }}
+              className="p-4 rounded-xl text-left transition-all duration-200"
+              style={{
+                background: scenario === s.id ? t.dim : "#f8fafc",
+                border: `1px solid ${scenario === s.id ? t.border : "rgba(0,0,0,0.07)"}`,
+                boxShadow: scenario === s.id ? `0 0 20px ${t.glow}` : "none",
+              }}>
+              <span className="text-2xl block mb-2">{s.icon}</span>
+              <span className="text-sm font-bold text-slate-800 block">{s.label}</span>
+              <span className="text-xs text-slate-400">{s.desc}</span>
             </button>
           ))}
         </div>
-
         {scenario && (
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl border border-gray-200 space-y-3">
-              <div className="text-xs font-semibold text-gray-400 flex items-center gap-1.5"><User size={12} /> 수동 예측</div>
-              <div className="h-24 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden relative">
-                <svg viewBox="0 0 200 80" className="w-full h-full">
-                  {scenario === "heat" ? (
-                    <>
-                      <polyline points="0,60 30,55 50,50 70,40 80,20 90,50 110,15 130,55 150,25 180,45 200,30" fill="none" stroke="#ef4444" strokeWidth="2" />
-                      <polyline points="0,55 30,53 50,52 70,50 80,48 90,47 110,46 130,45 150,44 180,43 200,42" fill="none" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4 2" />
-                    </>
+            {[
+              { label: "수동 예측", icon: User, color: "#f87171", ok: false, show: true },
+              { label: "AI 예측", icon: Bot, color: "#34d399", ok: true, show: showAi },
+            ].map((side, i) => (
+              <div key={i} className="rounded-xl p-4"
+                style={{ background: "#f8fafc", border: `1px solid ${side.show ? (side.ok ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)") : "rgba(0,0,0,0.07)"}` }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <side.icon size={13} style={{ color: side.color }} />
+                  <span className="text-xs font-bold" style={{ color: side.color }}>{side.label}</span>
+                </div>
+                <div className="h-20 rounded-lg overflow-hidden mb-3" style={{ background: "rgba(255,255,255,0.02)" }}>
+                  {side.show ? (
+                    <svg viewBox="0 0 200 80" className="w-full h-full">
+                      {i === 0 ? (
+                        scenario === "heat"
+                          ? <polyline points="0,60 30,55 50,50 70,40 80,20 90,50 110,15 130,55 150,25 180,45 200,30" fill="none" stroke={side.color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 4px ${side.color}60)` }} />
+                          : <polyline points="0,50 20,50 40,45 50,15 60,55 80,10 100,60 120,20 150,50 200,45" fill="none" stroke={side.color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 4px ${side.color}60)` }} />
+                      ) : (
+                        <polyline points="0,60 30,55 50,50 70,40 80,25 90,30 110,22 130,28 150,25 180,27 200,30" fill="none" stroke={side.color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 4px ${side.color}60)` }} />
+                      )}
+                      <polyline points="0,55 50,53 100,50 150,48 200,45" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeDasharray="4 2" />
+                    </svg>
                   ) : (
-                    <>
-                      <polyline points="0,50 20,50 40,45 50,15 60,55 80,10 100,60 120,20 150,50 200,45" fill="none" stroke="#ef4444" strokeWidth="2" />
-                      <polyline points="0,48 30,47 60,46 90,45 120,44 150,44 200,43" fill="none" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4 2" />
-                    </>
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Lock size={16} className="text-slate-600" />
+                    </div>
                   )}
-                </svg>
-              </div>
-              <p className="text-xs text-red-500">⚠️ 예측 실패! 수급 불균형 발생</p>
-            </div>
-            <div className="p-4 rounded-xl border border-gray-200 space-y-3">
-              <div className="text-xs font-semibold text-gray-400 flex items-center gap-1.5"><Bot size={12} /> AI 예측</div>
-              <div className="h-24 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden relative">
-                {showAi ? (
-                  <svg viewBox="0 0 200 80" className="w-full h-full">
-                    <polyline points="0,60 30,55 50,50 70,40 80,25 90,30 110,22 130,28 150,25 180,27 200,30" fill="none" stroke="#10b981" strokeWidth="2" />
-                    <polyline points="0,58 30,54 50,49 70,39 80,26 90,31 110,23 130,29 150,26 180,28 200,31" fill="none" stroke="#6b7280" strokeWidth="2" strokeDasharray="4 2" />
-                  </svg>
-                ) : (
-                  <p className="text-xs text-gray-400">AI를 활성화하세요</p>
+                </div>
+                {side.show && (
+                  <p className="text-xs font-semibold" style={{ color: side.color }}>
+                    {side.ok ? "✅ 수만 건 데이터로 즉시 대응!" : "⚠️ 예측 실패! 수급 불균형!"}
+                  </p>
                 )}
               </div>
-              {showAi && <p className="text-xs text-emerald-600">✅ 수만 건의 과거 데이터로 즉시 대응!</p>}
-            </div>
+            ))}
           </div>
         )}
         {scenario && !showAi && (
-          <button onClick={() => setShowAi(true)} className="mt-4 px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-            AI 예측 활성화 ⚡
-          </button>
+          <div className="mt-4">
+            <PBtn t={t} onClick={() => setShowAi(true)}>⚡ AI 예측 활성화</PBtn>
+          </div>
         )}
-      </div>
+      </Card>
 
-      {/* Game */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <GameHeader icon={Gamepad2} title="실전 게임 — 블랙아웃을 막아라!" />
-
+      <Card t={t} game>
+        <GameHead icon={Gamepad2} label="블랙아웃을 막아라!" t={t} />
         {!gameRunning ? (
-          <div className="text-center py-8 space-y-4">
-            <p className="text-sm text-gray-500">전력 수요에 맞춰 발전량을 조절하세요! 차이가 크면 정전됩니다.</p>
-            <button onClick={startGame} className="px-6 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-all">
-              <Play size={16} className="inline mr-2" /> 시작
-            </button>
+          <div className="text-center py-8">
+            <p className="text-sm text-slate-500 mb-2">전력 수요에 맞춰 발전량을 조절하세요!</p>
+            <p className="text-xs text-slate-600 mb-6">차이가 너무 크면 정전 발생 💥</p>
+            <PBtn t={t} onClick={startGame} icon={Play}>시작하기</PBtn>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <Badge variant={score > 50 ? "success" : score > 20 ? "warning" : "error"}>
-                  안정도: {score}%
-                </Badge>
-                <span className="text-xs text-gray-400">{Math.round(gameTime)}%</span>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                  style={{
+                    background: score > 50 ? "rgba(52,211,153,0.12)" : score > 20 ? "rgba(251,191,36,0.12)" : "rgba(248,113,113,0.12)",
+                    color: score > 50 ? "#34d399" : score > 20 ? "#fbbf24" : "#f87171",
+                    border: `1px solid ${score > 50 ? "rgba(52,211,153,0.3)" : score > 20 ? "rgba(251,191,36,0.3)" : "rgba(248,113,113,0.3)"}`,
+                  }}>
+                  안정도 {score}%
+                </div>
+                <span className="text-xs text-slate-600 font-mono">{Math.round(gameTime)}%</span>
               </div>
               {!aiMode && !gameOver && (
-                <button onClick={() => setAiMode(true)} className="px-4 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-all">
-                  <Cpu size={12} className="inline mr-1" /> AI 모드 켜기
-                </button>
+                <PBtn t={t} onClick={() => setAiMode(true)} className="text-xs py-2 px-3">
+                  <Cpu size={12} /> AI 모드
+                </PBtn>
               )}
-              {aiMode && <Badge variant="info">🤖 AI 자동 제어 중</Badge>}
-            </div>
-
-            {/* Progress */}
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gray-900 rounded-full transition-all" style={{ width: `${gameTime}%` }} />
-            </div>
-
-            {/* Chart area */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <div className="flex gap-4 text-xs text-gray-400 mb-2">
-                <span className="flex items-center gap-1"><div className="w-3 h-0.5 bg-red-500 rounded" /> 전력 수요</span>
-                <span className="flex items-center gap-1"><div className="w-3 h-0.5 bg-blue-500 rounded" /> 발전량(나)</span>
-              </div>
-              <div className="h-20 relative">
-                <MiniChart data={demandHistory} color="#ef4444" height={80} />
-                <div className="absolute inset-0">
-                  <MiniChart data={supplyHistory} color="#3b82f6" height={80} />
+              {aiMode && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+                  <Bot size={12} style={{ color: t.accent }} />
+                  <span className="text-xs font-bold" style={{ color: t.accent }}>AI 자동 제어</span>
                 </div>
+              )}
+            </div>
+
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${gameTime}%`, background: t.grad }} />
+            </div>
+
+            <div className="rounded-xl p-4" style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.07)" }}>
+              <div className="flex gap-4 text-xs font-semibold mb-3">
+                <span className="flex items-center gap-1.5" style={{ color: "#f87171" }}>
+                  <div className="w-4 h-0.5 rounded" style={{ background: "#f87171" }} />전력 수요
+                </span>
+                <span className="flex items-center gap-1.5" style={{ color: "#38bdf8" }}>
+                  <div className="w-4 h-0.5 rounded" style={{ background: "#38bdf8" }} />발전량(나)
+                </span>
+              </div>
+              <div className="h-20 relative rounded-lg overflow-hidden" style={{ background: "rgba(0,0,0,0.04)" }}>
+                <MiniChart data={demandHistory} color="#f87171" />
+                <div className="absolute inset-0"><MiniChart data={supplyHistory} color="#38bdf8" /></div>
               </div>
             </div>
 
-            {/* Slider */}
             {!aiMode && !gameOver && (
               <div className="space-y-2">
-                <label className="text-xs text-gray-500">발전량 조절: {Math.round(sliderVal)}%</label>
-                <input type="range" min="0" max="100" value={sliderVal} onChange={e => setSliderVal(Number(e.target.value))} className="w-full accent-gray-900" />
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">발전량 조절</span>
+                  <span className="font-mono font-bold" style={{ color: t.accent }}>{Math.round(sliderVal)}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={sliderVal}
+                  onChange={e => setSliderVal(Number(e.target.value))}
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                  style={{ accentColor: t.accent }} />
               </div>
             )}
 
             {gameOver && (
-              <div className={`p-5 rounded-xl text-center ${survived ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
-                <p className="text-lg font-bold mb-1">{survived ? "🎉 블랙아웃 방어 성공!" : "💥 정전 발생!"}</p>
-                <p className="text-sm text-gray-600">{survived ? (aiMode ? "AI 덕분에 안정적으로 유지했습니다!" : "대단합니다! 수동으로 성공!") : "수요와 공급의 괴리가 너무 커졌습니다."}</p>
-                <button onClick={startGame} className="mt-3 px-4 py-2 bg-gray-900 text-white text-xs rounded-lg">
-                  <RotateCcw size={12} className="inline mr-1" /> 다시 하기
-                </button>
+              <div className="p-5 rounded-xl text-center"
+                style={{
+                  background: survived ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+                  border: `1px solid ${survived ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+                }}>
+                <p className="text-xl font-black text-slate-800 mb-1">{survived ? "🎉 블랙아웃 방어 성공!" : "💥 정전 발생!"}</p>
+                <p className="text-sm text-slate-500">{survived ? (aiMode ? "AI 덕분에 안정 유지!" : "수동으로 성공! 대단합니다!") : "수요와 공급의 괴리가 너무 커졌습니다."}</p>
+                <div className="mt-4"><GBtn onClick={startGame}><RotateCcw size={13} />다시 하기</GBtn></div>
               </div>
             )}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
 
-// ─── TAB 4: Prompt Tips ──────────────────────────────
-const Tab4 = () => {
+// ─── TAB 4: Prompt Tips ───────────────────────────────
+const Tab4 = ({ onScore }) => {
+  const t = T.prompt;
   const [activeBlock, setActiveBlock] = useState(null);
-  const blocks = [
-    { id: "role", label: "역할 부여", color: "bg-gray-900", example: "넌 한국전력 10년 차 과장이야", icon: User },
-    { id: "context", label: "구체적 맥락", color: "bg-gray-700", example: "지금 폭우로 송전탑 문제가 생겼어", icon: Target },
-    { id: "format", label: "출력 형식", color: "bg-gray-500", example: "안내문을 3문단 텍스트로 써줘", icon: FileText },
-  ];
-
-  // Game
   const [slots, setSlots] = useState([null, null, null]);
   const [gameSubmitted, setGameSubmitted] = useState(false);
+
+  const conceptBlocks = [
+    { id: "role", label: "역할 부여", example: "넌 한국전력 10년 차 과장이야", icon: User, desc: "AI에게 전문가 역할을 부여하면 해당 분야 어조와 전문 용어를 사용한 답변을 받습니다. '신입사원에게 역할을 주는 것'과 같습니다." },
+    { id: "context", label: "구체적 맥락", example: "지금 폭우로 송전탑 문제가 생겼어", icon: Target, desc: "현재 상황과 배경을 구체적으로 알려주세요. '문제가 생겼어'보다 '154kV 송전선이 끊겨서 3개 지역이 정전됐어'가 훨씬 정확합니다." },
+    { id: "format", label: "출력 형식", example: "안내문을 3문단으로 써줘", icon: FileText, desc: "원하는 출력 형태를 명확히 지정하세요. '알려줘'보다 '5단계 체크리스트로', '3문단 안내문으로' 처럼 구체적으로 요청하세요." },
+  ];
+
+  const gradients = [
+    "linear-gradient(135deg,#047857,#34d399)",
+    "linear-gradient(135deg,#0369a1,#38bdf8)",
+    "linear-gradient(135deg,#7c3aed,#a78bfa)",
+  ];
 
   const allBlocks = [
     { id: "g1", text: "넌 전력설비 전문 엔지니어야", type: "role", good: true },
@@ -2279,100 +1749,114 @@ const Tab4 = () => {
   ];
 
   const shuffled = useRef([...allBlocks].sort(() => Math.random() - 0.5));
+  const slotLabels = ["① 역할", "② 맥락", "③ 형식"];
 
-  const handleSlotFill = (blockId, slotIndex) => {
+  const fill = (blockId, slotIdx) => {
     if (gameSubmitted) return;
-    const newSlots = [...slots];
-    // Remove from other slot if already placed
-    const existingSlot = newSlots.indexOf(blockId);
-    if (existingSlot !== -1) newSlots[existingSlot] = null;
-    newSlots[slotIndex] = blockId;
-    setSlots(newSlots);
+    const ns = [...slots];
+    const ex = ns.indexOf(blockId);
+    if (ex !== -1) ns[ex] = null;
+    ns[slotIdx] = blockId;
+    setSlots(ns);
   };
 
-  const checkResult = () => setGameSubmitted(true);
-  const resetGame = () => { setSlots([null, null, null]); setGameSubmitted(false); };
-
   const allGood = slots.every(s => allBlocks.find(b => b.id === s)?.good);
-  const slotLabels = ["역할", "맥락", "형식"];
+
+  useEffect(() => {
+    if (gameSubmitted) onScore?.("prompt", allGood ? 3 : slots.filter(s => allBlocks.find(b => b.id === s)?.good).length, 3);
+  }, [gameSubmitted]);
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <ConceptHeader icon={BookOpen} title="개념 쏙쏙 — 업무 지시 공식" />
-        <p className="text-sm text-gray-500 mb-6">좋은 프롬프트는 세 가지 블록으로 구성됩니다. 각 블록을 클릭해 보세요.</p>
-
+    <div className="space-y-6">
+      <Card t={t}>
+        <SecHead icon={BookOpen} label="업무 지시 공식 — 완벽한 프롬프트의 3요소" t={t} />
+        <p className="text-sm text-slate-500 mb-6">각 블록을 클릭해 설명을 확인하세요.</p>
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          {blocks.map((b, i) => (
-            <div key={b.id} className="flex items-center gap-2 flex-1">
-              <button onClick={() => setActiveBlock(activeBlock === b.id ? null : b.id)} className={`flex-1 p-4 rounded-xl border transition-all text-left ${activeBlock === b.id ? `${b.color} text-white border-transparent` : "bg-white border-gray-200 hover:border-gray-400"}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <b.icon size={16} />
-                  <span className="text-xs font-semibold">{b.label}</span>
+          {conceptBlocks.map((b, i) => (
+            <button key={b.id} onClick={() => setActiveBlock(activeBlock === b.id ? null : b.id)}
+              className="flex-1 p-4 rounded-xl text-left transition-all duration-200"
+              style={{
+                background: activeBlock === b.id ? t.dim : "#f8fafc",
+                border: `1px solid ${activeBlock === b.id ? t.border : "rgba(0,0,0,0.07)"}`,
+                boxShadow: activeBlock === b.id ? `0 0 20px ${t.glow}` : "none",
+              }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: gradients[i] }}>
+                  <b.icon size={13} className="text-white" />
                 </div>
-                {activeBlock === b.id && <p className="text-xs mt-2 opacity-90">{b.example}</p>}
-              </button>
-              {i < blocks.length - 1 && <span className="text-gray-300 hidden sm:block">+</span>}
-            </div>
+                <span className="text-sm font-bold text-slate-800">{b.label}</span>
+              </div>
+              <p className="text-xs font-mono" style={{ color: t.accent }}>"{b.example}"</p>
+            </button>
           ))}
         </div>
-
         {activeBlock && (
-          <div className="bg-gray-50 rounded-xl p-4" style={{ animation: "fadeIn 0.3s ease-out" }}>
+          <div className="rounded-xl p-4" style={{ background: t.dim, border: `1px solid ${t.border}`, animation: "fadeIn 0.3s" }}>
             <div className="flex items-start gap-2">
-              <Lightbulb size={16} className="text-gray-400 mt-0.5 shrink-0" />
-              <div className="text-sm text-gray-600">
-                {activeBlock === "role" && "AI에게 전문가 역할을 부여하면 해당 분야의 어조와 전문 용어를 사용한 답변을 받을 수 있습니다. 마치 신입사원에게 '넌 지금부터 안전관리 담당자야'라고 하면 그 역할에 맞게 행동하는 것과 같습니다."}
-                {activeBlock === "context" && "현재 상황과 배경을 구체적으로 알려주세요. '문제가 생겼어'보다 '폭우로 인해 154kV 송전선이 끊겨서 3개 지역이 정전됐어'라고 하면 훨씬 정확한 답변을 얻습니다."}
-                {activeBlock === "format" && "원하는 출력 형태를 명확히 지정하세요. '알려줘'보다 '3문단의 안내문 형식으로', '표로 정리해서', '5단계 체크리스트로' 처럼 구체적으로 요청하면 바로 쓸 수 있는 결과물을 얻습니다."}
-              </div>
+              <Lightbulb size={14} style={{ color: t.accent }} className="mt-0.5 shrink-0" />
+              <p className="text-sm text-slate-600">{conceptBlocks.find(b => b.id === activeBlock)?.desc}</p>
             </div>
           </div>
         )}
-
-        <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-          <p className="text-xs text-gray-400 mb-2">💡 조립 결과 미리보기:</p>
-          <p className="text-sm text-gray-700">
-            <span className="font-semibold">[역할]</span> {blocks[0].example} + <span className="font-semibold">[맥락]</span> {blocks[1].example} + <span className="font-semibold">[형식]</span> {blocks[2].example}
+        <div className="mt-5 p-4 rounded-xl" style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.07)" }}>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-2">조합 결과</p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            <span className="font-bold" style={{ color: "#34d399" }}>[역할]</span> {conceptBlocks[0].example} +{" "}
+            <span className="font-bold" style={{ color: "#38bdf8" }}>[맥락]</span> {conceptBlocks[1].example} +{" "}
+            <span className="font-bold" style={{ color: "#a78bfa" }}>[형식]</span> {conceptBlocks[2].example}
           </p>
-          <p className="text-xs text-gray-400 mt-2">→ 이렇게 조합하면 정확하고 실용적인 결과물을 얻을 수 있습니다!</p>
+          <p className="text-xs text-slate-500 mt-2">→ 정확하고 실용적인 결과물을 즉시 얻을 수 있습니다!</p>
         </div>
-      </div>
+      </Card>
 
-      {/* Game */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <GameHeader icon={Gamepad2} title="실전 게임 — 프롬프트 깎는 장인" />
-        <p className="text-sm text-gray-500 mb-6">아래 블록 중 좋은 3개를 골라 슬롯에 넣으세요!</p>
+      <Card t={t} game>
+        <GameHead icon={Gamepad2} label="프롬프트 깎는 장인" t={t} />
+        <p className="text-sm text-slate-500 mb-6">좋은 블록 3개를 골라 올바른 슬롯에 넣으세요!</p>
 
-        {/* Slots */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {slotLabels.map((label, i) => {
-            const filled = slots[i];
-            const block = allBlocks.find(b => b.id === filled);
+            const block = allBlocks.find(b => b.id === slots[i]);
+            const isGood = gameSubmitted && block?.good;
+            const isBad = gameSubmitted && block && !block.good;
             return (
-              <div key={i} className={`p-4 rounded-xl border-2 border-dashed min-h-[80px] flex flex-col items-center justify-center text-center transition-all ${filled ? (gameSubmitted ? (block?.good ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50") : "border-gray-400 bg-gray-50") : "border-gray-200"}`}>
-                <span className="text-[10px] text-gray-400 mb-1">슬롯 {i + 1}: {label}</span>
+              <div key={i} className="rounded-xl p-3 min-h-[90px] flex flex-col transition-all duration-300"
+                style={{
+                  background: isGood ? "rgba(52,211,153,0.08)" : isBad ? "rgba(248,113,113,0.08)" : slots[i] ? t.dim : "rgba(255,255,255,0.02)",
+                  border: `2px dashed ${isGood ? "rgba(52,211,153,0.4)" : isBad ? "rgba(248,113,113,0.4)" : slots[i] ? t.border : "rgba(0,0,0,0.08)"}`,
+                }}>
+                <span className="text-[10px] font-bold tracking-widest uppercase mb-2"
+                  style={{ color: isGood ? "#34d399" : isBad ? "#f87171" : t.accent }}>{label}</span>
                 {block ? (
-                  <span className="text-xs font-medium text-gray-700">{block.text}</span>
+                  <span className="text-xs font-medium text-slate-700 flex-1">{block.text}</span>
                 ) : (
-                  <span className="text-xs text-gray-300">비어있음</span>
+                  <span className="text-xs text-slate-600 flex-1">비어있음</span>
                 )}
+                {isGood && <CheckCircle2 size={13} style={{ color: "#34d399" }} className="mt-1" />}
+                {isBad && <XCircle size={13} style={{ color: "#f87171" }} className="mt-1" />}
               </div>
             );
           })}
         </div>
 
-        {/* Available blocks */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
           {shuffled.current.map(block => {
             const inSlot = slots.includes(block.id);
             return (
-              <div key={block.id} className={`p-3 rounded-xl border text-xs transition-all ${inSlot ? "opacity-40 border-gray-100" : "border-gray-200 hover:border-gray-400 cursor-pointer"}`}>
-                <p className="font-medium text-gray-700 mb-2">{block.text}</p>
+              <div key={block.id} className="rounded-xl p-3 transition-all duration-200"
+                style={{
+                  background: inSlot ? "#f1f5f9" : "#f8fafc",
+                  border: `1px solid rgba(0,0,0,0.08)`,
+                  opacity: inSlot ? 0.3 : 1,
+                }}>
+                <p className="text-xs font-medium text-slate-700 mb-2">{block.text}</p>
                 {!inSlot && !gameSubmitted && (
                   <div className="flex gap-1">
                     {[0, 1, 2].map(si => (
-                      <button key={si} onClick={() => handleSlotFill(block.id, si)} className="px-2 py-1 bg-gray-100 rounded text-[10px] text-gray-500 hover:bg-gray-900 hover:text-white transition-colors">
+                      <button key={si} onClick={() => fill(block.id, si)}
+                        className="flex-1 text-[10px] py-1 rounded-lg font-bold transition-all duration-150"
+                        style={{ background: t.dim, color: t.accent, border: `1px solid ${t.border}` }}
+                        onMouseEnter={e => { e.currentTarget.style.background = t.grad; e.currentTarget.style.color = "white"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = t.dim; e.currentTarget.style.color = t.accent; }}>
                         슬롯{si + 1}
                       </button>
                     ))}
@@ -2383,286 +1867,351 @@ const Tab4 = () => {
           })}
         </div>
 
-        {/* Result */}
         {!gameSubmitted ? (
-          <button onClick={checkResult} disabled={slots.some(s => s === null)} className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl disabled:opacity-30 hover:bg-gray-800 transition-all">
+          <PBtn t={t} onClick={() => setGameSubmitted(true)} disabled={slots.some(s => s === null)}>
             제출하기
-          </button>
+          </PBtn>
         ) : (
           <div className="space-y-4">
-            <div className={`p-5 rounded-xl border text-center ${allGood ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
-              {allGood ? (
-                <>
-                  <p className="text-lg font-bold mb-1">🏆 100점! 프롬프트 장인!</p>
-                  <p className="text-sm text-gray-600">완벽한 프롬프트 조합입니다!</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-lg font-bold mb-1">😵 AI가 혼란스러워합니다!</p>
-                  <p className="text-sm text-gray-600">"대충 써줘" 같은 모호한 지시로는 좋은 결과를 얻을 수 없어요.</p>
-                </>
-              )}
+            <div className="p-5 rounded-xl text-center"
+              style={{
+                background: allGood ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+                border: `1px solid ${allGood ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+              }}>
+              <p className="text-xl font-black text-slate-800 mb-1">{allGood ? "🏆 프롬프트 장인 달성!" : "😵 AI가 혼란스러워합니다!"}</p>
+              <p className="text-sm text-slate-500">{allGood ? "완벽한 조합입니다!" : '"대충 써줘" 같은 모호한 지시는 좋은 결과를 내지 못해요.'}</p>
             </div>
-            <button onClick={resetGame} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
-              <RotateCcw size={14} /> 다시 하기
-            </button>
+            <GBtn onClick={() => { setSlots([null, null, null]); setGameSubmitted(false); }}>
+              <RotateCcw size={13} />다시 하기
+            </GBtn>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
 
-// ─── TAB 5: AI Ethics & Hallucination ────────────────
-const Tab5 = () => {
+// ─── TAB 5: AI Ethics & Hallucination ─────────────────
+const Tab5 = ({ onScore }) => {
+  const t = T.ethics;
   const [tempSlider, setTempSlider] = useState(30);
-  const [showSecurityDemo, setShowSecurityDemo] = useState(false);
-  const [securityPhase, setSecurityPhase] = useState(0);
-
-  // Game state
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [secPhase, setSecPhase] = useState(0);
   const [currentCard, setCurrentCard] = useState(0);
   const [results, setResults] = useState([]);
   const [cardAnim, setCardAnim] = useState("");
 
   const hallucinationExamples = [
-    { temp: 20, text: "한국전력은 전력 공급을 담당하는 공기업입니다.", label: "사실" },
-    { temp: 40, text: "한국전력은 1961년에 설립된 공기업입니다.", label: "사실" },
-    { temp: 60, text: "한국전력은 세계 최대 규모의 전력 회사 중 하나입니다.", label: "살짝 과장" },
+    { temp: 10, text: "한국전력은 전력 공급을 담당하는 공기업입니다.", label: "✅ 사실" },
+    { temp: 35, text: "한국전력은 1961년에 설립된 공기업입니다.", label: "✅ 사실" },
+    { temp: 60, text: "한국전력은 세계 최대 규모의 전력 회사 중 하나입니다.", label: "⚠️ 살짝 과장" },
     { temp: 80, text: "에디슨이 1899년에 한국전력을 직접 설립했다고 합니다.", label: "🚨 환각!" },
-    { temp: 95, text: "에디슨이 조선시대에 한국전력을 세워 경복궁에 전기를 공급했습니다.", label: "🚨 심한 환각!" },
+    { temp: 95, text: "에디슨이 조선시대에 한국전력을 세워 경복궁에 전기를 공급했습니다.", label: "💀 심한 환각!" },
   ];
 
-  const currentHallucination = hallucinationExamples.reduce((prev, curr) =>
-    Math.abs(curr.temp - tempSlider) < Math.abs(prev.temp - tempSlider) ? curr : prev
+  const curHalluc = hallucinationExamples.reduce((prev, cur) =>
+    Math.abs(cur.temp - tempSlider) < Math.abs(prev.temp - tempSlider) ? cur : prev
   );
 
-  // Security demo
-  const handleSecurityDemo = () => {
-    setShowSecurityDemo(true);
-    setSecurityPhase(0);
-    setTimeout(() => setSecurityPhase(1), 800);
-    setTimeout(() => setSecurityPhase(2), 1600);
+  const isWarning = tempSlider > 70;
+  const isMild = tempSlider > 50 && !isWarning;
+
+  const handleSecurity = () => {
+    setShowSecurity(true); setSecPhase(0);
+    setTimeout(() => setSecPhase(1), 800);
+    setTimeout(() => setSecPhase(2), 1600);
   };
 
-  // Tinder game cards
   const cards = [
     { text: "우리 본부 하반기 예산안 엑셀 요약해 줘", danger: true, reason: "사내 기밀 예산 정보가 외부로 유출될 수 있습니다." },
     { text: "파이썬으로 데이터 정렬하는 코드 짜줘", danger: false, reason: "일반적인 프로그래밍 질문으로 보안 위험이 없습니다." },
-    { text: "고객 김OO의 전화번호와 주소 정리해 줘", danger: true, reason: "고객 개인정보를 외부 AI에 입력하면 개인정보보호법 위반입니다." },
-    { text: "이메일 문법 교정해 줘: '회의 참석 부탁드립니다'", danger: false, reason: "일반적인 문법 교정은 보안 위험이 없습니다." },
-    { text: "신규 발전소 건설 도면 분석해 줘", danger: true, reason: "미공개 인프라 도면은 국가 핵심 기밀에 해당합니다." },
+    { text: "고객 김OO의 전화번호와 주소 정리해 줘", danger: true, reason: "고객 개인정보 입력 시 개인정보보호법 위반입니다." },
+    { text: "이메일 문법 교정해 줘", danger: false, reason: "일반적인 문법 교정은 보안 위험이 없습니다." },
+    { text: "신규 발전소 건설 도면 분석해 줘", danger: true, reason: "미공개 인프라 도면은 국가 핵심 기밀입니다." },
     { text: "엑셀 VLOOKUP 함수 사용법 알려줘", danger: false, reason: "일반 업무 도구 사용법은 보안 위험이 없습니다." },
   ];
 
-  const handleSwipe = (block) => {
+  const swipe = (block) => {
     const card = cards[currentCard];
     const correct = block === card.danger;
     setCardAnim(block ? "swipe-left" : "swipe-right");
     setTimeout(() => {
-      setResults(prev => [...prev, { correct, card }]);
-      setCurrentCard(prev => prev + 1);
+      setResults(p => [...p, { correct, card }]);
+      setCurrentCard(p => p + 1);
       setCardAnim("");
     }, 300);
   };
 
-  const resetGame = () => { setCurrentCard(0); setResults([]); setCardAnim(""); };
   const gameScore = results.filter(r => r.correct).length;
+  useEffect(() => {
+    if (results.length === cards.length) onScore?.("ethics", gameScore, cards.length);
+  }, [results]);
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <ConceptHeader icon={BookOpen} title="개념 쏙쏙 — AI 주의사항" />
+    <div className="space-y-6">
+      <Card t={t}>
+        <SecHead icon={BookOpen} label="AI 주의사항 — 환각과 보안 위험" t={t} />
 
-        {/* Hallucination */}
         <div className="mb-8">
-          <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <AlertTriangle size={16} /> 환각 (Hallucination)
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">상상력 온도를 올려보세요. AI가 점점 그럴싸한 거짓말을 만들어냅니다.</p>
-
-          <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>🧊 정확</span>
-                <span>상상력 온도: {tempSlider}%</span>
-                <span>🔥 창의적(위험)</span>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={15} style={{ color: t.accent }} />
+            <h4 className="font-bold text-slate-800 text-sm">환각 (Hallucination)</h4>
+          </div>
+          <p className="text-sm text-slate-500 mb-5">상상력 온도를 올려보세요. AI가 점점 그럴싸한 거짓말을 만들어냅니다.</p>
+          <div className="rounded-xl p-5" style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.12)" }}>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-500">🧊 정확</span>
+                <span style={{ color: t.accent }}>상상력 온도 {tempSlider}%</span>
+                <span className="text-slate-500">🔥 위험</span>
               </div>
-              <input type="range" min="0" max="100" value={tempSlider} onChange={e => setTempSlider(Number(e.target.value))} className="w-full accent-gray-900" />
+              <input type="range" min="0" max="100" value={tempSlider}
+                onChange={e => setTempSlider(Number(e.target.value))}
+                className="w-full" style={{ accentColor: t.accent }} />
             </div>
-
-            <div className={`p-4 rounded-xl border transition-all ${tempSlider > 70 ? "bg-red-50 border-red-200" : tempSlider > 50 ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200"}`}>
+            <div className="p-4 rounded-xl transition-all duration-500"
+              style={{
+                background: isWarning ? "rgba(248,113,113,0.1)" : isMild ? "rgba(251,191,36,0.1)" : "rgba(52,211,153,0.1)",
+                border: `1px solid ${isWarning ? "rgba(248,113,113,0.3)" : isMild ? "rgba(251,191,36,0.3)" : "rgba(52,211,153,0.3)"}`,
+              }}>
               <div className="flex items-center gap-2 mb-2">
-                <Bot size={14} className="text-gray-400" />
-                <span className="text-xs text-gray-400">AI 출력:</span>
-                <Badge variant={tempSlider > 70 ? "error" : tempSlider > 50 ? "warning" : "success"}>
-                  {currentHallucination.label}
-                </Badge>
+                <Bot size={13} className="text-slate-400" />
+                <span className="text-xs text-slate-400">AI 출력:</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: isWarning ? "rgba(248,113,113,0.2)" : isMild ? "rgba(251,191,36,0.2)" : "rgba(52,211,153,0.2)",
+                    color: isWarning ? "#f87171" : isMild ? "#fbbf24" : "#34d399",
+                  }}>
+                  {curHalluc.label}
+                </span>
               </div>
-              <p className="text-sm text-gray-700">{currentHallucination.text}</p>
+              <p className="text-sm text-slate-700">{curHalluc.text}</p>
             </div>
           </div>
         </div>
 
-        {/* Security */}
         <div>
-          <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <Shield size={16} /> 보안 위험
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">기밀 데이터를 AI에 입력하면 어떤 일이 생기는지 확인해 보세요.</p>
-
-          <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-            {!showSecurityDemo ? (
+          <div className="flex items-center gap-2 mb-3">
+            <Shield size={15} style={{ color: t.accent }} />
+            <h4 className="font-bold text-slate-800 text-sm">보안 위험</h4>
+          </div>
+          <p className="text-sm text-slate-500 mb-5">기밀 데이터를 AI에 입력하면 어떤 일이 생기는지 확인해 보세요.</p>
+          <div className="rounded-xl p-5" style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.12)" }}>
+            {!showSecurity ? (
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm text-gray-600 mb-4">
-                  <FileText size={14} /> "2026_발전소_설계도면_v3.dwg"
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg mb-4"
+                  style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.08)" }}>
+                  <FileText size={13} className="text-slate-400" />
+                  <span className="text-sm text-slate-600">"2026_발전소_설계도면_v3.dwg"</span>
                 </div>
                 <br />
-                <button onClick={handleSecurityDemo} className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-xl hover:bg-gray-800 transition-all">
-                  AI에 업로드 시뮬레이션 ⬆️
-                </button>
+                <PBtn t={t} onClick={handleSecurity}>⬆️ AI에 업로드 시뮬레이션</PBtn>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${securityPhase >= 0 ? "bg-white border border-gray-200 opacity-100" : "opacity-0"}`}>
-                  <Send size={14} className="text-gray-400" />
-                  <span className="text-sm text-gray-600">파일을 AI 서버로 전송 중...</span>
-                </div>
-                {securityPhase >= 1 && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200" style={{ animation: "fadeIn 0.3s" }}>
-                    <Globe size={14} className="text-amber-600" />
-                    <span className="text-sm text-amber-700">⚠️ 데이터가 외부 서버(미국)에 저장됨!</span>
-                  </div>
-                )}
-                {securityPhase >= 2 && (
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 border border-red-200" style={{ animation: "fadeIn 0.3s" }}>
-                    <AlertTriangle size={18} className="text-red-600" />
-                    <div>
-                      <p className="text-sm font-semibold text-red-700">🚨 보안 경고!</p>
-                      <p className="text-xs text-red-600 mt-1">기밀 도면이 외부 서버에 영구 저장될 수 있습니다. 절대 사내 기밀을 외부 AI에 입력하지 마세요!</p>
+                {[
+                  { phase: 0, icon: Send, bg: "rgba(255,255,255,0.04)", border: "rgba(0,0,0,0.08)", text: "rgba(148,163,184,1)", label: "파일을 AI 서버로 전송 중..." },
+                  { phase: 1, icon: Globe, bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.25)", text: "#fbbf24", label: "⚠️ 데이터가 외부 서버(미국)에 저장됨!" },
+                  { phase: 2, icon: AlertTriangle, bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.25)", text: "#f87171", label: "🚨 기밀 도면이 외부 서버에 영구 저장될 수 있습니다. 절대 사내 기밀을 외부 AI에 입력하지 마세요!" },
+                ].map((row, i) => (
+                  secPhase >= i && (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg"
+                      style={{ background: row.bg, border: `1px solid ${row.border}`, animation: i > 0 ? "fadeIn 0.4s" : "" }}>
+                      <row.icon size={14} style={{ color: row.text }} className="mt-0.5 shrink-0" />
+                      <span className="text-sm" style={{ color: row.text }}>{row.label}</span>
                     </div>
-                  </div>
+                  )
+                ))}
+                {secPhase >= 2 && (
+                  <GBtn onClick={() => { setShowSecurity(false); setSecPhase(0); }}>
+                    <RotateCcw size={12} />리셋
+                  </GBtn>
                 )}
-                <button onClick={() => { setShowSecurityDemo(false); setSecurityPhase(0); }} className="text-xs text-gray-400 hover:text-gray-600">리셋</button>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Game */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-8 shadow-sm">
-        <GameHeader icon={Gamepad2} title="실전 게임 — 보안관 스와이프" />
-        <p className="text-sm text-gray-500 mb-6">사내 직원의 AI 사용 요청을 심사하세요. 위험하면 차단, 안전하면 허용!</p>
+      <Card t={t} game>
+        <GameHead icon={Gamepad2} label="보안관 스와이프" t={t} />
+        <p className="text-sm text-slate-500 mb-6">AI 사용 요청을 심사하세요. 위험하면 차단, 안전하면 허용!</p>
 
         {currentCard < cards.length ? (
           <div className="space-y-6">
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>{currentCard + 1} / {cards.length}</span>
-              <span>정답: {gameScore} / {results.length}</span>
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-slate-500">{currentCard + 1} / {cards.length}</span>
+              <span style={{ color: t.accent }}>정답 {gameScore}/{results.length}</span>
             </div>
 
-            {/* Card */}
-            <div className={`relative mx-auto max-w-sm transition-all duration-300 ${cardAnim === "swipe-left" ? "-translate-x-full opacity-0 rotate-[-10deg]" : cardAnim === "swipe-right" ? "translate-x-full opacity-0 rotate-[10deg]" : ""}`}>
-              <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200 min-h-[160px] flex flex-col items-center justify-center text-center">
-                <MessageSquare size={20} className="text-gray-400 mb-3" />
-                <p className="text-sm text-gray-700 font-medium leading-relaxed">"{cards[currentCard].text}"</p>
+            <div className={`relative mx-auto max-w-sm transition-all duration-300 ${
+              cardAnim === "swipe-left" ? "-translate-x-full opacity-0 -rotate-12" :
+              cardAnim === "swipe-right" ? "translate-x-full opacity-0 rotate-12" : ""
+            }`}>
+              <div className="p-6 rounded-2xl min-h-[150px] flex flex-col items-center justify-center text-center"
+                style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.08)" }}>
+                <MessageSquare size={22} className="text-slate-500 mb-4" />
+                <p className="text-sm font-bold text-slate-800 leading-relaxed">"{cards[currentCard].text}"</p>
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex justify-center gap-6">
-              <button onClick={() => handleSwipe(true)} className="flex flex-col items-center gap-1.5 p-4 rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 transition-all group">
-                <ThumbsDown size={24} className="text-red-500 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-medium text-red-600">차단</span>
-              </button>
-              <button onClick={() => handleSwipe(false)} className="flex flex-col items-center gap-1.5 p-4 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all group">
-                <ThumbsUp size={24} className="text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-medium text-emerald-600">허용</span>
-              </button>
+              {[
+                { action: true, icon: ThumbsDown, label: "차단", color: "#f87171", dim: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+                { action: false, icon: ThumbsUp, label: "허용", color: "#34d399", dim: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.25)" },
+              ].map(btn => (
+                <button key={btn.label} onClick={() => swipe(btn.action)}
+                  className="flex flex-col items-center gap-2 p-5 rounded-2xl transition-all duration-200 group"
+                  style={{ background: btn.dim, border: `1px solid ${btn.border}` }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 25px ${btn.color}40`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}>
+                  <btn.icon size={26} style={{ color: btn.color }} />
+                  <span className="text-xs font-black" style={{ color: btn.color }}>{btn.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className={`p-5 rounded-xl border text-center ${gameScore === cards.length ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
-              <p className="text-2xl font-bold mb-1">{gameScore}/{cards.length}</p>
-              <p className="text-sm text-gray-600">
-                {gameScore === cards.length ? "🛡️ 완벽한 보안관!" : `${cards.length - gameScore}건을 놓쳤습니다. 아래에서 확인하세요.`}
-              </p>
+          <div className="space-y-5">
+            <div className="p-5 rounded-xl text-center"
+              style={{
+                background: gameScore === cards.length ? "rgba(52,211,153,0.08)" : "rgba(251,191,36,0.08)",
+                border: `1px solid ${gameScore === cards.length ? "rgba(52,211,153,0.3)" : "rgba(251,191,36,0.3)"}`,
+              }}>
+              {gameScore === cards.length && <Trophy size={28} style={{ color: "#34d399" }} className="mx-auto mb-2" />}
+              <div className="text-4xl font-black text-slate-800 mb-1">{gameScore}<span className="text-xl text-slate-500">/{cards.length}</span></div>
+              <p className="text-sm text-slate-600">{gameScore === cards.length ? "🛡️ 완벽한 보안관!" : `${cards.length - gameScore}건을 놓쳤습니다.`}</p>
             </div>
-
             <div className="space-y-2">
               {results.map((r, i) => (
-                <div key={i} className={`p-3 rounded-xl border text-xs ${r.correct ? "border-emerald-100 bg-emerald-50/50" : "border-red-100 bg-red-50/50"}`}>
-                  <div className="flex items-center gap-2">
-                    {r.correct ? <CheckCircle2 size={14} className="text-emerald-500" /> : <XCircle size={14} className="text-red-500" />}
-                    <span className="text-gray-700 font-medium">"{r.card.text}"</span>
+                <div key={i} className="p-3 rounded-xl"
+                  style={{
+                    background: r.correct ? "rgba(52,211,153,0.06)" : "rgba(248,113,113,0.06)",
+                    border: `1px solid ${r.correct ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
+                  }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {r.correct
+                      ? <CheckCircle2 size={13} style={{ color: "#34d399" }} />
+                      : <XCircle size={13} style={{ color: "#f87171" }} />}
+                    <span className="text-xs font-semibold text-slate-700">"{r.card.text}"</span>
                   </div>
-                  <p className="text-gray-500 mt-1 ml-6">{r.card.reason}</p>
+                  <p className="text-xs text-slate-500 ml-5">{r.card.reason}</p>
                 </div>
               ))}
             </div>
-
-            <button onClick={resetGame} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
-              <RotateCcw size={14} /> 다시 하기
-            </button>
+            <GBtn onClick={() => { setCurrentCard(0); setResults([]); setCardAnim(""); }}>
+              <RotateCcw size={13} />다시 하기
+            </GBtn>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
 
-// ─── MAIN APP ────────────────────────────────────────
+// ─── MAIN APP ──────────────────────────────────────────
 const tabs = [
-  { id: "concept", label: "AI 개념과 역사", icon: Brain, component: Tab1 },
-  { id: "how", label: "AI의 동작원리", icon: Cpu, component: Tab2 },
-  { id: "apply", label: "AI 실무적용", icon: Zap, component: Tab3 },
-  { id: "prompt", label: "AI 프롬프트 활용 꿀팁", icon: Sparkles, component: Tab4 },
-  { id: "ethics", label: "AI 주의사항", icon: Shield, component: Tab5 },
+  { id: "concept", label: "AI 개념과 역사", shortLabel: "AI 개념", icon: Brain, component: Tab1 },
+  { id: "how", label: "AI 동작원리", shortLabel: "동작원리", icon: Cpu, component: Tab2 },
+  { id: "apply", label: "AI 실무적용", shortLabel: "실무적용", icon: Zap, component: Tab3 },
+  { id: "prompt", label: "프롬프트 꿀팁", shortLabel: "프롬프트", icon: Sparkles, component: Tab4 },
+  { id: "ethics", label: "AI 주의사항", shortLabel: "주의사항", icon: Shield, component: Tab5 },
 ];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("concept");
+  const [scores, setScores] = useState({});
+
+  const handleScore = (tabId, score, total) => {
+    setScores(p => ({ ...p, [tabId]: { score, total } }));
+  };
+
+  const totalScore = Object.values(scores).reduce((a, s) => a + s.score, 0);
+  const totalMax = Object.values(scores).reduce((a, s) => a + s.total, 0);
+  const completedTabs = Object.keys(scores).length;
+
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;
+  const theme = T[activeTab];
 
   return (
-    <div className="min-h-screen bg-gray-50/50" style={{ fontFamily: "'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif" }}>
+    <div className="min-h-screen" style={{
+      background: "#f1f5f9",
+      fontFamily: "'Pretendard', 'Apple SD Gothic Neo', -apple-system, BlinkMacSystemFont, sans-serif",
+    }}>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-4px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .tab-content { animation: fadeIn 0.3s ease-out; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+        input[type=range] { height: 6px; border-radius: 6px; cursor: pointer; }
       `}</style>
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 py-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
-              <Zap size={18} className="text-white" />
+      <header style={{ background: "#ffffff", borderBottom: "1px solid rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg,#6d28d9,#38bdf8)", boxShadow: "0 4px 12px rgba(109,40,217,0.3)" }}>
+              <Brain size={18} className="text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 tracking-tight">AI 기초 교육</h1>
-              <p className="text-xs text-gray-400">전력산업 종사자를 위한 인터랙티브 가이드</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-black text-slate-800 tracking-tight">AI 기초 교육</h1>
+              <p className="text-xs text-slate-400">전력산업 종사자를 위한 인터랙티브 학습 가이드</p>
             </div>
+            {completedTabs > 0 && (
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-400 font-semibold">TOTAL XP</p>
+                  <p className="text-sm font-black text-slate-800">{totalScore}<span className="text-slate-400 text-xs">/{totalMax}</span></p>
+                </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(217,119,6,0.1)", border: "1px solid rgba(217,119,6,0.25)" }}>
+                  <Star size={14} style={{ color: "#d97706" }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-3 flex gap-1">
+            {tabs.map(tab => (
+              <div key={tab.id} className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: scores[tab.id] ? "100%" : "0%", background: T[tab.id].grad }} />
+              </div>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* Tab nav */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      {/* Tab Navigation */}
+      <nav style={{ background: "#ffffff", borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+          <div className="flex gap-1 py-2 overflow-x-auto">
             {tabs.map(tab => {
+              const isActive = activeTab === tab.id;
+              const th = T[tab.id];
+              const done = !!scores[tab.id];
               const Icon = tab.icon;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}
-                >
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative"
+                  style={{
+                    background: isActive ? th.dim : "transparent",
+                    color: isActive ? th.accent : "#94a3b8",
+                    border: `1px solid ${isActive ? th.border : "transparent"}`,
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#f8fafc"; }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
                   <Icon size={15} />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split(" ").pop()}</span>
+                  <span className="hidden sm:inline">{tab.shortLabel}</span>
+                  {done && (
+                    <span className="w-1.5 h-1.5 rounded-full absolute top-2 right-2"
+                      style={{ background: th.accent }} />
+                  )}
                 </button>
               );
             })}
@@ -2672,13 +2221,22 @@ export default function App() {
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <ActiveComponent />
+        <div className="tab-content" key={activeTab}>
+          <ActiveComponent onScore={handleScore} />
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-white mt-12">
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-xs text-gray-400">AI 기초 교육 · 전력산업 종사자를 위한 인터랙티브 학습 가이드</p>
+      <footer style={{ borderTop: "1px solid rgba(0,0,0,0.07)", marginTop: "3rem", background: "#ffffff" }}>
+        <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
+          <p className="text-xs text-slate-400">AI 기초 교육 · 전력산업 종사자 인터랙티브 학습</p>
+          {completedTabs === tabs.length && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)" }}>
+              <Trophy size={13} style={{ color: "#d97706" }} />
+              <span className="text-xs font-bold" style={{ color: "#d97706" }}>전 과정 완료!</span>
+            </div>
+          )}
         </div>
       </footer>
     </div>

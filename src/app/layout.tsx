@@ -13,6 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        <meta name="color-scheme" content="light" />
+        <meta name="theme-color" content="#f1f5f9" />
+      </head>
       <body className="antialiased">{children}</body>
     </html>
   );
