@@ -1068,7 +1068,6 @@ const NeuralNetworkPlayground = () => {
   const epochRef = useRef(0);
   const lossRef = useRef(1.0);
   const trainingRef = useRef(false);
-  const [networkVersion, setNetworkVersion] = useState(0);
 
   // 데이터 생성
   const generateData = useCallback((type) => {
@@ -1323,7 +1322,7 @@ const NeuralNetworkPlayground = () => {
         {labels}
       </svg>
     );
-  }, [hiddenLayers, hiddenNeurons, networkVersion]);
+  }, [hiddenLayers, hiddenNeurons, epoch]);
 
   // 초기화
   useEffect(() => {
@@ -1338,7 +1337,7 @@ const NeuralNetworkPlayground = () => {
     setIsTraining(false);
     trainingRef.current = false;
     if (animRef.current) cancelAnimationFrame(animRef.current);
-    setNetworkVersion(v => v + 1);
+
     renderCanvas(w, data);
   }, [dataType, hiddenNeurons, hiddenLayers, generateData, initWeights, renderCanvas]);
 
@@ -1365,7 +1364,6 @@ const NeuralNetworkPlayground = () => {
       if (frame % 3 === 0) {
         setEpoch(epochRef.current);
         setLoss(l);
-        setNetworkVersion(v => v + 1);
         renderCanvas(w, data);
       }
       animRef.current = requestAnimationFrame(loop);
@@ -1390,7 +1388,7 @@ const NeuralNetworkPlayground = () => {
     lossRef.current = 1.0;
     setEpoch(0);
     setLoss(1.0);
-    setNetworkVersion(v => v + 1);
+
     setTimeout(() => renderCanvas(w, data), 50);
   };
 
