@@ -44,6 +44,12 @@ const T = {
     grad: "linear-gradient(135deg,#b91c1c,#f87171)",
     glow: "rgba(220,38,38,0.2)",
   },
+  expert: {
+    accent: "#a855f7", dim: "rgba(168,85,247,0.08)",
+    border: "rgba(168,85,247,0.2)",
+    grad: "linear-gradient(135deg,#7c3aed,#c084fc)",
+    glow: "rgba(168,85,247,0.2)",
+  },
 };
 
 // ─── Shared UI Components ─────────────────────────────
@@ -2327,29 +2333,521 @@ const Tab5 = ({ onScore }) => {
   );
 };
 
-// ─── MAIN APP ──────────────────────────────────────────
-const tabs = [
-  { id: "concept", label: "AI 개념과 역사", shortLabel: "AI 개념", icon: Brain, component: Tab1 },
-  { id: "how", label: "AI 동작원리", shortLabel: "동작원리", icon: Cpu, component: Tab2 },
-  { id: "apply", label: "AI 실무적용", shortLabel: "실무적용", icon: Zap, component: Tab3 },
-  { id: "prompt", label: "프롬프트 꿀팁", shortLabel: "프롬프트", icon: Sparkles, component: Tab4 },
-  { id: "ethics", label: "AI 주의사항", shortLabel: "주의사항", icon: Shield, component: Tab5 },
+// ─── TAB 6: Transformer Architecture (Course 3) ──────
+const Tab6 = ({ onScore }) => {
+  const t = T.expert;
+  const [step, setStep] = useState(0);
+
+  // 7토큰 부장님 예제: "저 내일 오후 에 반차 쓰겠 습니다"
+  const tokens = ["저", "내일", "오후", "에", "반차", "쓰겠", "습니다"];
+  const d_model = 12288;
+  const n_heads = 96;
+  const d_k = d_model / n_heads; // 128
+
+  const TransformerStep1 = () => {
+    const [showDim, setShowDim] = useState(false);
+    const [hoveredToken, setHoveredToken] = useState(null);
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">부장님의 뇌는 몇 차원일까?</p>
+          <p className="text-xs text-purple-600">김대리가 "저 내일 오후에 반차 쓰겠습니다"라고 말했습니다. GPT-3는 이 문장을 <strong>7개 토큰 × 12,288차원</strong>의 거대한 행렬로 변환합니다.</p>
+        </div>
+
+        {/* Token → Matrix visualization */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 1 — 입력 행렬 생성</p>
+          <p className="text-xs text-gray-500">각 토큰이 {d_model.toLocaleString()}차원 벡터로 변환됩니다</p>
+
+          {/* Token cards */}
+          <div className="flex gap-1.5 flex-wrap">
+            {tokens.map((tok, i) => (
+              <button key={i}
+                onMouseEnter={() => setHoveredToken(i)}
+                onMouseLeave={() => setHoveredToken(null)}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold border-2 transition-all ${hoveredToken === i ? "border-purple-500 bg-purple-50 text-purple-700 scale-105" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
+                <div>{tok}</div>
+                <div className="text-[8px] font-normal text-gray-400 mt-0.5">t{i}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Matrix representation */}
+          <button onClick={() => setShowDim(!showDim)}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all">
+            {showDim ? "접기" : "행렬 펼치기 📐"}
+          </button>
+
+          {showDim && (
+            <div className="space-y-3" style={{ animation: "fadeIn 0.4s ease-out" }}>
+              <div className="overflow-x-auto">
+                <div className="inline-block bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <p className="text-[10px] text-gray-400 mb-2 font-mono">X ∈ ℝ<sup>7×12288</sup> (입력 행렬)</p>
+                  <div className="space-y-1">
+                    {tokens.map((tok, i) => (
+                      <div key={i} className={`flex items-center gap-2 p-1.5 rounded transition-all ${hoveredToken === i ? "bg-purple-100" : ""}`}>
+                        <span className="text-[10px] font-mono font-bold w-10 text-gray-600">{tok}</span>
+                        <span className="text-[10px] text-gray-400">[</span>
+                        <div className="flex gap-0.5">
+                          {[0.12, -0.45, 0.78, 0.03, -0.91].map((v, j) => {
+                            const jitter = Math.sin((i + 1) * (j + 1) * 2.7) * 0.5;
+                            const val = (v + jitter).toFixed(2);
+                            return (
+                              <span key={j} className={`text-[9px] font-mono px-1 rounded ${parseFloat(val) > 0 ? "text-blue-600" : "text-red-500"}`}>
+                                {parseFloat(val) > 0 ? "+" : ""}{val}
+                              </span>
+                            );
+                          })}
+                          <span className="text-[9px] text-gray-300 px-1">... ×12,288</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">]</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 text-center">
+                  <p className="text-lg font-black text-purple-700">{tokens.length}</p>
+                  <p className="text-[10px] text-purple-500">토큰 수 (행)</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                  <p className="text-lg font-black text-blue-700">{d_model.toLocaleString()}</p>
+                  <p className="text-[10px] text-blue-500">임베딩 차원 (열)</p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-center">
+                  <p className="text-lg font-black text-amber-700">{(tokens.length * d_model).toLocaleString()}</p>
+                  <p className="text-[10px] text-amber-500">총 숫자 개수</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>부장님 비유:</strong> 부장님이 김대리의 7개 단어를 들었을 때, 각 단어에 대해 12,288가지 측면(의미, 감정, 문법, 맥락...)을 동시에 분석합니다. 86,016개의 숫자가 부장님의 "첫인상"입니다.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const TransformerStep2 = () => {
+    const [showQKV, setShowQKV] = useState(false);
+    const [activeMatrix, setActiveMatrix] = useState(null);
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">Q, K, V — 부장님의 세 가지 질문법</p>
+          <p className="text-xs text-purple-600">입력 행렬 X에 3개의 가중치 행렬을 곱해 Q(질문), K(열쇠), V(답변)를 만듭니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 2 — Q, K, V 행렬 생성</p>
+
+          {/* Formula */}
+          <div className="bg-gray-900 rounded-xl p-4 font-mono text-center">
+            <p className="text-emerald-400 text-sm">Q = X · W<sub>Q</sub></p>
+            <p className="text-blue-400 text-sm">K = X · W<sub>K</sub></p>
+            <p className="text-amber-400 text-sm">V = X · W<sub>V</sub></p>
+            <p className="text-gray-500 text-[10px] mt-2">[7×12288] · [12288×12288] = [7×12288]</p>
+          </div>
+
+          <button onClick={() => setShowQKV(!showQKV)}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all">
+            {showQKV ? "접기" : "Q, K, V 의미 보기"}
+          </button>
+
+          {showQKV && (
+            <div className="space-y-3" style={{ animation: "fadeIn 0.4s ease-out" }}>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { name: "Q (Query)", color: "emerald", desc: "내가 알고 싶은 것", matrix: "질문 행렬", example: "부장님: \"반차\"가 궁금해 → 다른 단어들에게 질문을 던짐" },
+                  { name: "K (Key)", color: "blue", desc: "내가 제공하는 정보 태그", matrix: "열쇠 행렬", example: "부장님: \"내일\"이 가진 정보 — 시간, 가까움, 급함" },
+                  { name: "V (Value)", color: "amber", desc: "실제 전달할 정보", matrix: "답변 행렬", example: "부장님: \"내일\"의 실제 의미 — 바로 다음 날, 곧" },
+                ].map((item, i) => (
+                  <button key={i} onClick={() => setActiveMatrix(activeMatrix === i ? null : i)}
+                    className={`p-3 rounded-lg border-2 text-left transition-all ${activeMatrix === i ? `border-${item.color}-500 bg-${item.color}-50` : "border-gray-200 bg-gray-50 hover:border-gray-300"}`}
+                    style={activeMatrix === i ? { borderColor: item.color === "emerald" ? "#10b981" : item.color === "blue" ? "#3b82f6" : "#f59e0b", background: item.color === "emerald" ? "rgba(16,185,129,0.08)" : item.color === "blue" ? "rgba(59,130,246,0.08)" : "rgba(245,158,11,0.08)" } : {}}>
+                    <p className="text-xs font-bold" style={{ color: item.color === "emerald" ? "#059669" : item.color === "blue" ? "#2563eb" : "#d97706" }}>{item.name}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{item.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {activeMatrix !== null && (
+                <div className="p-3 rounded-lg border border-gray-200 bg-white" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                  <p className="text-xs text-gray-600">{[
+                    "부장님: \"반차\"가 궁금해 → 다른 단어들에게 \"너 뭐 알아?\"라고 질문을 던짐",
+                    "각 단어가 자기 정보를 태그로 내놓음 — \"내일\"은 [시간, 가까움], \"한숨\"은 [감정, 부정]",
+                    "Q와 K의 매칭 점수에 따라, 높은 점수의 단어에서 V(실제 정보)를 많이 가져옴"
+                  ][activeMatrix]}</p>
+                </div>
+              )}
+
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 수치:</strong> W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> 각각 12,288 × 12,288 = <strong>1.5억 개</strong> 파라미터. Q, K, V 합쳐서 <strong>4.5억 개</strong> 파라미터가 이 단계에만 쓰입니다.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const TransformerStep3 = () => {
+    const [showCalc, setShowCalc] = useState(false);
+    const [showMask, setShowMask] = useState(false);
+    // Simulated attention scores between tokens
+    const attnScores = [
+      [0.35, 0.10, 0.08, 0.02, 0.25, 0.12, 0.08],
+      [0.05, 0.30, 0.28, 0.07, 0.15, 0.10, 0.05],
+      [0.03, 0.25, 0.20, 0.12, 0.22, 0.10, 0.08],
+      [0.02, 0.08, 0.35, 0.15, 0.20, 0.12, 0.08],
+      [0.15, 0.20, 0.15, 0.05, 0.20, 0.15, 0.10],
+      [0.10, 0.08, 0.05, 0.02, 0.35, 0.25, 0.15],
+      [0.05, 0.05, 0.03, 0.02, 0.15, 0.30, 0.40],
+    ];
+    const getColor = (v) => {
+      if (v >= 0.30) return { bg: "#7c3aed", text: "#ffffff" };
+      if (v >= 0.20) return { bg: "#a78bfa", text: "#ffffff" };
+      if (v >= 0.10) return { bg: "#ddd6fe", text: "#5b21b6" };
+      return { bg: "#f5f3ff", text: "#9ca3af" };
+    };
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">어텐션 수식 — 부장님의 집중력 계산법</p>
+          <p className="text-xs text-purple-600">Q와 K를 곱하고 √d<sub>k</sub>로 나눈 뒤 softmax를 취합니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 3 — Scaled Dot-Product Attention</p>
+
+          {/* Main formula */}
+          <div className="bg-gray-900 rounded-xl p-5 text-center space-y-2">
+            <p className="text-white text-sm font-mono">Attention(Q, K, V) = softmax(<span className="text-emerald-400">QK<sup>T</sup></span> / <span className="text-amber-400">√d<sub>k</sub></span>) · <span className="text-blue-400">V</span></p>
+            <div className="flex items-center justify-center gap-3 mt-3 text-[10px] text-gray-400 font-mono">
+              <span className="text-emerald-400">QK<sup>T</sup>: [7×128]·[128×7] = [7×7]</span>
+              <span>→</span>
+              <span className="text-amber-400">÷ √128 = ÷ 11.31</span>
+              <span>→</span>
+              <span className="text-purple-400">softmax → 확률</span>
+            </div>
+          </div>
+
+          <button onClick={() => setShowCalc(!showCalc)}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all">
+            {showCalc ? "접기" : "어텐션 맵 보기 🔍"}
+          </button>
+
+          {showCalc && (
+            <div className="space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
+              {/* 7x7 Attention heatmap */}
+              <div className="overflow-x-auto">
+                <div className="inline-block">
+                  <p className="text-[10px] text-gray-400 font-mono mb-2">softmax(QK<sup>T</sup> / √128) — 7×7 어텐션 맵</p>
+                  <table className="border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="p-1 text-[8px] text-gray-400">Q↓ K→</th>
+                        {tokens.map((t, i) => <th key={i} className="p-1 text-[9px] font-mono font-bold text-gray-600 min-w-[40px]">{t}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tokens.map((t, i) => (
+                        <tr key={i}>
+                          <td className="p-1 text-[9px] font-mono font-bold text-gray-600">{t}</td>
+                          {attnScores[i].map((v, j) => {
+                            const c = getColor(v);
+                            const masked = showMask && j > i;
+                            return (
+                              <td key={j} className="p-0.5">
+                                <div className="w-10 h-7 rounded flex items-center justify-center text-[8px] font-mono font-bold transition-all"
+                                  style={{ background: masked ? "#1e1b4b" : c.bg, color: masked ? "#4c1d95" : c.text }}>
+                                  {masked ? "-∞" : v.toFixed(2)}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-[9px] text-gray-400">
+                <span>약함</span>
+                {["#f5f3ff", "#ddd6fe", "#a78bfa", "#7c3aed"].map((c, i) => <div key={i} className="w-5 h-3 rounded-sm" style={{ background: c }} />)}
+                <span>강함</span>
+              </div>
+
+              {/* Masked attention toggle */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">Masked Self-Attention (GPT 디코더)</p>
+                    <p className="text-[10px] text-gray-500">미래 토큰을 -∞로 마스킹하여 "앞만 보게" 합니다</p>
+                  </div>
+                  <button onClick={() => setShowMask(!showMask)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showMask ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                    {showMask ? "마스크 ON" : "마스크 OFF"}
+                  </button>
+                </div>
+                {showMask && (
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                    <p className="text-xs text-purple-800"><strong>부장님 비유:</strong> "반차"를 예측할 때, 부장님은 "저 내일 오후 에"까지만 볼 수 있습니다. "쓰겠 습니다"는 아직 안 들었으니 가려야 합니다. 이것이 GPT가 <strong>왼쪽에서 오른쪽으로</strong> 한 토큰씩 생성하는 원리입니다.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>왜 √d<sub>k</sub>로 나눌까?</strong> QK<sup>T</sup> 내적값이 차원(128)이 클수록 값이 커져서 softmax가 극단적으로 한 곳에 몰립니다(gradient vanishing). √128 ≈ 11.31로 나눠 안정적인 분포를 만듭니다. 부장님이 "한 단어에만 꽂히는" 것을 방지하는 장치입니다.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const TransformerStep4 = () => {
+    const [showSplit, setShowSplit] = useState(false);
+    return (
+      <div className="space-y-6">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">Multi-Head Attention — 부장님이 96명?</p>
+          <p className="text-xs text-purple-600">{d_model.toLocaleString()}차원을 {n_heads}개 헤드로 나누면, 각 헤드당 {d_k}차원. 96명의 부장님이 각각 다른 관점으로 분석합니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 4 — Multi-Head Split & Merge</p>
+
+          {/* Dimension split formula */}
+          <div className="bg-gray-900 rounded-xl p-4 text-center space-y-1 font-mono">
+            <p className="text-white text-sm">{d_model.toLocaleString()} ÷ {n_heads} = <span className="text-amber-400 font-bold">{d_k}</span> 차원/헤드</p>
+            <p className="text-gray-500 text-[10px]">Q, K, V 각각을 96등분하여 병렬 처리</p>
+          </div>
+
+          <button onClick={() => setShowSplit(!showSplit)}
+            className="px-4 py-2 rounded-lg text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 transition-all">
+            {showSplit ? "접기" : "96개 헤드 분할 시각화 🔬"}
+          </button>
+
+          {showSplit && (
+            <div className="space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
+              {/* Visual split */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <p className="text-[10px] text-gray-400 font-mono">12,288차원을 96개 헤드로 분할:</p>
+                <div className="flex gap-0.5 flex-wrap">
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const headLabels = ["시간 관계", "감정 톤", "주어-목적어", "문법 구조", "의도 파악", "존댓말 수준"];
+                    return (
+                      <div key={i} className="group relative">
+                        <div className={`w-5 h-8 rounded-sm transition-all ${i < 6 ? "bg-purple-500" : i < 12 ? "bg-blue-400" : i < 18 ? "bg-emerald-400" : "bg-amber-400"} hover:scale-y-125 cursor-pointer`} />
+                        {i < 6 && (
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap bg-gray-900 text-white text-[8px] px-2 py-1 rounded">
+                            H{i + 1}: {headLabels[i]}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <span className="text-[9px] text-gray-400 self-center ml-1">...×96</span>
+                </div>
+                <div className="flex gap-3 text-[9px]">
+                  {[
+                    { color: "bg-purple-500", label: "시간/공간 관계" },
+                    { color: "bg-blue-400", label: "감정/어조 분석" },
+                    { color: "bg-emerald-400", label: "문법/구문 구조" },
+                    { color: "bg-amber-400", label: "의미/의도 추론" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-1 text-gray-500">
+                      <div className={`w-2 h-2 rounded-sm ${item.color}`} />
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Merge illustration */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                <p className="text-xs font-bold text-gray-700">Concat & Linear (합치기)</p>
+                <div className="flex items-center gap-2 text-[10px] font-mono text-gray-600">
+                  <span className="px-2 py-1 bg-purple-100 rounded">H1</span>
+                  <span className="px-2 py-1 bg-blue-100 rounded">H2</span>
+                  <span className="text-gray-300">...</span>
+                  <span className="px-2 py-1 bg-amber-100 rounded">H96</span>
+                  <ArrowRight size={12} className="text-gray-400" />
+                  <span className="px-2 py-1 bg-gray-200 rounded font-bold">Concat</span>
+                  <ArrowRight size={12} className="text-gray-400" />
+                  <span className="px-2 py-1 bg-gray-900 text-white rounded font-bold">[7×12288]</span>
+                </div>
+                <p className="text-[10px] text-gray-500">96개 헤드의 128차원 결과를 이어붙이면 다시 12,288차원. 최종 선형 변환으로 출력합니다.</p>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>부장님 비유:</strong> 부장님이 혼자 12,288가지를 분석하는 건 비효율적입니다. 대신 96명의 전문가가 128가지씩 나눠 분석한 뒤 합칩니다. 한 명은 "시간"만, 한 명은 "감정"만, 한 명은 "문법"만 — 이것이 Multi-Head의 핵심입니다.</p>
+              </div>
+
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 GPT-3 수치:</strong> 96 헤드 × 128 차원 = 12,288. 이 구조가 96개 레이어에 걸쳐 반복됩니다. 총 어텐션 파라미터만 약 <strong>530억 개</strong>. 전체 1,750억 파라미터 중 약 30%가 이 어텐션에 쓰입니다.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const expertSteps = [
+    { title: "입력 행렬", subtitle: "7토큰 × 12,288차원", icon: Binary, content: TransformerStep1 },
+    { title: "Q, K, V 생성", subtitle: "세 가지 가중치 행렬", icon: Layers, content: TransformerStep2 },
+    { title: "어텐션 수식", subtitle: "Scaled Dot-Product", icon: Eye, content: TransformerStep3 },
+    { title: "멀티헤드", subtitle: "96등분 병렬 처리", icon: Network, content: TransformerStep4 },
+  ];
+
+  const StepContent = expertSteps[step]?.content;
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <CircuitBoard size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>TRANSFORMER ARCHITECTURE</p>
+            <h2 className="text-lg font-black text-slate-800">트랜스포머 해부학</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">GPT-3의 실제 수치와 수식으로, 부장님이 김대리의 말을 분석하는 과정을 해부합니다.</p>
+
+        <div className="p-3 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-700 font-medium">📌 예제 문장: "<strong>저 내일 오후 에 반차 쓰겠 습니다</strong>" — 7토큰, GPT-3 기준 12,288차원</p>
+        </div>
+
+        {/* Step nav */}
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {expertSteps.map((s, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === step ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            {(() => { const Icon = expertSteps[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+            <div>
+              <h3 className="font-semibold text-gray-900">{expertSteps[step].title}</h3>
+              <p className="text-xs text-gray-400">{expertSteps[step].subtitle}</p>
+            </div>
+          </div>
+          <StepContent />
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            <ArrowLeft size={14} /> 이전
+          </button>
+          <span className="text-xs text-gray-400 self-center">{step + 1} / {expertSteps.length}</span>
+          <button onClick={() => setStep(Math.min(expertSteps.length - 1, step + 1))} disabled={step === expertSteps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            다음 <ArrowRight size={14} />
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── COURSE STRUCTURE ──────────────────────────────────
+const courses = [
+  {
+    id: "literacy",
+    title: "AI 문해력",
+    subtitle: "AI가 뭔데?",
+    badge: "🥉",
+    badgeLabel: "AI 문해력",
+    icon: BookOpen,
+    color: { accent: "#7c3aed", dim: "rgba(124,58,237,0.08)", border: "rgba(124,58,237,0.2)", grad: "linear-gradient(135deg,#6d28d9,#a78bfa)" },
+    chapters: [
+      { id: "concept", label: "AI 개념과 역사", icon: Brain, component: Tab1, themeKey: "concept" },
+      { id: "how", label: "AI 동작원리", icon: Cpu, component: Tab2, themeKey: "how" },
+      { id: "prompt", label: "프롬프트 꿀팁", icon: Sparkles, component: Tab4, themeKey: "prompt" },
+      { id: "ethics", label: "AI 주의사항", icon: Shield, component: Tab5, themeKey: "ethics" },
+    ],
+  },
+  {
+    id: "practitioner",
+    title: "AI 활용",
+    subtitle: "AI는 어떻게 생각할까?",
+    badge: "🥈",
+    badgeLabel: "AI 활용가",
+    icon: Zap,
+    color: { accent: "#0284c7", dim: "rgba(2,132,199,0.08)", border: "rgba(2,132,199,0.2)", grad: "linear-gradient(135deg,#0369a1,#38bdf8)" },
+    chapters: [
+      { id: "how-deep", label: "동작원리 딥다이브", icon: Cpu, component: Tab2, themeKey: "how" },
+      { id: "apply", label: "AI 실무적용", icon: Zap, component: Tab3, themeKey: "apply" },
+    ],
+  },
+  {
+    id: "expert",
+    title: "AI 전문",
+    subtitle: "AI의 수학과 구조",
+    badge: "🥇",
+    badgeLabel: "AI 전문가",
+    icon: CircuitBoard,
+    color: { accent: "#a855f7", dim: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.2)", grad: "linear-gradient(135deg,#7c3aed,#c084fc)" },
+    chapters: [
+      { id: "transformer", label: "트랜스포머 아키텍처", icon: CircuitBoard, component: Tab6, themeKey: "expert" },
+    ],
+  },
 ];
 
+// ─── MAIN APP ──────────────────────────────────────────
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState("concept");
+  const [activeCourse, setActiveCourse] = useState("literacy");
+  const [activeChapter, setActiveChapter] = useState(0);
   const [scores, setScores] = useState({});
+  const [completedChapters, setCompletedChapters] = useState(new Set());
 
   const handleScore = (tabId, score, total) => {
     setScores(p => ({ ...p, [tabId]: { score, total } }));
+    setCompletedChapters(prev => new Set([...prev, tabId]));
   };
 
   const totalScore = Object.values(scores).reduce((a, s) => a + s.score, 0);
   const totalMax = Object.values(scores).reduce((a, s) => a + s.total, 0);
-  const completedTabs = Object.keys(scores).length;
 
-  const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;
-  const theme = T[activeTab];
+  const course = courses.find(c => c.id === activeCourse);
+  const chapter = course.chapters[activeChapter];
+  const ChapterComponent = chapter.component;
+
+  // Course completion check
+  const getCourseCompletion = (courseId) => {
+    const c = courses.find(co => co.id === courseId);
+    const completed = c.chapters.filter(ch => completedChapters.has(ch.id)).length;
+    return { completed, total: c.chapters.length, done: completed === c.chapters.length };
+  };
+
+  // Course unlock logic: course 2 requires 50%+ of course 1, course 3 requires course 2 done
+  const isCourseUnlocked = (courseId) => {
+    if (courseId === "literacy") return true;
+    if (courseId === "practitioner") {
+      const c1 = getCourseCompletion("literacy");
+      return c1.completed >= Math.ceil(c1.total / 2);
+    }
+    if (courseId === "expert") {
+      return getCourseCompletion("practitioner").done;
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen" style={{
@@ -2372,64 +2870,65 @@ export default function App() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg,#6d28d9,#38bdf8)", boxShadow: "0 4px 12px rgba(109,40,217,0.3)" }}>
+              style={{ background: course.color.grad, boxShadow: `0 4px 12px ${course.color.border}` }}>
               <Brain size={18} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-black text-slate-800 tracking-tight">AI 기초 교육</h1>
-              <p className="text-xs text-slate-400">전력산업 종사자를 위한 인터랙티브 학습 가이드</p>
+              <h1 className="text-base font-black text-slate-800 tracking-tight">AI 교육 아카데미</h1>
+              <p className="text-xs text-slate-400">전력산업 종사자를 위한 단계별 AI 학습</p>
             </div>
-            {completedTabs > 0 && (
+            {totalScore > 0 && (
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
                   <p className="text-[10px] text-slate-400 font-semibold">TOTAL XP</p>
                   <p className="text-sm font-black text-slate-800">{totalScore}<span className="text-slate-400 text-xs">/{totalMax}</span></p>
                 </div>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(217,119,6,0.1)", border: "1px solid rgba(217,119,6,0.25)" }}>
-                  <Star size={14} style={{ color: "#d97706" }} />
+                <div className="flex gap-0.5">
+                  {courses.map(c => {
+                    const comp = getCourseCompletion(c.id);
+                    return comp.done ? (
+                      <span key={c.id} className="text-lg" title={c.badgeLabel}>{c.badge}</span>
+                    ) : null;
+                  })}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Progress bar */}
+          {/* Course progress */}
           <div className="mt-3 flex gap-1">
-            {tabs.map(tab => (
-              <div key={tab.id} className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+            {course.chapters.map((ch, i) => (
+              <div key={ch.id} className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
                 <div className="h-full rounded-full transition-all duration-700"
-                  style={{ width: scores[tab.id] ? "100%" : "0%", background: T[tab.id].grad }} />
+                  style={{ width: completedChapters.has(ch.id) ? "100%" : i === activeChapter ? "30%" : "0%", background: course.color.grad }} />
               </div>
             ))}
           </div>
         </div>
       </header>
 
-      {/* Tab Navigation */}
+      {/* Course Selector */}
       <nav style={{ background: "#ffffff", borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
         <div className="max-w-4xl mx-auto px-4">
-          <div className="flex gap-1 py-2 overflow-x-auto">
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.id;
-              const th = T[tab.id];
-              const done = !!scores[tab.id];
-              const Icon = tab.icon;
+          <div className="flex gap-1.5 py-2.5 overflow-x-auto">
+            {courses.map(c => {
+              const isActive = activeCourse === c.id;
+              const unlocked = isCourseUnlocked(c.id);
+              const comp = getCourseCompletion(c.id);
+              const Icon = c.icon;
               return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative"
+                <button key={c.id}
+                  onClick={() => { if (unlocked) { setActiveCourse(c.id); setActiveChapter(0); } }}
+                  className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 relative ${!unlocked ? "opacity-50 cursor-not-allowed" : ""}`}
                   style={{
-                    background: isActive ? th.dim : "transparent",
-                    color: isActive ? th.accent : "#94a3b8",
-                    border: `1px solid ${isActive ? th.border : "transparent"}`,
-                  }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#f8fafc"; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
-                  <Icon size={15} />
-                  <span className="hidden sm:inline">{tab.shortLabel}</span>
-                  {done && (
-                    <span className="w-1.5 h-1.5 rounded-full absolute top-2 right-2"
-                      style={{ background: th.accent }} />
-                  )}
+                    background: isActive ? c.color.dim : "transparent",
+                    color: isActive ? c.color.accent : "#94a3b8",
+                    border: `1px solid ${isActive ? c.color.border : "transparent"}`,
+                  }}>
+                  {unlocked ? <Icon size={15} /> : <Lock size={13} />}
+                  <span className="hidden sm:inline">{c.badge} {c.title}</span>
+                  <span className="sm:hidden">{c.badge}</span>
+                  {comp.done && <CheckCircle2 size={12} className="ml-0.5" />}
                 </button>
               );
             })}
@@ -2437,24 +2936,53 @@ export default function App() {
         </div>
       </nav>
 
+      {/* Chapter Navigation */}
+      <div style={{ background: "#f8fafc", borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex gap-1 py-2 overflow-x-auto">
+            {course.chapters.map((ch, i) => {
+              const isActive = activeChapter === i;
+              const done = completedChapters.has(ch.id);
+              const Icon = ch.icon;
+              return (
+                <button key={ch.id} onClick={() => setActiveChapter(i)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${isActive ? "text-white" : done ? "bg-white text-gray-600 border border-gray-200" : "text-gray-400 hover:bg-white hover:text-gray-600"}`}
+                  style={isActive ? { background: course.color.accent } : {}}>
+                  <Icon size={13} />
+                  <span className="hidden sm:inline">{ch.label}</span>
+                  <span className="sm:hidden">CH{i + 1}</span>
+                  {done && !isActive && <CheckCircle2 size={10} className="text-emerald-500" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="tab-content" key={activeTab}>
-          <ActiveComponent onScore={handleScore} />
+        <div className="tab-content" key={`${activeCourse}-${chapter.id}`}>
+          <ChapterComponent onScore={handleScore} />
         </div>
       </main>
 
       {/* Footer */}
       <footer style={{ borderTop: "1px solid rgba(0,0,0,0.07)", marginTop: "3rem", background: "#ffffff" }}>
         <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
-          <p className="text-xs text-slate-400">AI 기초 교육 · 전력산업 종사자 인터랙티브 학습</p>
-          {completedTabs === tabs.length && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-              style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)" }}>
-              <Trophy size={13} style={{ color: "#d97706" }} />
-              <span className="text-xs font-bold" style={{ color: "#d97706" }}>전 과정 완료!</span>
-            </div>
-          )}
+          <p className="text-xs text-slate-400">AI 교육 아카데미 · 전력산업 종사자 단계별 학습</p>
+          <div className="flex items-center gap-1.5">
+            {courses.map(c => {
+              const comp = getCourseCompletion(c.id);
+              return comp.done ? <span key={c.id} className="text-base">{c.badge}</span> : null;
+            })}
+            {courses.every(c => getCourseCompletion(c.id).done) && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full ml-2"
+                style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)" }}>
+                <Trophy size={13} style={{ color: "#d97706" }} />
+                <span className="text-xs font-bold" style={{ color: "#d97706" }}>전 과정 완료!</span>
+              </div>
+            )}
+          </div>
         </div>
       </footer>
     </div>
