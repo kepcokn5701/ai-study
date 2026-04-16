@@ -53,6 +53,29 @@ const T = {
 };
 
 // ─── Shared UI Components ─────────────────────────────
+const DeepDive = ({ children, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mt-6">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-4 py-2.5 w-full rounded-xl text-sm font-medium transition-all border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-700">
+        <Layers size={14} />
+        <span>{open ? "딥다이브 접기" : "실제로는 이렇게 동작합니다"}</span>
+        <ChevronDown size={14} className={`ml-auto transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-4 p-5 bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl border border-gray-200 space-y-4" style={{ animation: "fadeIn 0.4s ease-out" }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600">DEEP DIVE</span>
+          </div>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Card = ({ children, t, game = false, className = "" }) => (
   <div
     className={`rounded-2xl overflow-hidden ${className}`}
@@ -607,6 +630,36 @@ const Tab2 = ({ onScore }) => {
               {tokenized ? "원문 보기" : "✂️ 토큰화 실행"}
             </PBtn>
             <p className="text-sm text-slate-600 leading-relaxed">AI는 문장을 한꺼번에 이해하지 못합니다. 텍스트를 작은 조각(토큰)으로 쪼개는 것이 첫 단계입니다.</p>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">BPE (Byte Pair Encoding) — 실제 토큰화 과정</p>
+              <p className="text-xs text-gray-500">GPT, Claude 등 대부분의 LLM은 BPE 알고리즘을 사용합니다. 단어를 통째로 외우는 게 아니라, 자주 나오는 글자 조합을 학습해서 효율적으로 쪼갭니다.</p>
+              <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                <div className="space-y-1.5">
+                  {[
+                    { step: "1. 원문", tokens: ["저 내일 오후에 반차 쓰겠습니다"], color: "gray" },
+                    { step: "2. 공백 분리", tokens: ["저", "내일", "오후에", "반차", "쓰겠습니다"], color: "blue" },
+                    { step: "3. 서브워드 (BPE)", tokens: ["저", "내일", "오후", "에", "반차", "쓰겠", "습니다"], color: "purple" },
+                    { step: "4. 토큰 ID", tokens: ["3842", "1057", "8923", "45", "6721", "9102", "234"], color: "emerald" },
+                  ].map((row, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400 font-mono w-28 shrink-0">{row.step}</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {row.tokens.map((tk, j) => (
+                          <span key={j} className={`px-2 py-1 rounded text-[10px] font-mono font-semibold bg-${row.color}-50 text-${row.color}-700 border border-${row.color}-200`}
+                            style={{ background: row.color === "gray" ? "#f9fafb" : row.color === "blue" ? "rgba(59,130,246,0.08)" : row.color === "purple" ? "rgba(168,85,247,0.08)" : "rgba(16,185,129,0.08)", color: row.color === "gray" ? "#374151" : row.color === "blue" ? "#1d4ed8" : row.color === "purple" ? "#7c3aed" : "#059669", borderColor: row.color === "gray" ? "#e5e7eb" : row.color === "blue" ? "rgba(59,130,246,0.2)" : row.color === "purple" ? "rgba(168,85,247,0.2)" : "rgba(16,185,129,0.2)" }}>{tk}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>왜 서브워드로 쪼갤까?</strong> "쓰겠습니다"를 통째로 외우면 사전이 수십만 개 필요합니다. "쓰겠" + "습니다"로 나누면, "습니다"는 다른 문장에서도 재활용됩니다.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4 토큰 사전 ≈ 100,000개. 한국어 한 글자 ≈ 1.5~2토큰 소모. "저 내일 오후에 반차 쓰겠습니다" ≈ 7토큰.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -647,6 +700,29 @@ const Tab2 = ({ onScore }) => {
               ))}
             </div>
             <PBtn t={t} onClick={() => setShow(!show)}>{show ? "숨기기" : "📊 수치화 시작"}</PBtn>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">벡터 공간 — 단어가 숫자 좌표로 바뀌는 원리</p>
+              <p className="text-xs text-gray-500">임베딩은 각 단어를 수백~수천 차원의 숫자 벡터로 변환합니다. 의미가 비슷한 단어는 가까이, 다른 단어는 멀리 배치됩니다.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { name: "차원 #1: 시간 관련도", desc: "'내일', '오후'는 높고, '저'는 낮음" },
+                  { name: "차원 #2: 감정 강도", desc: "'한숨', '피곤'이 높은 값" },
+                  { name: "차원 #3: 행위 의도", desc: "'반차', '퇴사'에 강하게 반응" },
+                  { name: "차원 #4: 주어 여부", desc: "'저', '나'만 높은 차원" },
+                ].map((d, i) => (
+                  <div key={i} className="p-2.5 bg-white rounded-lg border border-gray-200">
+                    <p className="text-[10px] font-semibold text-gray-700">{d.name}</p>
+                    <p className="text-[10px] text-gray-400">{d.desc}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "반차"와 "퇴근"이 벡터 공간에서 가까운 건, AI가 수억 개의 문장에서 비슷한 맥락에 등장하는 것을 학습했기 때문입니다.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-3는 12,288차원, Claude는 약 8,192차원 임베딩. Word2Vec: vec("왕") - vec("남자") + vec("여자") ≈ vec("여왕").</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -686,6 +762,28 @@ const Tab2 = ({ onScore }) => {
               )}
             </div>
             <PBtn t={t} onClick={() => setShow(!show)}>{show ? "초기화" : "🔗 문맥 연결 시작"}</PBtn>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">Q·K·V와 멀티헤드 어텐션</p>
+              <p className="text-xs text-gray-500">부장님이 동시에 여러 관점으로 분석하듯, AI도 여러 "헤드"가 각기 다른 관계를 포착합니다.</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { name: "Q (Query)", desc: "\"내가 알고 싶은 것\"", color: "#2563eb", bg: "rgba(37,99,235,0.06)" },
+                  { name: "K (Key)", desc: "\"내가 가진 정보 태그\"", color: "#059669", bg: "rgba(5,150,105,0.06)" },
+                  { name: "V (Value)", desc: "\"실제 정보 내용\"", color: "#d97706", bg: "rgba(217,119,6,0.06)" },
+                ].map((item, i) => (
+                  <div key={i} className="p-2.5 rounded-lg border" style={{ background: item.bg, borderColor: item.color + "30" }}>
+                    <p className="text-[10px] font-bold" style={{ color: item.color }}>{item.name}</p>
+                    <p className="text-[10px] text-gray-500">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>왜 멀티헤드?</strong> GPT-4는 128개, Claude는 64~128개 헤드가 동시 분석. 하나의 헤드만으로는 시간 관계는 보되 감정 신호를 놓칠 수 있습니다.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 수식:</strong> Attention(Q,K,V) = softmax(QK<sup>T</sup>/√d<sub>k</sub>)V. 토큰 N개면 N² 번 연산 — 긴 문장이 비싼 이유입니다.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -733,6 +831,29 @@ const Tab2 = ({ onScore }) => {
               )}
             </div>
             <PBtn t={t} onClick={() => setRunning(!running)}>{running ? "🔄 리셋" : "⚡ 순전파 시작"}</PBtn>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">FFN — 뉴런이 실제로 하는 일</p>
+              <p className="text-xs text-gray-500">어텐션으로 "어디를 볼지" 정했다면, FFN은 "봐서 어떤 결론을 내릴지" 계산합니다.</p>
+              <div className="space-y-2">
+                {[
+                  { name: "Layer 1 — 표면 인식", desc: "'저'는 주어, '내일'은 시간" },
+                  { name: "Layer 6 — 문법 이해", desc: "'저+내일+오후에' → 누군가 뭔가를 할 예정" },
+                  { name: "Layer 12 — 의미 추론", desc: "한숨 + 내일 오후 = 쉬고 싶다는 신호" },
+                  { name: "Layer 24 — 최종 결론", desc: "반차(80%), 외근(15%), 퇴사(5%)" },
+                ].map((l, i) => (
+                  <div key={i} className="p-2.5 bg-white rounded-lg border border-gray-200">
+                    <p className="text-[10px] font-semibold text-gray-700">{l.name}</p>
+                    <p className="text-[10px] text-gray-500">{l.desc}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>핵심:</strong> GPT-4는 약 120개 레이어. 앞쪽은 "단어가 뭐지?" 수준, 뒤쪽은 "퇴사하고 싶은 건지 반차를 쓰고 싶은 건지" 수준의 추론.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 수치:</strong> FFN 은닉 차원 = 임베딩의 4배 (8,192×4=32,768). GPT-4 전체 약 1.8조 파라미터.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -773,6 +894,30 @@ const Tab2 = ({ onScore }) => {
               )}
             </div>
             <PBtn t={t} onClick={() => setShow(!show)}>{show ? "숨기기" : "🎰 확률 계산"}</PBtn>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">Temperature & Sampling — 부장님의 직감 조절기</p>
+              <p className="text-xs text-gray-500">소프트맥스 후 "얼마나 확신을 가지고 답할지" 조절하는 파라미터입니다.</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                  <p className="text-[10px] font-bold text-blue-700">🧊 T=0.2</p>
+                  <p className="text-[10px] text-blue-600">정확하게</p>
+                  <p className="text-[9px] text-gray-500">코드 생성용</p>
+                </div>
+                <div className="p-2.5 bg-gray-100 rounded-lg border border-gray-200 text-center">
+                  <p className="text-[10px] font-bold text-gray-700">⚖️ T=1.0</p>
+                  <p className="text-[10px] text-gray-600">균형</p>
+                  <p className="text-[9px] text-gray-500">일반 대화</p>
+                </div>
+                <div className="p-2.5 bg-red-50 rounded-lg border border-red-200 text-center">
+                  <p className="text-[10px] font-bold text-red-700">🔥 T=1.5+</p>
+                  <p className="text-[10px] text-red-600">창의적</p>
+                  <p className="text-[9px] text-gray-500">브레인스토밍</p>
+                </div>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>실무 팁:</strong> ChatGPT에서 "같은 질문에 다른 답이 나오는 이유"가 바로 temperature와 샘플링 때문입니다. Top-K는 상위 K개만, Top-P는 누적 확률 P%까지만 후보로 남깁니다.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -810,6 +955,32 @@ const Tab2 = ({ onScore }) => {
               </PBtn>
               {iter >= 2 && <GBtn onClick={() => setIter(0)}><RotateCcw size={13} />리셋</GBtn>}
             </div>
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">토큰별 생성 과정 — 한 토큰씩 예측하는 법</p>
+              <p className="text-xs text-gray-500">LLM은 한 번에 문장을 만들지 않습니다. 매번 "지금까지의 맥락"을 보고 "다음 한 토큰"만 예측합니다.</p>
+              <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-2">
+                {[
+                  { ctx: "저 내일 오후에 ___", top: "반차(42%)", why: "'한숨+오후' → 쉬고 싶다 포착" },
+                  { ctx: "저 내일 오후에 반차 ___", top: "쓰겠(55%)", why: "'반차' 다음 동사 패턴 학습" },
+                  { ctx: "저 내일 오후에 반차 쓰겠 ___", top: "습니다(72%)", why: "직장 존댓말 문맥 → 확률 급등" },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50">
+                    <span className="text-[9px] font-mono text-gray-400 shrink-0 mt-0.5">Step {i + 1}</span>
+                    <div>
+                      <p className="text-[10px] font-mono text-gray-700">{s.ctx}</p>
+                      <p className="text-[10px] text-blue-600 font-medium">→ {s.top}</p>
+                      <p className="text-[9px] text-gray-400">{s.why}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>KV 캐시:</strong> 이전 토큰은 이미 계산했으므로 다시 계산하지 않습니다. 새 토큰만 처리 — ChatGPT가 긴 답변에서도 속도를 유지하는 비결.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 수치:</strong> GPT-4 초당 ≈ 40~80토큰. 1,000자 ≈ 500~700토큰 ≈ 약 10초. 매 토큰마다 1.8조 파라미터 전부 동원.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -870,6 +1041,45 @@ const Tab2 = ({ onScore }) => {
               ? <PBtn t={t} onClick={reveal}>😱 실제 답 공개</PBtn>
               : <GBtn onClick={() => setPhase(0)}><RotateCcw size={13} />처음부터</GBtn>
             }
+            <DeepDive>
+              <p className="text-sm text-gray-700 font-medium">경사하강법 & 학습률 — 실수에서 배우는 속도</p>
+              <p className="text-xs text-gray-500">역전파는 "오차를 줄이는 방향"으로 가중치를 조금씩 수정합니다. 학습률은 "한 번에 얼마나 크게 수정할지"를 결정합니다.</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                  <p className="text-[10px] font-bold text-blue-700">🐢 LR 너무 작음</p>
+                  <p className="text-[9px] text-gray-500">수렴 느림</p>
+                </div>
+                <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
+                  <p className="text-[10px] font-bold text-emerald-700">✅ LR 적절</p>
+                  <p className="text-[9px] text-gray-500">안정 수렴</p>
+                </div>
+                <div className="p-2.5 bg-red-50 rounded-lg border border-red-200 text-center">
+                  <p className="text-[10px] font-bold text-red-700">💥 LR 너무 큼</p>
+                  <p className="text-[9px] text-gray-500">발산 위험</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-1.5">
+                <p className="text-[10px] font-medium text-gray-700">가중치 변화 예시 (학습 후):</p>
+                {[
+                  { name: '"한숨→반차"', from: "0.92", to: "0.30", dir: "↓ 대폭 감소" },
+                  { name: '"한숨→���사"', from: "0.05", to: "0.85", dir: "↑ 대폭 증가" },
+                ].map((w, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px]">
+                    <span className="text-gray-600 w-24 font-mono">{w.name}</span>
+                    <span className="line-through text-red-400">{w.from}</span>
+                    <ArrowRight size={10} className="text-gray-300" />
+                    <span className="font-bold text-emerald-600">{w.to}</span>
+                    <span className="text-gray-400">{w.dir}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-800"><strong>핵심:</strong> GPT-4 학습 비용 ≈ 1억 달러+. 수조 토큰에서 수조 번 역전파. 부장님 30년 경험의 수백만 배 "경험"입니다.</p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <p className="text-xs text-gray-600"><strong>📊 수치:</strong> Adam 옵티마이저 LR ≈ 1e-4~3e-4. GPT-4는 약 13조 토큰으로 학습. 학습 후 RLHF로 추가 튜닝합니다.</p>
+              </div>
+            </DeepDive>
           </div>
         );
       }
@@ -2333,6 +2543,250 @@ const Tab5 = ({ onScore }) => {
   );
 };
 
+// ─── TAB 2 DEEP: Deep Dive Only (Course 2) ───────────
+const Tab2Deep = ({ onScore }) => {
+  const t = T.how;
+  const deepDiveTopics = [
+    {
+      title: "토큰화 딥다이브",
+      subtitle: "BPE 서브워드 분해",
+      icon: Blocks,
+      content: () => (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700 font-medium">BPE (Byte Pair Encoding) — 실제 토큰화 과정</p>
+          <p className="text-xs text-gray-500">GPT, Claude 등 대부분의 LLM은 BPE 알고리즘으로 텍스트를 서브워드 단위로 쪼갭니다.</p>
+          <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+            {[
+              { step: "1. 원문", tokens: ["저 내일 오후에 반차 쓰겠습니다"], color: "#6b7280" },
+              { step: "2. 공백 분리", tokens: ["저", "내일", "오후에", "반차", "쓰겠습니다"], color: "#2563eb" },
+              { step: "3. 서브워드 (BPE)", tokens: ["저", "내일", "오후", "에", "반차", "쓰겠", "습니다"], color: "#7c3aed" },
+              { step: "4. 토큰 ID", tokens: ["3842", "1057", "8923", "45", "6721", "9102", "234"], color: "#059669" },
+            ].map((row, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 font-mono w-28 shrink-0">{row.step}</span>
+                <div className="flex gap-1 flex-wrap">
+                  {row.tokens.map((tk, j) => (
+                    <span key={j} className="px-2 py-1 rounded text-[10px] font-mono font-semibold"
+                      style={{ background: row.color + "10", color: row.color, border: `1px solid ${row.color}30` }}>{tk}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-xs text-amber-800"><strong>왜 서브워드로 쪼갤까?</strong> "쓰겠습니다"를 통째로 외우면 사전이 수십만 개 필요하지만, "쓰겠"+"습니다"로 나누면 "습니다"를 다른 문장에서도 재활용할 수 있습니다. 부장님도 패턴을 파악하는 것이지, 모든 말을 통째로 외우지 않습니다.</p>
+          </div>
+          <div className="p-3 bg-gray-100 rounded-lg">
+            <p className="text-xs text-gray-600"><strong>📊 실제 수치:</strong> GPT-4 토큰 사전 ≈ 100,000개. 한국어 한 글자 ≈ 1.5~2토큰. "저 내일 오후에 반차 쓰겠습니다" ≈ 7토큰. 영어는 1단어 ≈ 1~1.5토큰으로 한국어보다 효율적입니다.</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "임베딩 딥다이브",
+      subtitle: "벡터 공간과 차원",
+      icon: Binary,
+      content: () => {
+        const [selectedWord, setSelectedWord] = useState(null);
+        const vectorSpace = [
+          { word: "저", x: 20, y: 70, color: "#3b82f6" },
+          { word: "나", x: 25, y: 65, color: "#3b82f6" },
+          { word: "내일", x: 60, y: 30, color: "#f59e0b" },
+          { word: "오후", x: 65, y: 25, color: "#f59e0b" },
+          { word: "반차", x: 80, y: 60, color: "#10b981" },
+          { word: "퇴사", x: 82, y: 75, color: "#10b981" },
+          { word: "한숨", x: 40, y: 80, color: "#ef4444" },
+          { word: "피곤", x: 35, y: 85, color: "#ef4444" },
+        ];
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 font-medium">벡터 공간 — 단어가 숫자 좌표로 바뀌는 원리</p>
+            <p className="text-xs text-gray-500">의미가 비슷한 단어는 가까이, 다른 단어는 멀리 배치됩니다. 아래는 2D로 축소한 시각화입니다.</p>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <p className="text-[10px] font-mono text-gray-400 mb-2">2D 벡터 공간 (실제로는 768~12,288차원)</p>
+              <div className="relative w-full h-52 bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-100 overflow-hidden">
+                {vectorSpace.map((item, i) => (
+                  <button key={i} onClick={() => setSelectedWord(selectedWord === i ? null : i)}
+                    className={`absolute flex flex-col items-center gap-0.5 transition-all hover:scale-125 cursor-pointer ${selectedWord === i ? "scale-125 z-10" : ""}`}
+                    style={{ left: `${item.x}%`, top: `${item.y}%`, transform: "translate(-50%, -50%)" }}>
+                    <div className="w-3 h-3 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: item.color }} />
+                    <span className="text-[9px] font-medium text-gray-600">{item.word}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-2">
+                {[{ label: "인칭", color: "#3b82f6" }, { label: "시간", color: "#f59e0b" }, { label: "근무", color: "#10b981" }, { label: "감정", color: "#ef4444" }].map((c, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-gray-500">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />{c.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> "반차"와 "퇴사"가 가까이 있는 건 AI가 수억 문장에서 비슷한 맥락에 등장하는 것을 학습했기 때문입니다.</p>
+            </div>
+            <div className="p-3 bg-gray-100 rounded-lg">
+              <p className="text-xs text-gray-600"><strong>📊 수치:</strong> GPT-3 = 12,288차원, Claude ≈ 8,192차원. Word2Vec: vec("왕") - vec("남자") + vec("여자") ≈ vec("여왕").</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: "셀프 어텐션 딥다이브",
+      subtitle: "Q·K·V 멀티헤드",
+      icon: Eye,
+      content: () => {
+        const [activeHead, setActiveHead] = useState(0);
+        const tokens = ["저", "내일", "오후에", "한숨"];
+        const heads = [
+          { name: "Head 1: 시간 관계", matrix: [[0.1,0.3,0.5,0.1],[0.1,0.2,0.6,0.1],[0.1,0.7,0.1,0.1],[0.1,0.2,0.3,0.4]] },
+          { name: "Head 2: 감정 관계", matrix: [[0.2,0.1,0.1,0.6],[0.1,0.1,0.2,0.6],[0.1,0.1,0.3,0.5],[0.3,0.1,0.2,0.4]] },
+          { name: "Head 3: 주어-행위", matrix: [[0.4,0.1,0.4,0.1],[0.5,0.1,0.3,0.1],[0.6,0.1,0.2,0.1],[0.3,0.1,0.1,0.5]] },
+        ];
+        const head = heads[activeHead];
+        const heatColor = v => v >= 0.5 ? "#7c3aed" : v >= 0.3 ? "#a78bfa" : v >= 0.2 ? "#ddd6fe" : "#f5f3ff";
+        const textColor = v => v >= 0.3 ? "#ffffff" : "#6b7280";
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 font-medium">Q·K·V와 멀티헤드 어텐션 — 부장님의 다중 관점</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[{ name: "Q (Query)", desc: "알고 싶은 것", c: "#2563eb" }, { name: "K (Key)", desc: "정보 태그", c: "#059669" }, { name: "V (Value)", desc: "실제 정보", c: "#d97706" }].map((item, i) => (
+                <div key={i} className="p-2.5 rounded-lg" style={{ background: item.c + "10", border: `1px solid ${item.c}30` }}>
+                  <p className="text-[10px] font-bold" style={{ color: item.c }}>{item.name}</p>
+                  <p className="text-[10px] text-gray-500">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1.5">
+              {heads.map((h, i) => (
+                <button key={i} onClick={() => setActiveHead(i)} className={`px-3 py-1.5 text-[10px] font-medium rounded-lg transition-all ${i === activeHead ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"}`}>Head {i+1}</button>
+              ))}
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 overflow-x-auto">
+              <p className="text-xs font-medium text-gray-700 mb-2">{head.name}</p>
+              <table className="w-full">
+                <thead><tr><th className="text-[9px] text-gray-400 p-1">Q↓ K→</th>{tokens.map((t, i) => <th key={i} className="text-[10px] font-mono font-semibold text-gray-600 p-1">{t}</th>)}</tr></thead>
+                <tbody>{tokens.map((t, i) => (
+                  <tr key={i}><td className="text-[10px] font-mono font-semibold text-gray-600 p-1">{t}</td>
+                  {head.matrix[i].map((v, j) => (
+                    <td key={j} className="p-0.5"><span className="inline-block w-full px-1 py-1 rounded text-[10px] font-mono font-bold text-center" style={{ background: heatColor(v), color: textColor(v) }}>{v.toFixed(2)}</span></td>
+                  ))}</tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800"><strong>왜 멀티헤드?</strong> GPT-4는 128개 헤드가 각각 다른 관계를 포착합니다. 시간, 감정, 문법을 동시에 분석합니다.</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Temperature 실험실",
+      subtitle: "확률 분포 조절기",
+      icon: SlidersHorizontal,
+      content: () => {
+        const [temperature, setTemperature] = useState(1.0);
+        const rawLogits = [3.2, 1.5, -0.5, -1.8, 0.3];
+        const labels = ["반차", "외근", "야근", "퇴사", "회의"];
+        const scaled = rawLogits.map(l => l / Math.max(temperature, 0.01));
+        const maxVal = Math.max(...scaled);
+        const exps = scaled.map(s => Math.exp(s - maxVal));
+        const sum = exps.reduce((a, b) => a + b, 0);
+        const probs = exps.map(e => e / sum);
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700 font-medium">Temperature — 부장님의 직감 조절기</p>
+            <p className="text-xs text-gray-500">Temperature를 직접 움직여 확률 분포가 어떻게 바뀌는지 체험해보세요.</p>
+            <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-gray-700 w-24">Temperature:</span>
+                <input type="range" min="0.1" max="2.0" step="0.1" value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  className="flex-1" style={{ accentColor: t.accent }} />
+                <span className="text-sm font-mono font-bold w-8 text-right">{temperature.toFixed(1)}</span>
+              </div>
+              <div className="space-y-2">
+                {labels.map((label, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-[10px] font-medium text-gray-600 w-10">{label}</span>
+                    <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(probs[i] * 100, 1)}%`, background: probs[i] > 0.4 ? t.accent : probs[i] > 0.15 ? "#818cf8" : "#cbd5e1" }} />
+                    </div>
+                    <span className="text-[10px] font-mono font-bold w-12 text-right">{(probs[i] * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  {temperature < 0.5 ? "🧊 매우 확신 — \"무조건 반차!\" 다른 가능성은 거의 무시" : temperature <= 1.2 ? "⚖️ 합리적 — \"반차가 유력하지만 외근일 수도...\"" : "🔥 열린 마음 — \"반차? 외근? 회의? 다 가능해!\""}
+                </p>
+              </div>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800"><strong>실무:</strong> 코드 생성 T=0.2, 글쓰기 T=0.8~1.2, 브레인스토밍 T=1.5+. "같은 질문에 다른 답"이 나오는 이유입니다.</p>
+            </div>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const [step, setStep] = useState(0);
+  const CurrentContent = deepDiveTopics[step].content;
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Cpu size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>DEEP DIVE</p>
+            <h2 className="text-lg font-black text-slate-800">동작원리 딥다이브</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">부장님 비유 뒤에 숨겨진 실제 기술을 깊이 있게 탐구합니다.</p>
+
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {deepDiveTopics.map((s, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === step ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            {(() => { const Icon = deepDiveTopics[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+            <div>
+              <h3 className="font-semibold text-gray-900">{deepDiveTopics[step].title}</h3>
+              <p className="text-xs text-gray-400">{deepDiveTopics[step].subtitle}</p>
+            </div>
+          </div>
+          <CurrentContent />
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            <ArrowLeft size={14} /> 이전
+          </button>
+          <span className="text-xs text-gray-400 self-center">{step + 1} / {deepDiveTopics.length}</span>
+          <button onClick={() => setStep(Math.min(deepDiveTopics.length - 1, step + 1))} disabled={step === deepDiveTopics.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            다음 <ArrowRight size={14} />
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ─── TAB 6: Transformer Architecture (Course 3) ──────
 const Tab6 = ({ onScore }) => {
   const t = T.expert;
@@ -2791,7 +3245,7 @@ const courses = [
     icon: Zap,
     color: { accent: "#0284c7", dim: "rgba(2,132,199,0.08)", border: "rgba(2,132,199,0.2)", grad: "linear-gradient(135deg,#0369a1,#38bdf8)" },
     chapters: [
-      { id: "how-deep", label: "동작원리 딥다이브", icon: Cpu, component: Tab2, themeKey: "how" },
+      { id: "how-deep", label: "동작원리 딥다이브", icon: Cpu, component: Tab2Deep, themeKey: "how" },
       { id: "apply", label: "AI 실무적용", icon: Zap, component: Tab3, themeKey: "apply" },
     ],
   },
