@@ -9,8 +9,10 @@ import {
   ThumbsUp, ThumbsDown, Eye, Network, RefreshCw,
   MessageSquare, Bot, Globe, Send, Blocks,
   CircuitBoard, Binary, Trophy, Flame, Star, Award, Lock, X,
-  ChevronDown, Layers, SlidersHorizontal
+  ChevronDown, Layers, SlidersHorizontal, Settings, BarChart3,
+  Users, LogOut, KeyRound
 } from "lucide-react";
+import { verifyAdmin, getStudyStats, saveQuizResult } from "@/lib/supabase";
 
 // ─── Design Tokens ────────────────────────────────────
 const T = {
@@ -3265,11 +3267,154 @@ const courses = [
 
 // ─── MAIN APP ──────────────────────────────────────────
 
+// ─── ADMIN DASHBOARD COMPONENT ─────────────────────────
+const AdminDashboard = ({ onClose }) => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getStudyStats().then(data => { setStats(data); setLoading(false); });
+  }, []);
+
+  if (loading) return (
+    <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-8 text-center" onClick={e => e.stopPropagation()}>
+        <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-3" />
+        <p className="text-sm text-gray-500">통계 로딩 중...</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[200] overflow-y-auto" onClick={onClose}>
+      <div className="max-w-2xl mx-auto my-8 bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-5 bg-gray-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 size={20} />
+            <div>
+              <h2 className="text-base font-bold">관리자 대시보드</h2>
+              <p className="text-xs text-gray-400">AI 교육 학습 통계</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} /></button>
+        </div>
+
+        <div className="p-5 space-y-6">
+          {/* Summary cards */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 text-center">
+              <p className="text-2xl font-black text-blue-700">{stats.totalAttempts}</p>
+              <p className="text-[10px] text-blue-500 font-medium">총 응시 수</p>
+            </div>
+            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
+              <p className="text-2xl font-black text-emerald-700">{stats.uniqueUsers}</p>
+              <p className="text-[10px] text-emerald-500 font-medium">참여자 수</p>
+            </div>
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-center">
+              <p className="text-2xl font-black text-amber-700">{stats.avgCorrectRate}%</p>
+              <p className="text-[10px] text-amber-500 font-medium">평균 정답률</p>
+            </div>
+          </div>
+
+          {/* 7-day activity */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <TrendingUp size={14} /> 최근 7일 활동
+            </h3>
+            <div className="flex items-end gap-1 h-24">
+              {stats.recentActivity.map((day, i) => {
+                const maxAttempts = Math.max(...stats.recentActivity.map(d => d.attempts), 1);
+                const height = Math.max((day.attempts / maxAttempts) * 100, 4);
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[8px] font-mono text-gray-500">{day.attempts}</span>
+                    <div className="w-full rounded-t-md transition-all duration-500"
+                      style={{ height: `${height}%`, background: day.attempts > 0 ? "linear-gradient(to top, #6d28d9, #a78bfa)" : "#e2e8f0" }} />
+                    <span className="text-[8px] text-gray-400">{day.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Hardest questions */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <AlertTriangle size={14} className="text-red-500" /> 가장 많이 틀리는 문제 TOP 10
+            </h3>
+            {stats.hardestQuestions.length === 0 ? (
+              <p className="text-xs text-gray-400 p-4 bg-gray-50 rounded-xl text-center">아직 데이터가 없습니다. 사용자들이 퀴즈를 풀면 여기에 통계가 표시됩니다.</p>
+            ) : (
+              <div className="space-y-2">
+                {stats.hardestQuestions.map((q, i) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-700 font-medium">{q.text}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{q.chapter} · {q.total}회 응시</p>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-[10px] font-bold ${q.wrongRate >= 70 ? "bg-red-100 text-red-700" : q.wrongRate >= 40 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        오답 {q.wrongRate}%
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${q.wrongRate}%`, background: q.wrongRate >= 70 ? "#ef4444" : q.wrongRate >= 40 ? "#f59e0b" : "#10b981" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="p-3 bg-gray-100 rounded-lg">
+            <p className="text-[10px] text-gray-500">💡 오답률이 높은 문제는 교육 자료 오류이거나, 설명이 부족한 부분일 수 있습니다. 확인 후 콘텐츠를 수정하세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [activeCourse, setActiveCourse] = useState("literacy");
   const [activeChapter, setActiveChapter] = useState(0);
   const [scores, setScores] = useState({});
   const [completedChapters, setCompletedChapters] = useState(new Set());
+
+  // Admin state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
+  const [adminError, setAdminError] = useState("");
+
+  // Check persisted admin session
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("ai_study_admin");
+      if (saved === "true") setIsAdmin(true);
+    }
+  }, []);
+
+  const handleAdminLogin = async () => {
+    setAdminError("");
+    const result = await verifyAdmin(adminCode);
+    if (result) {
+      setIsAdmin(true);
+      setShowAdminLogin(false);
+      setAdminCode("");
+      localStorage.setItem("ai_study_admin", "true");
+    } else {
+      setAdminError("관리자 코드가 올바르지 않습니다");
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    localStorage.removeItem("ai_study_admin");
+  };
 
   const handleScore = (tabId, score, total) => {
     setScores(p => ({ ...p, [tabId]: { score, total } }));
@@ -3290,8 +3435,9 @@ export default function App() {
     return { completed, total: c.chapters.length, done: completed === c.chapters.length };
   };
 
-  // Course unlock logic: course 2 requires 50%+ of course 1, course 3 requires course 2 done
+  // Course unlock logic: admin bypasses all locks
   const isCourseUnlocked = (courseId) => {
+    if (isAdmin) return true;
     if (courseId === "literacy") return true;
     if (courseId === "practitioner") {
       const c1 = getCourseCompletion("literacy");
@@ -3328,7 +3474,12 @@ export default function App() {
               <Brain size={18} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-black text-slate-800 tracking-tight">AI 교육 아카데미</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-black text-slate-800 tracking-tight">AI 교육 아카데미</h1>
+                {isAdmin && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">ADMIN</span>
+                )}
+              </div>
               <p className="text-xs text-slate-400">전력산업 종사자를 위한 단계별 AI 학습</p>
             </div>
             {totalScore > 0 && (
@@ -3439,6 +3590,69 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Admin floating button */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
+        {isAdmin && (
+          <>
+            <button onClick={() => setShowAdminDashboard(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl shadow-lg hover:bg-gray-800 transition-all">
+              <BarChart3 size={14} /> 학습 통계
+            </button>
+            <button onClick={handleAdminLogout}
+              className="flex items-center gap-2 px-3 py-2 bg-white text-gray-500 text-xs font-medium rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-all">
+              <LogOut size={12} /> 관리자 로그아웃
+            </button>
+          </>
+        )}
+        {!isAdmin && (
+          <button onClick={() => setShowAdminLogin(true)}
+            className="w-10 h-10 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all"
+            title="관리자 로그인">
+            <KeyRound size={16} className="text-gray-400" />
+          </button>
+        )}
+      </div>
+
+      {/* Admin login modal */}
+      {showAdminLogin && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center" onClick={() => setShowAdminLogin(false)}>
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-2xl" onClick={e => e.stopPropagation()} style={{ animation: "fadeIn 0.3s ease-out" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
+                <Shield size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">관리자 로그인</h3>
+                <p className="text-[10px] text-gray-400">관리자 코드를 입력하세요</p>
+              </div>
+            </div>
+            <input
+              type="password"
+              value={adminCode}
+              onChange={e => { setAdminCode(e.target.value); setAdminError(""); }}
+              onKeyDown={e => e.key === "Enter" && handleAdminLogin()}
+              placeholder="관리자 코드"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 mb-3"
+              autoFocus
+            />
+            {adminError && <p className="text-xs text-red-500 mb-3">{adminError}</p>}
+            <div className="flex gap-2">
+              <button onClick={handleAdminLogin}
+                className="flex-1 px-4 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-all">
+                로그인
+              </button>
+              <button onClick={() => setShowAdminLogin(false)}
+                className="px-4 py-2.5 text-gray-500 text-sm rounded-xl hover:bg-gray-100 transition-all">
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin dashboard modal */}
+      {showAdminDashboard && <AdminDashboard onClose={() => setShowAdminDashboard(false)} />}
     </div>
   );
 }
