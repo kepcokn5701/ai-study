@@ -9,7 +9,7 @@ import {
   ThumbsUp, ThumbsDown, Eye, Network, RefreshCw,
   MessageSquare, Bot, Globe, Send, Blocks,
   CircuitBoard, Binary, Trophy, Flame, Star, Award, Lock, X,
-  ChevronDown, Layers, SlidersHorizontal, Settings, BarChart3,
+  ChevronDown, Layers, SlidersHorizontal, Settings, BarChart3, Workflow,
   Users, LogOut, KeyRound
 } from "lucide-react";
 import { verifyAdmin, getStudyStats, saveQuizResult, getProfileByNickname } from "@/lib/supabase";
@@ -2545,6 +2545,605 @@ const Tab5 = ({ onScore }) => {
   );
 };
 
+// ─── INDUSTRY CH2: AI가 문서를 읽는 법 (OCR + NLP) ────
+const IndustryCH2 = ({ onScore }) => {
+  const t = T.apply;
+  const [activeCase, setActiveCase] = useState(0);
+  const [ocrStep, setOcrStep] = useState(0);
+
+  const cases = [
+    {
+      company: "Duke Energy (미국)",
+      tech: "AI-OCR",
+      problem: "현장 작업지시서가 수기로 작성되어 본사 전달까지 수일 소요",
+      solution: "AI-OCR이 손글씨 양식을 자동 인식하여 디지털 데이터로 변환",
+      result: "처리 속도 50%+ 개선",
+      icon: FileText,
+    },
+    {
+      company: "National Grid (영국)",
+      tech: "NLP 문서 분류",
+      problem: "매년 수만 건의 규제 문서·안전보고서를 수작업 분류",
+      solution: "NLP가 문서 내용을 읽고 자동으로 카테고리 분류·핵심 키워드 추출",
+      result: "문서 처리 시간 70% 단축",
+      icon: Target,
+    },
+    {
+      company: "Enel (이탈리아)",
+      tech: "RPA + AI",
+      problem: "고객 청구서·계약서 처리에 대규모 인력 투입",
+      solution: "AI가 문서 내용을 판단 → RPA가 시스템에 자동 입력",
+      result: "연간 수백만 건 자동 처리",
+      icon: Workflow,
+    },
+  ];
+
+  const ocrSteps = [
+    { label: "원본 문서", desc: "수기 전기 사용 신청서가 접수됩니다", content: (
+      <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-200 font-mono text-sm space-y-2">
+        <p className="text-amber-800 font-bold text-xs mb-3">📋 전기사용 신청서 (수기)</p>
+        <div className="space-y-1.5 text-amber-900">
+          <p>신청인: <span className="underline decoration-wavy decoration-amber-400">김 영 호</span></p>
+          <p>주소: <span className="underline decoration-wavy decoration-amber-400">서울시 강남구 역삼동 123-4</span></p>
+          <p>계약종별: <span className="underline decoration-wavy decoration-amber-400">주택용 (저압)</span></p>
+          <p>신청전력: <span className="underline decoration-wavy decoration-amber-400">5 kW</span></p>
+          <p>신청일: <span className="underline decoration-wavy decoration-amber-400">2026. 4. 15.</span></p>
+        </div>
+      </div>
+    )},
+    { label: "OCR 인식", desc: "AI가 문자 영역을 탐지하고 텍스트로 변환합니다", content: (
+      <div className="p-4 bg-blue-50 rounded-xl border-2 border-blue-200 space-y-2">
+        <p className="text-blue-800 font-bold text-xs mb-3">🔍 OCR 텍스트 추출 결과</p>
+        <div className="space-y-1 font-mono text-xs">
+          {[
+            { field: "영역 1", text: "김 영 호", confidence: 94 },
+            { field: "영역 2", text: "서울시 강남구 역삼동 123-4", confidence: 91 },
+            { field: "영역 3", text: "주택용 (저압)", confidence: 97 },
+            { field: "영역 4", text: "5 kW", confidence: 99 },
+            { field: "영역 5", text: "2026. 4. 15.", confidence: 96 },
+          ].map((r, i) => (
+            <div key={i} className="flex items-center gap-2 p-1.5 bg-white rounded-lg">
+              <span className="text-blue-400 w-12">{r.field}</span>
+              <span className="text-blue-800 flex-1 font-semibold">{r.text}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${r.confidence >= 95 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{r.confidence}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )},
+    { label: "NLP 분류", desc: "자연어 처리로 각 텍스트가 어떤 필드인지 자동 매핑합니다", content: (
+      <div className="p-4 bg-purple-50 rounded-xl border-2 border-purple-200 space-y-2">
+        <p className="text-purple-800 font-bold text-xs mb-3">🧠 NLP 필드 매핑</p>
+        <div className="space-y-1.5">
+          {[
+            { raw: "김 영 호", field: "신청인명", type: "PERSON" },
+            { raw: "서울시 강남구 역삼동 123-4", field: "주소", type: "ADDRESS" },
+            { raw: "주택용 (저압)", field: "계약종별", type: "CONTRACT_TYPE" },
+            { raw: "5 kW", field: "신청전력", type: "POWER_VALUE" },
+            { raw: "2026. 4. 15.", field: "신청일", type: "DATE" },
+          ].map((r, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <span className="font-mono text-gray-500 w-36 truncate">"{r.raw}"</span>
+              <ArrowRight size={10} className="text-purple-300 shrink-0" />
+              <span className="font-bold text-purple-700">{r.field}</span>
+              <span className="text-[9px] px-1.5 py-0.5 bg-purple-200 text-purple-700 rounded-full">{r.type}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )},
+    { label: "자동 입력", desc: "구조화된 데이터가 업무 시스템에 자동 등록됩니다", content: (
+      <div className="p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200 space-y-2">
+        <p className="text-emerald-800 font-bold text-xs mb-3">✅ 시스템 자동 등록 완료</p>
+        <div className="bg-white rounded-lg border border-emerald-200 overflow-hidden">
+          <table className="w-full text-xs">
+            <tbody>
+              {[
+                ["신청인명", "김영호"], ["주소", "서울시 강남구 역삼동 123-4"],
+                ["계약종별", "주택용 (저압)"], ["신청전력", "5 kW"], ["신청일", "2026-04-15"],
+                ["상태", "✅ 접수 완료 — 자동 처리"],
+              ].map(([k, v], i) => (
+                <tr key={i} className={i % 2 ? "bg-emerald-50/50" : ""}>
+                  <td className="px-3 py-2 font-semibold text-gray-600 w-24">{k}</td>
+                  <td className="px-3 py-2 text-gray-800">{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[10px] text-emerald-600 text-center mt-2">기존 수작업 30분 → AI 자동 처리 2분</p>
+      </div>
+    )},
+  ];
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <FileText size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>OCR + NLP</p>
+            <h2 className="text-lg font-black text-slate-800">AI가 문서를 읽는 법</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">수기 양식, PDF, 보고서를 AI가 자동으로 읽고 분류하고 시스템에 입력하는 기술</p>
+
+        {/* Pain point */}
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.15)" }}>
+          <p className="text-sm text-orange-800 font-medium mb-1">왜 필요한가?</p>
+          <p className="text-xs text-orange-700">전력산업에서는 신청서, 점검보고서, 작업지시서 등 수기/PDF 문서가 아직도 많습니다. 사람이 읽고 입력하면 느리고 오류가 생깁니다. AI가 이 과정을 자동화합니다.</p>
+        </div>
+
+        {/* OCR simulation */}
+        <div className="mb-8">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">INTERACTIVE — 신청서 AI 자동 처리 시뮬레이션</p>
+          <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+            {ocrSteps.map((s, i) => (
+              <button key={i} onClick={() => setOcrStep(i)}
+                className={`shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === ocrStep ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+                style={i === ocrStep ? { background: t.accent } : {}}>
+                {i + 1}. {s.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mb-3">{ocrSteps[ocrStep].desc}</p>
+          <div style={{ animation: "fadeIn 0.4s ease-out" }} key={ocrStep}>
+            {ocrSteps[ocrStep].content}
+          </div>
+          <div className="flex justify-between mt-4">
+            <button onClick={() => setOcrStep(Math.max(0, ocrStep - 1))} disabled={ocrStep === 0} className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 disabled:opacity-30"><ArrowLeft size={12} />이전</button>
+            <button onClick={() => setOcrStep(Math.min(ocrSteps.length - 1, ocrStep + 1))} disabled={ocrStep >= ocrSteps.length - 1} className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 disabled:opacity-30">다음<ArrowRight size={12} /></button>
+          </div>
+        </div>
+
+        {/* Global cases */}
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">GLOBAL CASES — 해외 전력회사 도입 사례</p>
+        <div className="space-y-3">
+          {cases.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <button key={i} onClick={() => setActiveCase(activeCase === i ? -1 : i)}
+                className="w-full text-left p-4 rounded-xl border transition-all"
+                style={{ background: activeCase === i ? t.dim : "#f8fafc", borderColor: activeCase === i ? t.border : "rgba(0,0,0,0.07)" }}>
+                <div className="flex items-center gap-3">
+                  <Icon size={16} style={{ color: t.accent }} className="shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-gray-800">{c.company}</p>
+                    <p className="text-[10px] text-gray-500">{c.tech}</p>
+                  </div>
+                  <span className="px-2 py-1 rounded-full text-[10px] font-bold" style={{ background: t.dim, color: t.accent }}>{c.result}</span>
+                </div>
+                {activeCase === i && (
+                  <div className="mt-3 space-y-2" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                    <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>문제:</strong> {c.problem}</p></div>
+                    <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>솔루션:</strong> {c.solution}</p></div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── INDUSTRY CH3: AI가 이미지를 보는 법 (CV) ─────────
+const IndustryCH3 = ({ onScore }) => {
+  const t = T.apply;
+  const [inspecting, setInspecting] = useState(null);
+  const [answers, setAnswers] = useState({});
+  const [showResult, setShowResult] = useState(false);
+  const [activeCase, setActiveCase] = useState(-1);
+
+  const poles = [
+    { id: 1, label: "전주 A", status: "정상", hasDefect: false, features: "균열 없음, 기울기 0.5° 이내, 도장 양호" },
+    { id: 2, label: "전주 B", status: "기울어짐", hasDefect: true, features: "기울기 4.2° (기준 3° 초과), 기초부 침하 의심" },
+    { id: 3, label: "전주 C", status: "정상", hasDefect: false, features: "표면 경미한 오염, 구조 이상 없음" },
+    { id: 4, label: "전주 D", status: "균열", hasDefect: true, features: "상부 3m 지점 세로균열 15cm, 철근 노출" },
+  ];
+
+  const cases = [
+    { company: "TEPCO (일본)", tech: "드론 + CNN 이미지 인식", problem: "수만 기 전주를 사람이 직접 순시 — 시간/비용 과다", solution: "드론이 촬영 → CNN이 자동 결함 분류 (균열, 기울기, 부식)", result: "점검 시간 40% 단축" },
+    { company: "State Grid (중국)", tech: "딥러닝 영상 분석", problem: "100만km+ 송전선의 애자 균열/오손 탐지", solution: "고해상도 드론 영상을 AI가 실시간 분석, 결함 자동 마킹", result: "결함 검출률 95%+" },
+    { company: "Duke Energy (미국)", tech: "AI + LiDAR", problem: "배전선 주변 수목 접촉으로 정전 발생", solution: "LiDAR 3D 스캔 + AI가 위험 수목 성장 예측", result: "정전 건수 유의미 감소" },
+  ];
+
+  const handleJudge = (poleId, judgment) => {
+    setAnswers(p => ({ ...p, [poleId]: judgment }));
+  };
+
+  const checkResults = () => setShowResult(true);
+  const score = showResult ? poles.filter(p => answers[p.id] === p.hasDefect).length : 0;
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Eye size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>COMPUTER VISION</p>
+            <h2 className="text-lg font-black text-slate-800">AI가 이미지를 보는 법</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">드론 영상, 설비 사진에서 결함을 자동 탐지하는 컴퓨터 비전 기술</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.15)" }}>
+          <p className="text-sm text-orange-800 font-medium mb-1">왜 필요한가?</p>
+          <p className="text-xs text-orange-700">전주, 애자, 송전선 점검은 위험하고 시간이 많이 걸립니다. 드론이 촬영한 영상을 AI가 자동 분석하면, 사람보다 빠르고 일관되게 결함을 찾아냅니다.</p>
+        </div>
+
+        {/* Interactive: Pole inspection game */}
+        <div className="mb-8">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">INTERACTIVE — 전주 불량 판정 게임</p>
+          <p className="text-xs text-gray-500 mb-4">AI 점검관이 되어보세요! 4개 전주의 점검 데이터를 보고 불량 여부를 판정하세요.</p>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {poles.map(p => (
+              <div key={p.id} className="rounded-xl border-2 overflow-hidden transition-all"
+                style={{ borderColor: showResult ? (answers[p.id] === p.hasDefect ? "#10b981" : "#ef4444") : inspecting === p.id ? t.accent : "rgba(0,0,0,0.08)" }}>
+                {/* Pole visual */}
+                <div className="h-24 flex items-center justify-center relative"
+                  style={{ background: "linear-gradient(180deg, #dbeafe 0%, #93c5fd 50%, #6b7280 50%, #6b7280 100%)" }}>
+                  <div className={`w-3 bg-gray-500 rounded-t-sm ${p.hasDefect && p.status === "기울어짐" ? "rotate-[4deg]" : ""}`} style={{ height: "70px", position: "relative" }}>
+                    {p.hasDefect && p.status === "균열" && <div className="absolute top-3 left-0 w-full h-4 border-l-2 border-red-500 border-dashed" />}
+                  </div>
+                  {/* Wires */}
+                  <div className="absolute top-6 left-2 right-2 border-t border-gray-600" />
+                </div>
+                <div className="p-3 bg-white">
+                  <p className="text-xs font-bold text-gray-800 mb-1">{p.label}</p>
+                  <button onClick={() => setInspecting(inspecting === p.id ? null : p.id)}
+                    className="text-[10px] text-blue-600 underline mb-2">점검 데이터 보기</button>
+                  {inspecting === p.id && (
+                    <p className="text-[10px] text-gray-500 mb-2 p-2 bg-gray-50 rounded-lg" style={{ animation: "fadeIn 0.3s" }}>{p.features}</p>
+                  )}
+                  {!showResult ? (
+                    <div className="flex gap-1.5">
+                      <button onClick={() => handleJudge(p.id, false)}
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${answers[p.id] === false ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"}`}>정상</button>
+                      <button onClick={() => handleJudge(p.id, true)}
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${answers[p.id] === true ? "bg-red-500 text-white" : "bg-gray-100 text-gray-500"}`}>불량</button>
+                    </div>
+                  ) : (
+                    <div className={`text-center py-1.5 rounded-lg text-[10px] font-bold ${answers[p.id] === p.hasDefect ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                      {answers[p.id] === p.hasDefect ? "✅ 정답" : `❌ 오답 (실제: ${p.hasDefect ? "불량" : "정상"})`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!showResult ? (
+            <button onClick={checkResults} disabled={Object.keys(answers).length < 4}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-30"
+              style={{ background: t.accent }}>판정 결과 확인</button>
+          ) : (
+            <div className="p-4 rounded-xl text-center" style={{ background: score === 4 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)", border: `1px solid ${score === 4 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"}` }}>
+              <p className="text-lg font-black" style={{ color: score === 4 ? "#059669" : "#d97706" }}>{score}/4 정답</p>
+              <p className="text-xs text-gray-500 mt-1">{score === 4 ? "완벽한 AI 점검관입니다!" : "AI는 이 판정을 0.3초 만에, 정확도 95%로 수행합니다."}</p>
+              <button onClick={() => { setAnswers({}); setShowResult(false); setInspecting(null); }}
+                className="mt-3 px-4 py-2 text-xs text-gray-500 hover:text-gray-800"><RotateCcw size={12} className="inline mr-1" />다시 하기</button>
+            </div>
+          )}
+        </div>
+
+        {/* Global cases */}
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">GLOBAL CASES — 해외 전력회사 도입 사례</p>
+        <div className="space-y-3">
+          {cases.map((c, i) => (
+            <button key={i} onClick={() => setActiveCase(activeCase === i ? -1 : i)}
+              className="w-full text-left p-4 rounded-xl border transition-all"
+              style={{ background: activeCase === i ? t.dim : "#f8fafc", borderColor: activeCase === i ? t.border : "rgba(0,0,0,0.07)" }}>
+              <div className="flex items-center gap-3">
+                <Eye size={16} style={{ color: t.accent }} className="shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-gray-800">{c.company}</p>
+                  <p className="text-[10px] text-gray-500">{c.tech}</p>
+                </div>
+                <span className="px-2 py-1 rounded-full text-[10px] font-bold" style={{ background: t.dim, color: t.accent }}>{c.result}</span>
+              </div>
+              {activeCase === i && (
+                <div className="mt-3 space-y-2" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>문제:</strong> {c.problem}</p></div>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>솔루션:</strong> {c.solution}</p></div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── INDUSTRY CH4: AI가 미래를 예측하는 법 (시계열) ──────
+const IndustryCH4 = ({ onScore }) => {
+  const t = T.apply;
+  const [gameStarted, setGameStarted] = useState(false);
+  const [userPrediction, setUserPrediction] = useState(50);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [activeCase, setActiveCase] = useState(-1);
+
+  // Demand prediction game data
+  const conditions = [
+    { label: "기온", value: "35°C (폭염)", icon: "🌡️", impact: "높음 ↑" },
+    { label: "요일", value: "수요일 (평일)", icon: "📅", impact: "보통" },
+    { label: "시간대", value: "오후 2~3시", icon: "🕑", impact: "높음 ↑" },
+    { label: "특이사항", value: "월드컵 4강전 생중계", icon: "⚽", impact: "매우 높음 ↑↑" },
+  ];
+  const actualDemand = 82; // GW
+  const aiPrediction = 80.5;
+
+  const cases = [
+    { company: "National Grid (영국)", tech: "ML 수요예측 (기상+과거 데이터)", problem: "예비 전력을 너무 많이 확보하면 낭비, 적으면 정전 위험", solution: "기상, 과거 소비, 이벤트 데이터로 ML이 시간대별 부하 예측", result: "예측 정확도 98%+" },
+    { company: "Schneider Electric", tech: "EcoStruxure Power Advisor (DGA)", problem: "변압기 내부 고장을 조기에 발견하지 못해 대형사고 발생", solution: "유중가스(DGA) 농도 변화를 AI가 실시간 분석 → 고장 유형 예측", result: "비계획 정전 감소" },
+    { company: "Duke Energy (미국)", tech: "AI 변압기 건전성 모니터링", problem: "노후 변압기의 돌발 고장으로 수리비·정전 피해 막대", solution: "온도, 진동, 부하 이력 데이터로 고장 시점 예측", result: "유지보수 비용 절감" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <TrendingUp size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>TIME SERIES PREDICTION</p>
+            <h2 className="text-lg font-black text-slate-800">AI가 미래를 예측하는 법</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">부하 수요예측, 변압기 고장예측, DGA 분석 등 시계열 데이터 기반 AI 예측 기술</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.15)" }}>
+          <p className="text-sm text-orange-800 font-medium mb-1">왜 필요한가?</p>
+          <p className="text-xs text-orange-700">전력은 저장이 어렵기 때문에 수요를 정확히 예측해야 합니다. 예측이 틀리면 정전이나 과잉 발전으로 수십억 원의 손실이 발생합니다. AI는 수천 개 변수를 동시에 분석하여 사람보다 정확하게 예측합니다.</p>
+        </div>
+
+        {/* Interactive: Demand prediction game */}
+        <div className="mb-8">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">INTERACTIVE — 전력 수요 예측 게임</p>
+
+          {!gameStarted ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-gray-600 mb-4">주어진 조건을 보고 내일 최대 전력 수요를 예측해보세요!</p>
+              <button onClick={() => setGameStarted(true)} className="px-6 py-3 text-sm font-bold text-white rounded-xl" style={{ background: t.accent }}>
+                <Play size={14} className="inline mr-2" />예측 시작
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Condition cards */}
+              <div className="grid grid-cols-2 gap-2">
+                {conditions.map((c, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-white border border-gray-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">{c.icon}</span>
+                      <span className="text-[10px] text-gray-500">{c.label}</span>
+                    </div>
+                    <p className="text-xs font-bold text-gray-800">{c.value}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: t.accent }}>수요 영향: {c.impact}</p>
+                  </div>
+                ))}
+              </div>
+
+              {!showAnswer ? (
+                <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                  <p className="text-xs text-gray-600 font-medium">내일 오후 최대 전력 수요는? (단위: GW)</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">40</span>
+                    <input type="range" min="40" max="100" value={userPrediction}
+                      onChange={e => setUserPrediction(parseInt(e.target.value))}
+                      className="flex-1" style={{ accentColor: t.accent }} />
+                    <span className="text-xs text-gray-400">100</span>
+                  </div>
+                  <p className="text-center text-2xl font-black" style={{ color: t.accent }}>{userPrediction} GW</p>
+                  <button onClick={() => setShowAnswer(true)}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: t.accent }}>예측 제출</button>
+                </div>
+              ) : (
+                <div className="space-y-3" style={{ animation: "fadeIn 0.4s ease-out" }}>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 rounded-xl text-center" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+                      <p className="text-lg font-black" style={{ color: t.accent }}>{userPrediction}</p>
+                      <p className="text-[10px] text-gray-500">당신의 예측</p>
+                    </div>
+                    <div className="p-3 rounded-xl text-center bg-blue-50 border border-blue-200">
+                      <p className="text-lg font-black text-blue-700">{aiPrediction}</p>
+                      <p className="text-[10px] text-blue-500">AI 예측</p>
+                    </div>
+                    <div className="p-3 rounded-xl text-center bg-emerald-50 border border-emerald-200">
+                      <p className="text-lg font-black text-emerald-700">{actualDemand}</p>
+                      <p className="text-[10px] text-emerald-500">실제 수요</p>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                    <p className="text-xs text-gray-600">당신의 오차: <strong>{Math.abs(userPrediction - actualDemand).toFixed(1)} GW ({(Math.abs(userPrediction - actualDemand) / actualDemand * 100).toFixed(1)}%)</strong></p>
+                    <p className="text-xs text-gray-600">AI 오차: <strong>{Math.abs(aiPrediction - actualDemand).toFixed(1)} GW ({(Math.abs(aiPrediction - actualDemand) / actualDemand * 100).toFixed(1)}%)</strong></p>
+                    <p className="text-[10px] text-gray-500 mt-2">AI는 폭염 + 평일 오후 + 스포츠 이벤트까지 종합하여 과거 10년 데이터와 비교 분석합니다.</p>
+                  </div>
+                  <button onClick={() => { setShowAnswer(false); setGameStarted(false); setUserPrediction(50); }}
+                    className="flex items-center gap-1 px-4 py-2 text-xs text-gray-500 hover:text-gray-800"><RotateCcw size={12} />다시 하기</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Global cases */}
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">GLOBAL CASES — 해외 전력회사 도입 사례</p>
+        <div className="space-y-3">
+          {cases.map((c, i) => (
+            <button key={i} onClick={() => setActiveCase(activeCase === i ? -1 : i)}
+              className="w-full text-left p-4 rounded-xl border transition-all"
+              style={{ background: activeCase === i ? t.dim : "#f8fafc", borderColor: activeCase === i ? t.border : "rgba(0,0,0,0.07)" }}>
+              <div className="flex items-center gap-3">
+                <TrendingUp size={16} style={{ color: t.accent }} className="shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-gray-800">{c.company}</p>
+                  <p className="text-[10px] text-gray-500">{c.tech}</p>
+                </div>
+                <span className="px-2 py-1 rounded-full text-[10px] font-bold" style={{ background: t.dim, color: t.accent }}>{c.result}</span>
+              </div>
+              {activeCase === i && (
+                <div className="mt-3 space-y-2" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>문제:</strong> {c.problem}</p></div>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>솔루션:</strong> {c.solution}</p></div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── INDUSTRY CH5: AI가 시스템을 운영하는 법 (최적화) ────
+const IndustryCH5 = ({ onScore }) => {
+  const t = T.apply;
+  const [gridMode, setGridMode] = useState("manual");
+  const [solar, setSolar] = useState(30);
+  const [battery, setBattery] = useState(50);
+  const [demand, setDemand] = useState(70);
+  const [activeCase, setActiveCase] = useState(-1);
+
+  const supply = solar + (battery * 0.8);
+  const balance = supply - demand;
+  const aiSolar = Math.min(95, demand * 0.6);
+  const aiBattery = Math.max(0, Math.min(100, (demand - aiSolar) / 0.8));
+  const aiSupply = aiSolar + (aiBattery * 0.8);
+  const aiBalance = aiSupply - demand;
+
+  const cases = [
+    { company: "Schneider Electric", tech: "EcoStruxure Microgrid Advisor", problem: "마이크로그리드 내 태양광+배터리+디젤 발전을 수동으로 제어", solution: "AI가 기상 예측, 전력 가격, 배터리 수명을 종합하여 최적 운영 스케줄 자동 생성", result: "에너지 비용 30% 절감" },
+    { company: "Enel (이탈리아)", tech: "Grid Digital Twin", problem: "재생에너지 확대로 계통 안정성 관리가 복잡해짐", solution: "송배전망 전체를 디지털 트윈으로 복제, AI가 시나리오별 영향 시뮬레이션", result: "재생에너지 계통 안정성 향상" },
+    { company: "TEPCO (일본)", tech: "AI + SCADA 데이터 분석", problem: "변전소 오경보가 빈번하여 운전원이 실제 이상을 놓칠 위험", solution: "SCADA 데이터를 AI가 패턴 분석하여 진짜 이상만 필터링", result: "오경보 감소, 이상징후 조기 탐지" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Settings size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>OPTIMIZATION & SIMULATION</p>
+            <h2 className="text-lg font-black text-slate-800">AI가 시스템을 운영하는 법</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">스마트미터링, 마이크로그리드 최적화, SCADA 디지털트윈 등 AI 기반 시스템 운영</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.15)" }}>
+          <p className="text-sm text-orange-800 font-medium mb-1">왜 필요한가?</p>
+          <p className="text-xs text-orange-700">재생에너지 비중이 높아지면서 전력 공급이 불안정해집니다. AI가 실시간으로 발전-저장-소비를 최적 배분하여 안정성과 비용을 동시에 잡습니다.</p>
+        </div>
+
+        {/* Interactive: Microgrid optimizer */}
+        <div className="mb-8">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">INTERACTIVE — 마이크로그리드 최적화 대결</p>
+          <p className="text-xs text-gray-500 mb-4">태양광과 배터리를 조절하여 수요에 딱 맞게 전력을 공급해보세요. AI와 비교합니다!</p>
+
+          <div className="flex gap-2 mb-4">
+            {["manual", "ai"].map(mode => (
+              <button key={mode} onClick={() => setGridMode(mode)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${gridMode === mode ? "text-white" : "bg-gray-100 text-gray-500"}`}
+                style={gridMode === mode ? { background: t.accent } : {}}>
+                {mode === "manual" ? "🎮 수동 제어" : "🤖 AI 자동"}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            {/* Demand (fixed) */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-600 w-20 font-medium">⚡ 수요</span>
+              <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-red-500" style={{ width: `${demand}%` }} />
+              </div>
+              <span className="text-xs font-mono font-bold w-12 text-right">{demand} kW</span>
+            </div>
+
+            {gridMode === "manual" ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 w-20 font-medium">☀️ 태양광</span>
+                  <input type="range" min="0" max="95" value={solar} onChange={e => setSolar(parseInt(e.target.value))} className="flex-1" style={{ accentColor: "#f59e0b" }} />
+                  <span className="text-xs font-mono font-bold w-12 text-right">{solar} kW</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 w-20 font-medium">🔋 배터리</span>
+                  <input type="range" min="0" max="100" value={battery} onChange={e => setBattery(parseInt(e.target.value))} className="flex-1" style={{ accentColor: "#10b981" }} />
+                  <span className="text-xs font-mono font-bold w-12 text-right">{battery}%</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 w-20 font-medium">☀️ 태양광</span>
+                  <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full bg-amber-500 transition-all duration-700" style={{ width: `${aiSolar}%` }} /></div>
+                  <span className="text-xs font-mono font-bold w-12 text-right">{Math.round(aiSolar)} kW</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 w-20 font-medium">🔋 배터리</span>
+                  <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${aiBattery}%` }} /></div>
+                  <span className="text-xs font-mono font-bold w-12 text-right">{Math.round(aiBattery)}%</span>
+                </div>
+              </>
+            )}
+
+            {/* Balance result */}
+            <div className={`p-3 rounded-xl text-center ${gridMode === "manual" ? (Math.abs(balance) <= 5 ? "bg-emerald-50 border border-emerald-200" : balance > 0 ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200") : "bg-blue-50 border border-blue-200"}`}>
+              {gridMode === "manual" ? (
+                <>
+                  <p className="text-xs text-gray-600">공급 {Math.round(supply)} kW - 수요 {demand} kW = <span className={`font-bold ${Math.abs(balance) <= 5 ? "text-emerald-700" : balance > 0 ? "text-amber-700" : "text-red-700"}`}>{balance > 0 ? "+" : ""}{Math.round(balance)} kW</span></p>
+                  <p className="text-[10px] text-gray-500 mt-1">{Math.abs(balance) <= 5 ? "✅ 최적! 수급 균형" : balance > 0 ? "⚠️ 과잉 공급 — 전력 낭비" : "🚨 공급 부족 — 정전 위험!"}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-blue-700 font-medium">AI 최적 제어: 공급 {Math.round(aiSupply)} kW - 수요 {demand} kW = {aiBalance > 0 ? "+" : ""}{Math.round(aiBalance)} kW</p>
+                  <p className="text-[10px] text-blue-500 mt-1">기상 예측 + 배터리 수명 + 전력 단가를 종합 계산하여 최소 비용으로 수급 균형 달성</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Global cases */}
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-4">GLOBAL CASES — 해외 전력회사 도입 사례</p>
+        <div className="space-y-3">
+          {cases.map((c, i) => (
+            <button key={i} onClick={() => setActiveCase(activeCase === i ? -1 : i)}
+              className="w-full text-left p-4 rounded-xl border transition-all"
+              style={{ background: activeCase === i ? t.dim : "#f8fafc", borderColor: activeCase === i ? t.border : "rgba(0,0,0,0.07)" }}>
+              <div className="flex items-center gap-3">
+                <Settings size={16} style={{ color: t.accent }} className="shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-gray-800">{c.company}</p>
+                  <p className="text-[10px] text-gray-500">{c.tech}</p>
+                </div>
+                <span className="px-2 py-1 rounded-full text-[10px] font-bold" style={{ background: t.dim, color: t.accent }}>{c.result}</span>
+              </div>
+              {activeCase === i && (
+                <div className="mt-3 space-y-2" style={{ animation: "fadeIn 0.3s ease-out" }}>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>문제:</strong> {c.problem}</p></div>
+                  <div className="p-3 bg-white rounded-lg"><p className="text-xs text-gray-600"><strong>솔루션:</strong> {c.solution}</p></div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ─── TAB 2 DEEP: Deep Dive Only (Course 2) ───────────
 const Tab2Deep = ({ onScore }) => {
   const t = T.how;
@@ -3248,7 +3847,11 @@ const courses = [
     color: { accent: "#0284c7", dim: "rgba(2,132,199,0.08)", border: "rgba(2,132,199,0.2)", grad: "linear-gradient(135deg,#0369a1,#38bdf8)" },
     chapters: [
       { id: "how-deep", label: "동작원리 딥다이브", icon: Cpu, component: Tab2Deep, themeKey: "how" },
-      { id: "apply", label: "AI 실무적용", icon: Zap, component: Tab3, themeKey: "apply" },
+      { id: "ind-ocr", label: "AI가 문서를 읽는 법", icon: FileText, component: IndustryCH2, themeKey: "apply" },
+      { id: "ind-cv", label: "AI가 이미지를 보는 법", icon: Eye, component: IndustryCH3, themeKey: "apply" },
+      { id: "ind-predict", label: "AI가 미래를 예측하는 법", icon: TrendingUp, component: IndustryCH4, themeKey: "apply" },
+      { id: "ind-optimize", label: "AI가 시스템을 운영하는 법", icon: Settings, component: IndustryCH5, themeKey: "apply" },
+      { id: "apply", label: "AI 실무적용 종합", icon: Zap, component: Tab3, themeKey: "apply" },
     ],
   },
   {
