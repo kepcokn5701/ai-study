@@ -3774,6 +3774,7 @@ const Tab6 = ({ onScore }) => {
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>TRANSFORMER ARCHITECTURE</p>
+            <p className="text-[9px] text-gray-400 font-mono">변환기 구조 — 어텐션만으로 언어를 처리하는 현대 AI의 기반</p>
             <h2 className="text-lg font-black text-slate-800">트랜스포머 해부학</h2>
           </div>
         </div>
@@ -4361,6 +4362,7 @@ const Tab7 = ({ onScore }) => {
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>CNN — CONVOLUTIONAL NEURAL NETWORK</p>
+            <p className="text-[9px] text-gray-400 font-mono">합성곱 신경망 — 이미지 인식에 특화된 딥러닝 구조</p>
             <h2 className="text-lg font-black text-slate-800">"본다"는 것의 원리</h2>
           </div>
         </div>
@@ -4407,7 +4409,7 @@ const Tab7 = ({ onScore }) => {
 const Tab8 = ({ onScore }) => {
   const t = T.expert;
   const [modelType, setModelType] = useState("rnn");
-  const [timeStep, setTimeStep] = useState(0);
+  const [timeStep, setTimeStep] = useState(9);
 
   const data = [65, 70, 68, 72, 78, 85, 92, 88, 82, 75];
   const labels = ["6시", "8시", "10시", "12시", "14시", "16시", "18시", "20시", "22시", "24시"];
@@ -4415,27 +4417,33 @@ const Tab8 = ({ onScore }) => {
   const models = {
     rnn: {
       name: "단순 RNN",
+      fullName: "Recurrent Neural Network (순환 신경망)",
       icon: "📝",
       metaphor: "포스트잇 1장",
       desc: "직전 정보만 기억. 오래된 정보는 잊어버림",
+      detail: "출력을 다시 입력으로 순환(Recurrent)시키는 구조입니다. '지금'의 출력이 '다음'의 입력에 영향을 주므로 순서가 있는 데이터를 처리할 수 있지만, 순환이 길어지면 앞쪽 정보가 희미해집니다 (기울기 소실).",
       memory: 2,
       predictions: [65, 68, 67, 70, 74, 80, 90, 86, 80, 73],
       weakness: "어제 같은 시간대 수요? 기억 못 합니다 (기울기 소실)"
     },
     lstm: {
       name: "LSTM",
+      fullName: "Long Short-Term Memory (장단기 기억)",
       icon: "📓",
       metaphor: "메모장 + 지우개 + 형광펜",
       desc: "중요한 건 형광펜, 불필요한 건 지우개. 선택적 기억",
+      detail: "이름 그대로 '장기(Long-Term)와 단기(Short-Term) 기억을 모두' 유지합니다. Forget Gate(지우개)가 불필요한 과거를 삭제하고, Input Gate(형광펜)가 중요한 새 정보를 저장하며, Output Gate가 현재 필요한 기억만 꺼내 씁니다.",
       memory: 6,
       predictions: [65, 69, 68, 71, 77, 84, 91, 87, 81, 74],
       weakness: "장기 기억 가능하지만 순차 처리라 느림"
     },
     transformer: {
       name: "Transformer",
+      fullName: "Transformer (변환기 — 어텐션 기반 구조)",
       icon: "📚",
       metaphor: "모든 페이지를 동시에 펼침",
       desc: "과거 전체를 한 번에 참조. 병렬 처리로 빠름",
+      detail: "순차 처리를 완전히 버리고, Self-Attention으로 모든 위치를 한 번에 참조합니다. 'Attention Is All You Need' 논문에서 탄생. 병렬 처리가 가능해 GPU 활용 효율이 극대화되며, GPT/BERT/Claude 모두 이 구조입니다.",
       memory: 10,
       predictions: [65, 70, 68, 72, 78, 85, 92, 88, 82, 75],
       weakness: "메모리 사용량이 크고 비용이 높음"
@@ -4480,37 +4488,42 @@ const Tab8 = ({ onScore }) => {
         {/* Model description */}
         <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-sm text-purple-800 font-medium">{model.icon} {model.name} — "{model.metaphor}"</p>
-          <p className="text-xs text-purple-600 mt-1">{model.desc}</p>
+          <p className="text-[10px] text-purple-500 mt-0.5 font-mono">{model.fullName}</p>
+          <p className="text-xs text-purple-600 mt-2">{model.desc}</p>
+          <p className="text-xs text-gray-600 mt-2 leading-relaxed">{model.detail}</p>
         </div>
 
         {/* Prediction comparison chart */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">전력 수요 예측 비교</p>
 
-          <div className="flex items-end gap-1 h-40">
-            {data.map((actual, i) => {
-              const pred = model.predictions[i];
-              const visible = i <= timeStep;
-              const actualH = (actual / maxVal) * 100;
-              const predH = (pred / maxVal) * 100;
-              const error = Math.abs(actual - pred);
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-0.5 relative">
-                  {visible && (
-                    <>
-                      {/* Error indicator */}
-                      {error > 2 && <span className="text-[7px] font-mono text-red-500 absolute -top-3">-{error}</span>}
-                      {/* Actual bar */}
-                      <div className="w-full flex gap-0.5 items-end" style={{ height: "100%" }}>
-                        <div className="flex-1 rounded-t-sm bg-gray-300 transition-all duration-500" style={{ height: `${actualH}%` }} />
-                        <div className="flex-1 rounded-t-sm transition-all duration-500" style={{ height: `${predH}%`, background: error <= 2 ? "#a855f7" : error <= 5 ? "#f59e0b" : "#ef4444" }} />
-                      </div>
-                    </>
-                  )}
-                  <span className="text-[7px] text-gray-400 mt-0.5">{labels[i]}</span>
-                </div>
-              );
-            })}
+          <div className="relative" style={{ height: "160px" }}>
+            <div className="absolute inset-0 flex items-end gap-1">
+              {data.map((actual, i) => {
+                const pred = model.predictions[i];
+                const visible = i <= timeStep;
+                const actualH = (actual / maxVal) * 100;
+                const predH = (pred / maxVal) * 100;
+                const error = Math.abs(actual - pred);
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center" style={{ height: "100%" }}>
+                    {/* Bar area */}
+                    <div className="flex-1 w-full flex items-end justify-center gap-0.5 relative">
+                      {visible ? (
+                        <>
+                          {error > 2 && <span className="text-[7px] font-mono text-red-500 absolute -top-1 left-1/2 -translate-x-1/2">-{error}</span>}
+                          <div className="w-[40%] rounded-t-sm bg-gray-300 transition-all duration-500" style={{ height: `${actualH}%` }} />
+                          <div className="w-[40%] rounded-t-sm transition-all duration-500" style={{ height: `${predH}%`, background: error <= 2 ? "#a855f7" : error <= 5 ? "#f59e0b" : "#ef4444" }} />
+                        </>
+                      ) : (
+                        <div className="w-[80%] h-1 rounded-sm bg-gray-100" />
+                      )}
+                    </div>
+                    <span className="text-[7px] text-gray-400 mt-1 shrink-0">{labels[i]}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Legend */}
@@ -4681,6 +4694,7 @@ const Tab9 = ({ onScore }) => {
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>REINFORCEMENT LEARNING</p>
+            <p className="text-[9px] text-gray-400 font-mono">강화학습 — 시행착오를 통해 최적 전략을 스스로 찾아내는 학습 방식</p>
             <h2 className="text-lg font-black text-slate-800">스스로 배우는 AI</h2>
           </div>
         </div>
