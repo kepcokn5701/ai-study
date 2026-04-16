@@ -3826,6 +3826,27 @@ const Tab6 = ({ onScore }) => {
 };
 
 // ─── TAB 10: AI 혁명의 순간들 (Course 3 Intro) ─────────
+const QuickQuiz = ({ quiz }) => {
+  const [picked, setPicked] = useState(null);
+  return (
+    <div className="p-3 bg-gray-50 rounded-lg">
+      <p className="text-xs font-bold text-gray-700 mb-2">⚡ 퀵 퀴즈: {quiz.q}</p>
+      <div className="flex gap-1.5 flex-wrap">
+        {quiz.opts.map((opt, oi) => (
+          <button key={oi} onClick={() => setPicked(oi)}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-all ${picked === null ? "border-gray-200 hover:border-gray-300 text-gray-600" : oi === quiz.a ? "border-emerald-400 bg-emerald-50 text-emerald-700 font-bold" : picked === oi ? "border-red-300 bg-red-50 text-red-600" : "border-gray-100 text-gray-400"}`}
+            disabled={picked !== null}>{opt}</button>
+        ))}
+      </div>
+      {picked !== null && (
+        <p className="text-[10px] mt-2" style={{ color: picked === quiz.a ? "#059669" : "#dc2626" }}>
+          {picked === quiz.a ? "✅ 정답!" : `❌ 정답: ${quiz.opts[quiz.a]}`}
+        </p>
+      )}
+    </div>
+  );
+};
+
 const Tab10 = ({ onScore }) => {
   const t = T.expert;
   const [activeEvent, setActiveEvent] = useState(null);
@@ -3975,26 +3996,7 @@ const Tab10 = ({ onScore }) => {
                       </div>
 
                       {/* Mini quiz */}
-                      {(() => {
-                        const [picked, setPicked] = useState(null);
-                        return (
-                          <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs font-bold text-gray-700 mb-2">⚡ 퀵 퀴즈: {evt.quiz.q}</p>
-                            <div className="flex gap-1.5 flex-wrap">
-                              {evt.quiz.opts.map((opt, oi) => (
-                                <button key={oi} onClick={() => setPicked(oi)}
-                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-all ${picked === null ? "border-gray-200 hover:border-gray-300 text-gray-600" : oi === evt.quiz.a ? "border-emerald-400 bg-emerald-50 text-emerald-700 font-bold" : picked === oi ? "border-red-300 bg-red-50 text-red-600" : "border-gray-100 text-gray-400"}`}
-                                  disabled={picked !== null}>{opt}</button>
-                              ))}
-                            </div>
-                            {picked !== null && (
-                              <p className="text-[10px] mt-2" style={{ color: picked === evt.quiz.a ? "#059669" : "#dc2626" }}>
-                                {picked === evt.quiz.a ? "✅ 정답!" : `❌ 정답: ${evt.quiz.opts[evt.quiz.a]}`}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      <QuickQuiz quiz={evt.quiz} key={`quiz-${i}`} />
                     </div>
                   )}
                 </div>
