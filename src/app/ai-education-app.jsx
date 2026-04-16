@@ -4040,10 +4040,121 @@ const Tab7 = ({ onScore }) => {
     </div>
   );
 
+  const CNNStep4 = () => {
+    const [customFilter, setCustomFilter] = useState([0,0,0, 0,0,0, 0,0,0]);
+    const presets = [
+      { name: "세로 엣지", values: [-1,0,1,-1,0,1,-1,0,1] },
+      { name: "가로 엣지", values: [-1,-1,-1,0,0,0,1,1,1] },
+      { name: "샤프닝", values: [0,-1,0,-1,5,-1,0,-1,0] },
+      { name: "블러", values: [1,1,1,1,1,1,1,1,1] },
+    ];
+    const testImg = [[20,20,80,80,80],[20,20,80,80,80],[20,20,80,80,80],[20,20,80,80,80],[20,20,80,80,80]];
+    const computeOutput = () => {
+      const res = [];
+      for (let r = 0; r <= 2; r++) { const row = []; for (let c2 = 0; c2 <= 2; c2++) { let s = 0; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += (testImg[r+i]?.[c2+j]||0)*customFilter[i*3+j]; row.push(Math.abs(Math.round(s))); } res.push(row); }
+      return res;
+    };
+    const output = computeOutput();
+    const maxOut = Math.max(...output.flat(), 1);
+    return (
+      <div className="space-y-5">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">나만의 후레시 만들기</p>
+          <p className="text-xs text-purple-600">필터 값을 직접 설정하고, 이미지에 적용 결과를 실험해보세요. 프리셋을 먼저 눌러보고, 값을 바꿔보세요.</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">나만의 필터 실험실</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {presets.map((p, i) => (
+              <button key={i} onClick={() => setCustomFilter([...p.values])} className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100">{p.name}</button>
+            ))}
+            <button onClick={() => setCustomFilter([0,0,0,0,0,0,0,0,0])} className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">초기화</button>
+          </div>
+          <div className="flex gap-6 items-start flex-wrap justify-center">
+            <div>
+              <p className="text-[10px] text-gray-400 mb-2 text-center">🔦 내 필터 (클릭해서 수정)</p>
+              <div className="grid grid-cols-3 gap-0.5">
+                {customFilter.map((v, i) => (
+                  <button key={i} onClick={() => { const nf = [...customFilter]; nf[i] = nf[i] >= 1 ? -1 : nf[i]+1; setCustomFilter(nf); }}
+                    className="w-11 h-11 flex items-center justify-center text-sm font-mono font-bold rounded-sm cursor-pointer hover:scale-110 transition-all"
+                    style={{ background: v<0?"#fecaca":v>0?"#bbf7d0":"#f1f5f9", color: v<0?"#dc2626":v>0?"#16a34a":"#9ca3af" }}>
+                    {v>0?"+":""}{v}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[8px] text-gray-400 mt-1 text-center">클릭: -1 → 0 → +1 순환</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 mb-2 text-center">결과 (특징맵)</p>
+              <div className="grid grid-cols-3 gap-0.5">
+                {output.flat().map((v, i) => (
+                  <div key={i} className="w-11 h-11 flex items-center justify-center text-[9px] font-mono font-bold rounded-sm"
+                    style={{ background: `rgba(168,85,247,${Math.min(v/maxOut,1)})`, color: v/maxOut>0.5?"white":"#6b21a8" }}>{v}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-xs text-purple-800">💡 <strong>세로 엣지</strong>는 좌우 밝기 차이를, <strong>가로 엣지</strong>는 상하 차이를 감지합니다. <strong>샤프닝</strong>은 중앙을 강조, <strong>블러</strong>는 주변 평균으로 부드럽게. 실제 CNN은 이런 필터 수백 개를 학습으로 자동 생성합니다.</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CNNQuiz = () => {
+    const [answers, setAnswers] = useState({});
+    const [submitted, setSubmitted] = useState(false);
+    const questions = [
+      { id:"q1", q:"CNN에서 '합성곱(Convolution)'이란?", opts:["이미지 전체를 한 번에 분석하는 것","작은 필터를 이미지 위로 슬라이딩하며 패턴을 찾는 것","이미지를 축소하는 것","색상을 변환하는 것"], ans:1 },
+      { id:"q2", q:"레이어가 깊어질수록 CNN이 인식하는 것은?", opts:["점점 더 구체적인 픽셀 값","점점 더 추상적인 패턴 (선→윤곽→물체)","점점 더 작은 이미지","점점 더 많은 색상"], ans:1 },
+      { id:"q3", q:"Max Pooling의 역할은?", opts:["이미지 해상도를 높이는 것","필터 개수를 늘리는 것","핵심 특징을 유지하며 크기를 줄이는 것","색상을 흑백으로 변환하는 것"], ans:2 },
+      { id:"q4", q:"TEPCO가 전주 점검에 CNN을 사용하는 이유는?", opts:["사진을 예쁘게 보정하려고","드론 영상에서 균열/기울기 등 결함을 자동 탐지하려고","전주 개수를 세려고","전주 색상을 분류하려고"], ans:1 },
+    ];
+    const score = submitted ? questions.filter(q => answers[q.id] === q.ans).length : 0;
+    return (
+      <div className="space-y-5">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium">이해도 체크</p>
+          <p className="text-xs text-purple-600">CNN에 대해 얼마나 이해했는지 확인해보세요!</p>
+        </div>
+        <div className="space-y-4">
+          {questions.map((q, qi) => (
+            <div key={q.id} className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs font-bold text-gray-800 mb-3">Q{qi+1}. {q.q}</p>
+              <div className="space-y-1.5">
+                {q.opts.map((opt, oi) => {
+                  const sel = answers[q.id]===oi, correct = submitted&&oi===q.ans, wrong = submitted&&sel&&oi!==q.ans;
+                  return (
+                    <button key={oi} onClick={() => !submitted && setAnswers(p => ({...p,[q.id]:oi}))}
+                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all border ${correct?"bg-emerald-50 border-emerald-300 text-emerald-800 font-bold":wrong?"bg-red-50 border-red-300 text-red-800":sel?"border-purple-400 bg-purple-50 text-purple-800":"border-gray-100 hover:border-gray-200 text-gray-600"}`}
+                      disabled={submitted}>{opt}</button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        {!submitted ? (
+          <button onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length<questions.length}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{ background:"#a855f7" }}>제출하기</button>
+        ) : (
+          <div className="p-4 rounded-xl text-center" style={{ background: score===questions.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)" }}>
+            <p className="text-lg font-black" style={{ color: score===questions.length?"#059669":"#d97706" }}>{score}/{questions.length} 정답</p>
+            <p className="text-xs text-gray-500 mt-1">{score===questions.length?"CNN을 완벽히 이해했습니다!":"틀린 문제의 초록색 정답을 확인해보세요."}</p>
+            <button onClick={() => {setAnswers({});setSubmitted(false);}} className="mt-3 text-xs text-gray-500 hover:text-gray-800"><RotateCcw size={12} className="inline mr-1"/>다시 풀기</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const cnnSteps = [
     { title: "합성곱 연산", subtitle: "후레시로 비추기", icon: Eye, content: CNNStep1 },
     { title: "레이어별 추상화", subtitle: "점점 넓게 보기", icon: Layers, content: CNNStep2 },
     { title: "풀링", subtitle: "핵심만 남기기", icon: Target, content: CNNStep3 },
+    { title: "필터 실험실", subtitle: "직접 만들어보기", icon: SlidersHorizontal, content: CNNStep4 },
+    { title: "이해도 체크", subtitle: "퀴즈", icon: CheckCircle2, content: CNNQuiz },
   ];
 
   const StepContent = cnnSteps[step]?.content;
@@ -4232,6 +4343,101 @@ const Tab8 = ({ onScore }) => {
         <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
           <p className="text-xs text-amber-800"><strong>전력산업 적용:</strong> National Grid는 Transformer 기반 모델로 수요예측 정확도 98%+를 달성했습니다. 단순 RNN으로는 "어제 같은 시간" 패턴을 놓치지만, Transformer는 일주일 전, 작년 같은 날까지 한 번에 참조합니다.</p>
         </div>
+
+        {/* LSTM Gate Interactive */}
+        <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">LSTM 게이트 시각화 — 메모장의 비밀</p>
+          <p className="text-xs text-gray-500">LSTM은 3개의 게이트(문)로 기억을 관리합니다. 각 게이트를 토글해보세요.</p>
+
+          {(() => {
+            const [forget, setForget] = useState(false);
+            const [input, setInput] = useState(false);
+            const [output, setOutput] = useState(false);
+            const memory = ["어제 수요: 75GW", "그제 기온: 28°C", "지난주 피크: 82GW"];
+            const newInfo = "오늘 기온: 35°C (폭염)";
+            return (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <button onClick={() => setForget(!forget)} className={`p-3 rounded-xl border-2 text-center transition-all ${forget ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
+                    <p className="text-lg mb-1">🗑️</p>
+                    <p className="text-[10px] font-bold text-gray-800">Forget Gate</p>
+                    <p className="text-[9px] text-gray-500">불필요한 기억 삭제</p>
+                    <p className="text-[8px] mt-1 font-bold" style={{ color: forget ? "#dc2626" : "#9ca3af" }}>{forget ? "ON — 지우는 중" : "OFF"}</p>
+                  </button>
+                  <button onClick={() => setInput(!input)} className={`p-3 rounded-xl border-2 text-center transition-all ${input ? "border-emerald-400 bg-emerald-50" : "border-gray-200"}`}>
+                    <p className="text-lg mb-1">📥</p>
+                    <p className="text-[10px] font-bold text-gray-800">Input Gate</p>
+                    <p className="text-[9px] text-gray-500">새 정보 저장</p>
+                    <p className="text-[8px] mt-1 font-bold" style={{ color: input ? "#059669" : "#9ca3af" }}>{input ? "ON — 저장 중" : "OFF"}</p>
+                  </button>
+                  <button onClick={() => setOutput(!output)} className={`p-3 rounded-xl border-2 text-center transition-all ${output ? "border-blue-400 bg-blue-50" : "border-gray-200"}`}>
+                    <p className="text-lg mb-1">📤</p>
+                    <p className="text-[10px] font-bold text-gray-800">Output Gate</p>
+                    <p className="text-[9px] text-gray-500">기억 출력 결정</p>
+                    <p className="text-[8px] mt-1 font-bold" style={{ color: output ? "#2563eb" : "#9ca3af" }}>{output ? "ON — 출력 중" : "OFF"}</p>
+                  </button>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <p className="text-[10px] font-bold text-gray-600">📓 메모장 (Cell State):</p>
+                  {memory.map((m, i) => (
+                    <div key={i} className={`flex items-center gap-2 text-xs p-1.5 rounded transition-all ${forget && i === 1 ? "line-through text-red-400 bg-red-50" : "text-gray-700"}`}>
+                      <span>{forget && i === 1 ? "🗑️" : "📌"}</span> {m}
+                    </div>
+                  ))}
+                  {input && (
+                    <div className="flex items-center gap-2 text-xs p-1.5 rounded bg-emerald-50 text-emerald-700 font-bold" style={{ animation: "fadeIn 0.3s" }}>
+                      <span>✨</span> {newInfo} <span className="text-[9px] text-emerald-500">(NEW)</span>
+                    </div>
+                  )}
+                </div>
+
+                {output && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200" style={{ animation: "fadeIn 0.3s" }}>
+                    <p className="text-xs text-blue-800"><strong>출력:</strong> 폭염(35°C) + 지난주 피크(82GW) 참고 → 예측: <strong>85GW</strong></p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* RNN/LSTM Quiz */}
+        {(() => {
+          const [ans, setAns] = useState({});
+          const [done, setDone] = useState(false);
+          const qs = [
+            { id:"r1", q:"RNN의 가장 큰 한계는?", opts:["계산이 느림","오래된 정보를 잊어버림 (기울기 소실)","색상을 구분 못함","텍스트만 처리 가능"], a:1 },
+            { id:"r2", q:"LSTM의 Forget Gate 역할은?", opts:["새 정보를 저장","불필요한 과거 기억을 삭제","최종 결과를 출력","입력 데이터를 변환"], a:1 },
+            { id:"r3", q:"Transformer가 RNN/LSTM보다 유리한 이유는?", opts:["메모리를 적게 사용","과거 전체를 한 번에 참조 + 병렬 처리 가능","필터를 사용해서","강화학습을 포함해서"], a:1 },
+          ];
+          const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
+          return (
+            <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+              <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">이해도 체크 — RNN/LSTM/Transformer</p>
+              {qs.map((q, qi) => (
+                <div key={q.id} className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
+                  <div className="space-y-1">
+                    {q.opts.map((o, oi) => {
+                      const sel=ans[q.id]===oi, cor=done&&oi===q.a, wr=done&&sel&&oi!==q.a;
+                      return <button key={oi} onClick={() => !done&&setAns(p=>({...p,[q.id]:oi}))} disabled={done}
+                        className={`w-full text-left p-2 rounded-lg text-xs border transition-all ${cor?"bg-emerald-50 border-emerald-300 font-bold":wr?"bg-red-50 border-red-300":sel?"border-purple-400 bg-purple-50":"border-gray-100 hover:border-gray-200"} text-gray-600`}>{o}</button>;
+                    })}
+                  </div>
+                </div>
+              ))}
+              {!done ? (
+                <button onClick={() => setDone(true)} disabled={Object.keys(ans).length<qs.length} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{background:"#a855f7"}}>제출하기</button>
+              ) : (
+                <div className="p-3 rounded-xl text-center" style={{background:sc===qs.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"}}>
+                  <p className="text-lg font-black" style={{color:sc===qs.length?"#059669":"#d97706"}}>{sc}/{qs.length} 정답</p>
+                  <button onClick={() => {setAns({});setDone(false);}} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1"/>다시</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </Card>
     </div>
   );
@@ -4347,6 +4553,114 @@ const Tab9 = ({ onScore }) => {
         <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
           <p className="text-xs text-amber-800"><strong>전력산업 적용:</strong> Schneider Electric의 EcoStruxure Microgrid Advisor가 바로 이 원리입니다. AI가 수천 번의 시뮬레이션(에피소드)을 돌리며 "태양광이 줄면 배터리를 방전", "야간에는 충전" 같은 최적 정책을 스스로 학습합니다. 비용 30% 절감이라는 결과가 여기서 나옵니다.</p>
         </div>
+
+        {/* Manual decision mode */}
+        <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">직접 의사결정 — 당신이 AI라면?</p>
+          <p className="text-xs text-gray-500">3가지 상황에서 최적의 행동을 선택해보세요. AI가 학습하는 과정을 체험합니다.</p>
+
+          {(() => {
+            const [decisions, setDecisions] = useState({});
+            const [showResults, setShowResults] = useState(false);
+            const scenarios = [
+              { id: "s1", situation: "☀️ 한낮, 태양광 발전 최대, 배터리 80%, 전력 가격 낮음", options: [
+                { label: "배터리 충전", reward: 8, reason: "이미 80%라 비효율적. 과충전 위험" },
+                { label: "잉여 전력 판매", reward: 10, reason: "✅ 최적! 가격이 낮아도 잉여분 판매가 이득" },
+                { label: "디젤 발전기 가동", reward: -5, reason: "태양광이 충분한데 디젤은 낭비+탄소배출" },
+              ]},
+              { id: "s2", situation: "🌙 야간, 태양광 0, 배터리 30%, 내일 폭염 예보", options: [
+                { label: "배터리 방전으로 버티기", reward: 2, reason: "30%로 밤을 넘기면 내일 아침 부족" },
+                { label: "야간 저가 전력으로 충전", reward: 10, reason: "✅ 최적! 저렴할 때 충전 → 내일 폭염 대비" },
+                { label: "아무것도 안 함", reward: -3, reason: "내일 폭염에 배터리 부족 → 정전 위험" },
+              ]},
+              { id: "s3", situation: "⚡ 피크시간, 수요 급증, 배터리 60%, 전력 가격 최고", options: [
+                { label: "배터리 방전 (전력 판매)", reward: 10, reason: "✅ 최적! 가격 최고일 때 팔아서 수익 극대화" },
+                { label: "배터리 충전", reward: -8, reason: "가장 비쌀 때 사는 건 최악의 선택" },
+                { label: "디젤로 자체 수요만 충당", reward: 3, reason: "가능하지만 판매 기회를 놓침" },
+              ]},
+            ];
+            const totalReward = showResults ? scenarios.reduce((sum, s) => sum + (s.options[decisions[s.id]]?.reward || 0), 0) : 0;
+            const maxReward = 30;
+
+            return (
+              <div className="space-y-3">
+                {scenarios.map((s, si) => (
+                  <div key={s.id} className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-800 mb-2">상황 {si+1}: {s.situation}</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {s.options.map((opt, oi) => {
+                        const sel = decisions[s.id] === oi;
+                        const best = showResults && opt.reward === 10;
+                        const chosen = showResults && sel;
+                        return (
+                          <button key={oi} onClick={() => !showResults && setDecisions(p => ({...p, [s.id]: oi}))}
+                            className={`p-2 rounded-lg text-[10px] font-medium border-2 transition-all ${best ? "border-emerald-400 bg-emerald-50" : chosen && opt.reward < 10 ? "border-red-300 bg-red-50" : sel ? "border-purple-400 bg-purple-50" : "border-gray-100 hover:border-gray-200"}`}
+                            disabled={showResults}>
+                            {opt.label}
+                            {showResults && <span className={`block text-[9px] mt-1 ${opt.reward >= 8 ? "text-emerald-600" : opt.reward < 0 ? "text-red-500" : "text-amber-600"}`}>{opt.reward > 0 ? "+" : ""}{opt.reward}점</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {showResults && decisions[s.id] !== undefined && (
+                      <p className="text-[10px] text-gray-500 mt-2 p-2 bg-white rounded-lg" style={{ animation: "fadeIn 0.3s" }}>
+                        💬 {s.options[decisions[s.id]].reason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+                {!showResults ? (
+                  <button onClick={() => setShowResults(true)} disabled={Object.keys(decisions).length < 3}
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{ background: "#a855f7" }}>결과 확인</button>
+                ) : (
+                  <div className="p-4 rounded-xl text-center" style={{ background: totalReward >= 25 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)" }}>
+                    <p className="text-lg font-black" style={{ color: totalReward >= 25 ? "#059669" : "#d97706" }}>보상: {totalReward}/{maxReward}점</p>
+                    <p className="text-xs text-gray-500 mt-1">{totalReward >= 25 ? "훌륭합니다! 최적에 가까운 의사결정!" : "AI는 이런 상황을 수천 번 반복하며 최적 정책을 스스로 찾아냅니다."}</p>
+                    <button onClick={() => { setDecisions({}); setShowResults(false); }} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1" />다시 하기</button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* RL Quiz */}
+        {(() => {
+          const [ans, setAns] = useState({});
+          const [done, setDone] = useState(false);
+          const qs = [
+            { id:"rl1", q:"강화학습에서 '보상(Reward)'이란?", opts:["AI가 받는 전기료","행동의 결과에 대한 점수 (좋으면 +, 나쁘면 -)","학습 데이터의 양","신경망의 레이어 수"], a:1 },
+            { id:"rl2", q:"'탐험(Exploration)'이 필요한 이유는?", opts:["계산 속도를 높이려고","이미 알고 있는 방법만 쓰면 더 좋은 방법을 놓칠 수 있어서","메모리를 절약하려고","오류를 줄이려고"], a:1 },
+            { id:"rl3", q:"마이크로그리드에서 강화학습 AI가 최적화하는 것은?", opts:["발전기의 색상","비용 최소화 + 정전 방지를 동시에 달성하는 운영 전략","직원 수 배치","전선의 길이"], a:1 },
+          ];
+          const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
+          return (
+            <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+              <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">이해도 체크 — 강화학습</p>
+              {qs.map((q, qi) => (
+                <div key={q.id} className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
+                  <div className="space-y-1">
+                    {q.opts.map((o, oi) => {
+                      const sel=ans[q.id]===oi, cor=done&&oi===q.a, wr=done&&sel&&oi!==q.a;
+                      return <button key={oi} onClick={() => !done&&setAns(p=>({...p,[q.id]:oi}))} disabled={done}
+                        className={`w-full text-left p-2 rounded-lg text-xs border transition-all ${cor?"bg-emerald-50 border-emerald-300 font-bold":wr?"bg-red-50 border-red-300":sel?"border-purple-400 bg-purple-50":"border-gray-100 hover:border-gray-200"} text-gray-600`}>{o}</button>;
+                    })}
+                  </div>
+                </div>
+              ))}
+              {!done ? (
+                <button onClick={() => setDone(true)} disabled={Object.keys(ans).length<qs.length} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{background:"#a855f7"}}>제출하기</button>
+              ) : (
+                <div className="p-3 rounded-xl text-center" style={{background:sc===qs.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"}}>
+                  <p className="text-lg font-black" style={{color:sc===qs.length?"#059669":"#d97706"}}>{sc}/{qs.length} 정답</p>
+                  <button onClick={() => {setAns({});setDone(false);}} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1"/>다시</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </Card>
     </div>
   );
