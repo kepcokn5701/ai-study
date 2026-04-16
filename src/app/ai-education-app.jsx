@@ -3777,7 +3777,12 @@ const Tab6 = ({ onScore }) => {
             <h2 className="text-lg font-black text-slate-800">트랜스포머 해부학</h2>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mb-6">GPT-3의 실제 수치와 수식으로, 부장님이 김대리의 말을 분석하는 과정을 해부합니다.</p>
+        <p className="text-sm text-slate-500 mb-4">GPT-3의 실제 수치와 수식으로, 부장님이 김대리의 말을 분석하는 과정을 해부합니다.</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
+          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 2017</p>
+          <p className="text-xs text-gray-700 leading-relaxed">2017년, 구글의 8명의 연구원이 <strong>"Attention Is All You Need"</strong>라는 논문을 발표합니다. 핵심 메시지는 단순했습니다: "순차 처리(RNN)를 버리고 어텐션만으로 충분하다." 이 논문이 제안한 <strong>Transformer</strong>가 GPT, BERT, Claude, Gemini 등 오늘날 모든 대형 AI의 기반이 됩니다. 아래에서 그 내부 구조를 해부합니다.</p>
+        </div>
 
         <div className="p-3 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-xs text-purple-700 font-medium">📌 예제 문장: "<strong>저 내일 오후 에 반차 쓰겠 습니다</strong>" — 7토큰, GPT-3 기준 12,288차원</p>
@@ -3814,6 +3819,192 @@ const Tab6 = ({ onScore }) => {
           <button onClick={() => setStep(Math.min(expertSteps.length - 1, step + 1))} disabled={step === expertSteps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
             다음 <ArrowRight size={14} />
           </button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TAB 10: AI 혁명의 순간들 (Course 3 Intro) ─────────
+const Tab10 = ({ onScore }) => {
+  const t = T.expert;
+  const [activeEvent, setActiveEvent] = useState(null);
+
+  const timeline = [
+    {
+      year: "1957", title: "퍼셉트론 발명", icon: "🧠", color: "#6b7280",
+      oneLiner: "뉴런을 수학으로 만들 수 있다!",
+      story: "프랭크 로젠블랫이 사람의 뇌 신경세포를 흉내 낸 수학 모델을 만들었습니다. 입력을 받아 가중치를 곱하고, 합산해서 결과를 내는 단순한 구조였지만, '기계가 학습할 수 있다'는 아이디어 자체가 혁명이었습니다.",
+      impact: "이것이 없었다면 → 뉴럴 네트워크라는 개념 자체가 없었을 것",
+      quiz: { q: "퍼셉트론의 핵심 아이디어는?", opts: ["규칙을 수동으로 입력", "뇌의 뉴런을 수학으로 모방", "인터넷 검색"], a: 1 },
+    },
+    {
+      year: "1986", title: "역전파 알고리즘", icon: "🔄", color: "#dc2626",
+      oneLiner: "실수에서 배울 수 있게 됐다",
+      story: "제프리 힌턴이 '오차를 거꾸로 전파해서 가중치를 수정하는' 방법을 정립했습니다. 이전에는 퍼셉트론이 틀려도 '어디가 틀렸는지' 알 수 없었는데, 역전파 덕분에 깊은 네트워크도 학습이 가능해졌습니다. 코스1에서 배운 '부장님의 뼈저린 반성'이 바로 이것입니다.",
+      impact: "이것이 없었다면 → 딥러닝은 존재하지 않았을 것",
+      quiz: { q: "역전파가 해결한 문제는?", opts: ["데이터 부족", "오차를 기반으로 가중치를 수정하는 방법", "컴퓨터 속도"], a: 1 },
+    },
+    {
+      year: "1998", title: "LeNet-5 (CNN 탄생)", icon: "👁️", color: "#2563eb",
+      oneLiner: "AI가 눈을 떴다",
+      story: "얀 르쿤이 합성곱 신경망(CNN)으로 손글씨 숫자를 인식하는 LeNet-5를 만들었습니다. 미국 우체국이 이 기술로 우편번호를 자동 분류하기 시작했습니다. '후레시로 이미지를 비추는' 합성곱 아이디어가 여기서 시작됐습니다.",
+      impact: "이것이 없었다면 → TEPCO의 전주 자동 점검, 자율주행 모두 불가능",
+      quiz: { q: "LeNet-5의 실제 활용 사례는?", opts: ["음악 생성", "우편번호 자동 분류", "날씨 예측"], a: 1 },
+    },
+    {
+      year: "2012", title: "AlexNet — 딥러닝 빅뱅", icon: "💥", color: "#ea580c",
+      oneLiner: "GPU 하나가 AI의 겨울을 끝냈다",
+      story: "알렉스 크리제브스키가 GPU로 깊은 CNN을 학습시켜 ImageNet 대회에서 오류율을 26%→16%로 절반 가까이 줄였습니다. 2위와의 격차가 압도적이어서, 전 세계 연구자들이 '딥러닝이 진짜구나'를 깨달은 순간입니다. AI의 겨울이 끝나고 봄이 온 날입니다.",
+      impact: "이것이 없었다면 → AI 연구에 투자가 이루어지지 않았을 것",
+      quiz: { q: "AlexNet이 기존과 달랐던 핵심은?", opts: ["규칙 기반 프로그래밍", "GPU를 활용한 깊은 신경망 학습", "소규모 데이터 사용"], a: 1 },
+    },
+    {
+      year: "2015", title: "AlphaGo — 이세돌 대국", icon: "⚫", color: "#1e293b",
+      oneLiner: "인간 최고수를 이긴 AI",
+      story: "구글 딥마인드의 AlphaGo가 이세돌 9단을 4:1로 이겼습니다. 바둑은 경우의 수가 우주 원자 수보다 많아서 '절대 AI가 못 이긴다'던 영역이었습니다. 강화학습과 딥러닝의 결합이 이뤄낸 성과로, AI가 '스스로 전략을 학습할 수 있다'는 것을 전 세계에 증명했습니다.",
+      impact: "이것이 없었다면 → 강화학습 기반 최적화(마이크로그리드 등)의 상용화가 늦어졌을 것",
+      quiz: { q: "AlphaGo가 사용한 핵심 기술은?", opts: ["OCR", "강화학습 + 딥러닝", "엑셀 매크로"], a: 1 },
+    },
+    {
+      year: "2017", title: "Attention Is All You Need", icon: "📜", color: "#7c3aed",
+      featured: true,
+      oneLiner: "논문 한 편이 판도를 바꿨다",
+      story: "구글 연구팀이 8명의 저자로 발표한 이 논문은 AI 역사상 가장 영향력 있는 논문 중 하나입니다. 핵심 메시지는 단순했습니다: '순차 처리(RNN)를 버리고 어텐션만으로 충분하다.' Transformer라는 새로운 구조를 제안했는데, 이것이 GPT, BERT, Claude, Gemini 등 오늘날 모든 대형 AI의 기반이 됩니다. 제목 그대로 — Attention이 전부였습니다.",
+      impact: "이것이 없었다면 → ChatGPT, Claude, GPT-4 모두 존재하지 않음. 전력산업의 AI 도입도 크게 늦어졌을 것",
+      details: [
+        { label: "이전", desc: "RNN/LSTM — 순차 처리라 느리고, 긴 문장에서 정보 손실" },
+        { label: "이후", desc: "Transformer — 병렬 처리 + 전체 문맥 한 번에 참조 = 빠르고 정확" },
+        { label: "핵심 수식", desc: "Attention(Q,K,V) = softmax(QK^T / √dk)V — 코스3에서 배운 바로 그것" },
+      ],
+      quiz: { q: "이 논문이 제안한 핵심 아이디어는?", opts: ["더 큰 GPU 사용", "RNN 없이 어텐션만으로 언어를 처리", "이미지 인식 개선"], a: 1 },
+    },
+    {
+      year: "2018", title: "BERT / GPT-1", icon: "📖", color: "#059669",
+      oneLiner: "AI가 언어를 '이해'하기 시작하다",
+      story: "구글의 BERT와 OpenAI의 GPT-1이 같은 해에 등장했습니다. 둘 다 Transformer 기반이지만 방향이 달랐습니다. BERT는 '빈칸 맞추기'로 양방향 이해를, GPT는 '다음 단어 예측'으로 생성을 선택했습니다. 이 두 갈래가 오늘날 '이해하는 AI'와 '생성하는 AI'의 시작점입니다.",
+      impact: "이것이 없었다면 → 검색엔진 품질 개선과 텍스트 생성 AI 모두 지연",
+      quiz: { q: "GPT와 BERT의 차이는?", opts: ["GPT는 이미지용, BERT는 텍스트용", "GPT는 다음 단어 예측, BERT는 빈칸 맞추기", "둘 다 같은 방식"], a: 1 },
+    },
+    {
+      year: "2020", title: "GPT-3 (1,750억 파라미터)", icon: "🚀", color: "#0284c7",
+      oneLiner: "규모가 지능을 만들다",
+      story: "OpenAI가 파라미터 1,750억 개짜리 모델을 공개했습니다. 놀라운 점은 별도 학습 없이 프롬프트만으로 번역, 요약, 코딩까지 해낸다는 것이었습니다. '크게 만들면 똑똑해진다'는 스케일링 법칙이 증명된 순간. 코스3 트랜스포머 챕터에서 다룬 7토큰 × 12,288차원이 바로 이 모델의 구조입니다.",
+      impact: "이것이 없었다면 → 프롬프트 엔지니어링이라는 개념이 없었을 것",
+      quiz: { q: "GPT-3가 보여준 핵심 능력은?", opts: ["이미지 생성", "별도 학습 없이 프롬프트만으로 다양한 과제 수행", "로봇 제어"], a: 1 },
+    },
+    {
+      year: "2022", title: "ChatGPT — 모두의 AI", icon: "💬", color: "#16a34a",
+      oneLiner: "2개월 만에 1억 사용자",
+      story: "GPT-3.5에 RLHF(인간 피드백 강화학습)를 적용해 '대화형'으로 만든 것이 ChatGPT입니다. 기술적 혁신보다는 '인터페이스의 혁신'이었습니다 — 누구나 자연어로 AI와 대화할 수 있게 되면서, AI가 연구실에서 전 국민의 손안으로 나왔습니다. 역사상 가장 빠르게 1억 사용자를 달성한 서비스입니다.",
+      impact: "이것이 없었다면 → 여러분이 지금 이 교육을 받고 있지 않을 것",
+      quiz: { q: "ChatGPT의 핵심 혁신은?", opts: ["새로운 신경망 구조", "누구나 대화로 사용할 수 있는 인터페이스 + RLHF", "하드웨어 개선"], a: 1 },
+    },
+    {
+      year: "2024~", title: "멀티모달 & AI 에이전트 시대", icon: "🌐", color: "#a855f7",
+      oneLiner: "텍스트를 넘어 보고, 듣고, 행동하는 AI",
+      story: "GPT-4o, Claude 3.5, Gemini 등이 텍스트+이미지+음성을 동시에 처리합니다. AI가 단순히 '답하는' 것에서 '직접 행동하는' 에이전트로 진화하고 있습니다. 전력산업에서도 SCADA 데이터+드론 영상+문서를 AI가 종합 분석하는 시대가 열리고 있습니다.",
+      impact: "지금 진행 중 → 전력산업의 AI 전환이 가속화되는 중",
+      quiz: { q: "멀티모달 AI의 의미는?", opts: ["여러 모델을 합친 것", "텍스트, 이미지, 음성 등 여러 형태를 동시에 처리", "여러 언어를 지원"], a: 1 },
+    },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <BookOpen size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>AI HISTORY</p>
+            <h2 className="text-lg font-black text-slate-800">AI 혁명의 순간들</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">기술만 알면 교과서, 이야기를 알면 교양. AI를 바꾼 결정적 순간들을 따라가봅니다.</p>
+
+        {/* Timeline */}
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+
+          <div className="space-y-1">
+            {timeline.map((evt, i) => {
+              const isActive = activeEvent === i;
+              const isFeatured = evt.featured;
+              return (
+                <div key={i}>
+                  <button onClick={() => setActiveEvent(isActive ? null : i)}
+                    className={`relative w-full text-left pl-12 pr-4 py-3 rounded-xl transition-all ${isActive ? "" : "hover:bg-gray-50"} ${isFeatured && !isActive ? "bg-purple-50/50" : ""}`}
+                    style={isActive ? { background: evt.color + "10", border: `1px solid ${evt.color}30` } : {}}>
+                    {/* Dot on timeline */}
+                    <div className={`absolute left-2.5 top-4 w-3 h-3 rounded-full border-2 border-white transition-all ${isActive ? "scale-125" : ""}`}
+                      style={{ background: evt.color, boxShadow: isActive ? `0 0 8px ${evt.color}60` : "none" }} />
+                    {/* Year + title */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-black" style={{ color: evt.color }}>{evt.year}</span>
+                      <span className="text-sm font-bold text-gray-800">{evt.icon} {evt.title}</span>
+                      {isFeatured && <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">핵심</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 italic">"{evt.oneLiner}"</p>
+                  </button>
+
+                  {/* Expanded content */}
+                  {isActive && (
+                    <div className="ml-12 mr-4 mb-3 space-y-3" style={{ animation: "fadeIn 0.4s ease-out" }}>
+                      {/* Story */}
+                      <div className="p-4 bg-white rounded-xl border border-gray-200">
+                        <p className="text-xs text-gray-700 leading-relaxed">{evt.story}</p>
+                      </div>
+
+                      {/* Before/After (featured only) */}
+                      {evt.details && (
+                        <div className="space-y-1.5">
+                          {evt.details.map((d, di) => (
+                            <div key={di} className="flex items-start gap-2 p-3 rounded-lg" style={{ background: evt.color + "08" }}>
+                              <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded" style={{ background: evt.color + "20", color: evt.color }}>{d.label}</span>
+                              <p className="text-xs text-gray-600">{d.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Impact */}
+                      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <p className="text-xs text-amber-800"><strong>만약 이것이 없었다면?</strong> {evt.impact}</p>
+                      </div>
+
+                      {/* Mini quiz */}
+                      {(() => {
+                        const [picked, setPicked] = useState(null);
+                        return (
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs font-bold text-gray-700 mb-2">⚡ 퀵 퀴즈: {evt.quiz.q}</p>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {evt.quiz.opts.map((opt, oi) => (
+                                <button key={oi} onClick={() => setPicked(oi)}
+                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-all ${picked === null ? "border-gray-200 hover:border-gray-300 text-gray-600" : oi === evt.quiz.a ? "border-emerald-400 bg-emerald-50 text-emerald-700 font-bold" : picked === oi ? "border-red-300 bg-red-50 text-red-600" : "border-gray-100 text-gray-400"}`}
+                                  disabled={picked !== null}>{opt}</button>
+                              ))}
+                            </div>
+                            {picked !== null && (
+                              <p className="text-[10px] mt-2" style={{ color: picked === evt.quiz.a ? "#059669" : "#dc2626" }}>
+                                {picked === evt.quiz.a ? "✅ 정답!" : `❌ 정답: ${evt.quiz.opts[evt.quiz.a]}`}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800"><strong>이 뒤의 챕터에서는</strong> 이 역사 속 기술들 — Transformer, CNN, RNN/LSTM, 강화학습 — 의 내부 구조를 직접 해부합니다. 각 기술이 '왜 그렇게 만들어졌는지'를 알면, 수식이 외우는 것이 아니라 이해하는 것이 됩니다.</p>
         </div>
       </Card>
     </div>
@@ -4171,7 +4362,12 @@ const Tab7 = ({ onScore }) => {
             <h2 className="text-lg font-black text-slate-800">"본다"는 것의 원리</h2>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mb-6">어두운 벽에 후레시를 비추듯, AI가 이미지에서 패턴을 찾아내는 원리를 해부합니다.</p>
+        <p className="text-sm text-slate-500 mb-4">어두운 벽에 후레시를 비추듯, AI가 이미지에서 패턴을 찾아내는 원리를 해부합니다.</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
+          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 1998 → 2012</p>
+          <p className="text-xs text-gray-700 leading-relaxed">1998년, 얀 르쿤이 <strong>LeNet-5</strong>로 손글씨를 인식해 미국 우체국 우편번호를 자동 분류했습니다. 하지만 당시 컴퓨터가 너무 느려서 AI의 겨울이 찾아왔죠. 14년 후인 2012년, <strong>AlexNet</strong>이 GPU의 힘으로 ImageNet 대회에서 오류율을 절반으로 줄이며 딥러닝 빅뱅을 일으킵니다. 그 핵심 구조가 바로 지금 배울 CNN입니다.</p>
+        </div>
 
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
           {cnnSteps.map((s, i) => (
@@ -4259,7 +4455,12 @@ const Tab8 = ({ onScore }) => {
             <h2 className="text-lg font-black text-slate-800">시간을 기억하는 구조</h2>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mb-6">기억력 나쁜 메모장에서 모든 페이지를 동시에 펼치는 구조로 — 시계열 AI의 진화</p>
+        <p className="text-sm text-slate-500 mb-4">기억력 나쁜 메모장에서 모든 페이지를 동시에 펼치는 구조로 — 시계열 AI의 진화</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
+          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 1997 → 2017</p>
+          <p className="text-xs text-gray-700 leading-relaxed">1997년, 호크라이터와 슈미트후버가 <strong>LSTM</strong>을 발명합니다. RNN의 치명적 약점인 '기울기 소실' — 오래된 정보를 잊어버리는 문제를 게이트로 해결했죠. 20년간 음성인식, 기계번역의 왕좌를 지켰지만, 2017년 Transformer가 "순차 처리 자체가 불필요하다"며 왕좌를 빼앗습니다. 왜 LSTM이 잘나갔고, 왜 Transformer에 밀렸는지 — 직접 비교해봅니다.</p>
+        </div>
 
         {/* Model selector */}
         <div className="flex gap-2 mb-6">
@@ -4481,7 +4682,12 @@ const Tab9 = ({ onScore }) => {
             <h2 className="text-lg font-black text-slate-800">스스로 배우는 AI</h2>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mb-6">게임을 공략하듯 — AI가 시행착오를 거쳐 최적의 전략을 스스로 찾아내는 원리</p>
+        <p className="text-sm text-slate-500 mb-4">게임을 공략하듯 — AI가 시행착오를 거쳐 최적의 전략을 스스로 찾아내는 원리</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
+          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 2013 → 2016</p>
+          <p className="text-xs text-gray-700 leading-relaxed">2013년, 딥마인드가 <strong>DQN</strong>으로 Atari 게임을 사람보다 잘 하는 AI를 만듭니다. 게임 화면만 보고 스스로 전략을 터득한 최초의 사례였죠. 2016년, 같은 팀이 만든 <strong>AlphaGo</strong>가 이세돌 9단을 4:1로 이깁니다. '경우의 수가 우주 원자보다 많은' 바둑에서 AI가 인간을 넘은 순간, 강화학습은 게임을 넘어 전력 최적화, 로봇 제어 등 산업으로 확장됩니다.</p>
+        </div>
 
         <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-sm text-purple-800 font-medium mb-2">마이크로그리드 운영 = 게임 공략</p>
@@ -4709,6 +4915,7 @@ const courses = [
     icon: CircuitBoard,
     color: { accent: "#a855f7", dim: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.2)", grad: "linear-gradient(135deg,#7c3aed,#c084fc)" },
     chapters: [
+      { id: "ai-history", label: "AI 혁명의 순간들", icon: BookOpen, component: Tab10, themeKey: "expert" },
       { id: "transformer", label: "트랜스포머 아키텍처", icon: CircuitBoard, component: Tab6, themeKey: "expert" },
       { id: "cnn", label: "\"본다\"는 것의 원리 (CNN)", icon: Eye, component: Tab7, themeKey: "expert" },
       { id: "rnn-lstm", label: "시간을 기억하는 구조", icon: RefreshCw, component: Tab8, themeKey: "expert" },
