@@ -12,7 +12,7 @@ import {
   ChevronDown, Layers, SlidersHorizontal, Settings, BarChart3, Workflow,
   Users, LogOut, KeyRound
 } from "lucide-react";
-import { verifyAdmin, getStudyStats, saveQuizResult, getProfileByNickname } from "@/lib/supabase";
+import { verifyAdmin, getStudyStats, saveQuizResult, getProfileByNickname, saveCourseCompletion, getLeaderboard } from "@/lib/supabase";
 
 // ─── Design Tokens ────────────────────────────────────
 const T = {
@@ -3870,6 +3870,174 @@ const courses = [
 
 // ─── MAIN APP ──────────────────────────────────────────
 
+// ─── CERTIFICATE COMPONENT ─────────────────────────────
+const Certificate = ({ nickname, course, onClose }) => {
+  const certRef = useRef(null);
+  const date = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  const courseNames = { literacy: "AI 문해력", practitioner: "AI 활용", expert: "AI 전문" };
+  const badges = { literacy: "🥉", practitioner: "🥈", expert: "🥇" };
+  const colors = { literacy: "#7c3aed", practitioner: "#0284c7", expert: "#a855f7" };
+
+  const handlePrint = () => {
+    const el = certRef.current;
+    if (!el) return;
+    const win = window.open("", "_blank");
+    win.document.write(`<!DOCTYPE html><html><head><title>수료증</title><style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f1f5f9; }
+      @media print { body { background:white; } .cert { box-shadow:none !important; } }
+    </style></head><body>${el.outerHTML}</body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 500);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="max-w-lg w-full" onClick={e => e.stopPropagation()} style={{ animation: "fadeIn 0.4s ease-out" }}>
+        {/* Certificate */}
+        <div ref={certRef} className="cert bg-white rounded-2xl overflow-hidden shadow-2xl" style={{ border: `3px solid ${colors[course]}` }}>
+          {/* Top decorative bar */}
+          <div className="h-2" style={{ background: `linear-gradient(90deg, ${colors[course]}, ${colors[course]}88, ${colors[course]})` }} />
+
+          <div className="p-8 text-center space-y-5">
+            {/* Header */}
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 mb-1">CERTIFICATE OF COMPLETION</p>
+              <p className="text-2xl font-black text-gray-900">수 료 증</p>
+            </div>
+
+            {/* Decorative line */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-3xl">{badges[course]}</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Body */}
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">위 사람은</p>
+              <p className="text-2xl font-black" style={{ color: colors[course] }}>{nickname || "학습자"}</p>
+              <p className="text-sm text-gray-500">
+                <strong className="text-gray-800">AI 교육 아카데미</strong>의
+              </p>
+              <p className="text-xl font-bold text-gray-900">
+                {courseNames[course]} 과정
+              </p>
+              <p className="text-sm text-gray-500">을(를) 성실히 이수하였기에 이 증서를 수여합니다.</p>
+            </div>
+
+            {/* Date */}
+            <div className="pt-4">
+              <p className="text-sm text-gray-600">{date}</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Brain size={16} style={{ color: colors[course] }} />
+                <p className="text-xs font-bold" style={{ color: colors[course] }}>AI 교육 아카데미</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="h-2" style={{ background: `linear-gradient(90deg, ${colors[course]}, ${colors[course]}88, ${colors[course]})` }} />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 mt-4 justify-center">
+          <button onClick={handlePrint}
+            className="px-5 py-2.5 bg-white text-gray-700 text-sm font-bold rounded-xl shadow-lg hover:bg-gray-50 transition-all">
+            🖨️ 인쇄 / 저장
+          </button>
+          <button onClick={onClose}
+            className="px-5 py-2.5 bg-gray-800 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-gray-700 transition-all">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── LEADERBOARD COMPONENT ──────────────────────────────
+const Leaderboard = ({ onClose, currentUser }) => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getLeaderboard().then(d => { setData(d); setLoading(false); });
+  }, []);
+
+  const medals = ["🥇", "🥈", "🥉"];
+  const courseLabels = { literacy: "🥉문해력", practitioner: "🥈활용", expert: "🥇전문" };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[200] overflow-y-auto" onClick={onClose}>
+      <div className="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ animation: "fadeIn 0.3s ease-out" }}>
+        {/* Header */}
+        <div className="p-5 text-white text-center" style={{ background: "linear-gradient(135deg, #6d28d9, #0284c7)" }}>
+          <p className="text-3xl mb-1">🏆</p>
+          <h2 className="text-lg font-black">리더보드</h2>
+          <p className="text-xs text-white/70">AI 교육 아카데미 학습 랭킹</p>
+        </div>
+
+        <div className="p-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-3" />
+              <p className="text-sm text-gray-500">랭킹 로딩 중...</p>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-3xl mb-2">📭</p>
+              <p className="text-sm text-gray-500">아직 완료된 코스가 없습니다</p>
+              <p className="text-xs text-gray-400 mt-1">코스를 완료하면 리더보드에 등록됩니다!</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {data.map((user, i) => {
+                const isMe = currentUser && user.nickname === currentUser;
+                const pct = user.totalMax > 0 ? Math.round((user.totalScore / user.totalMax) * 100) : 0;
+                return (
+                  <div key={i}
+                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isMe ? "ring-2 ring-purple-400 bg-purple-50" : i < 3 ? "bg-gray-50" : ""}`}>
+                    {/* Rank */}
+                    <div className="w-8 text-center shrink-0">
+                      {i < 3 ? (
+                        <span className="text-xl">{medals[i]}</span>
+                      ) : (
+                        <span className="text-sm font-bold text-gray-400">{i + 1}</span>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-gray-800 truncate">{user.nickname}</p>
+                        {isMe && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-200 text-purple-700 font-bold">나</span>}
+                      </div>
+                      <div className="flex gap-1 mt-0.5">
+                        {user.courses.map(c => (
+                          <span key={c} className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">{courseLabels[c] || c}</span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Score */}
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-black text-gray-800">{user.totalScore}<span className="text-gray-400 text-xs">/{user.totalMax}</span></p>
+                      <p className="text-[10px] text-gray-400">{pct}%</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-gray-100">
+          <button onClick={onClose} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-800 font-medium rounded-xl hover:bg-gray-50 transition-all">닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── ADMIN DASHBOARD COMPONENT ─────────────────────────
 const AdminDashboard = ({ onClose }) => {
   const [stats, setStats] = useState(null);
@@ -3993,6 +4161,8 @@ export default function App() {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState("");
+  const [showCertificate, setShowCertificate] = useState(null); // course id
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // URL 파라미터로 자동 로그인 (knai-zone 연동)
   useEffect(() => {
@@ -4063,6 +4233,25 @@ export default function App() {
     const completed = c.chapters.filter(ch => completedChapters.has(ch.id)).length;
     return { completed, total: c.chapters.length, done: completed === c.chapters.length };
   };
+
+  // Track course completion & save to DB
+  const [completedCourses, setCompletedCourses] = useState(new Set());
+  useEffect(() => {
+    courses.forEach(c => {
+      const comp = getCourseCompletion(c.id);
+      if (comp.done && !completedCourses.has(c.id)) {
+        setCompletedCourses(prev => new Set([...prev, c.id]));
+        // Save to Supabase
+        if (nickname) {
+          saveCourseCompletion({ nickname, course_id: c.id, score: totalScore, total: totalMax });
+        }
+        // Show certificate (only if not admin browsing)
+        if (!isAdmin) {
+          setShowCertificate(c.id);
+        }
+      }
+    });
+  }, [completedChapters]);
 
   // Course unlock logic: admin bypasses all locks
   const isCourseUnlocked = (courseId) => {
@@ -4166,6 +4355,18 @@ export default function App() {
                 </button>
               );
             })}
+            {/* Certificate buttons for completed courses */}
+            {courses.some(c => getCourseCompletion(c.id).done) && (
+              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-200">
+                {courses.filter(c => getCourseCompletion(c.id).done).map(c => (
+                  <button key={c.id} onClick={() => setShowCertificate(c.id)}
+                    className="shrink-0 px-2.5 py-2 rounded-lg text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-all"
+                    title={`${c.title} 수료증`}>
+                    📜
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -4219,6 +4420,12 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Leaderboard floating button */}
+      <button onClick={() => setShowLeaderboard(true)}
+        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-xs font-bold rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-all">
+        🏆 리더보드
+      </button>
 
       {/* Admin floating button */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
@@ -4282,6 +4489,12 @@ export default function App() {
 
       {/* Admin dashboard modal */}
       {showAdminDashboard && <AdminDashboard onClose={() => setShowAdminDashboard(false)} />}
+
+      {/* Certificate modal */}
+      {showCertificate && <Certificate nickname={nickname} course={showCertificate} onClose={() => setShowCertificate(null)} />}
+
+      {/* Leaderboard modal */}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} currentUser={nickname} />}
     </div>
   );
 }

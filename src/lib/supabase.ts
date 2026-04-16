@@ -100,3 +100,47 @@ export async function getStudyStats() {
 
   return { totalAttempts, uniqueUsers, avgCorrectRate, hardestQuestions, recentActivity }
 }
+
+/** 코스 완료 기록 저장 */
+export async function saveCourseCompletion(data: {
+  nickname: string
+  course_id: string
+  score: number
+  total: number
+  completed_at?: string
+}) {
+  return supabase.from('ai_study_completions').upsert(
+    { ...data, completed_at: data.completed_at || new Date().toISOString() },
+    { onConflict: 'nickname,course_id' }
+  )
+}
+
+/** 리더보드 조회 */
+export async function getLeaderboard() {
+  const { data } = await supabase
+    .from('ai_study_completions')
+    .select('*')
+    .order('score', { ascending: false })
+
+  if (!data || data.length === 0) return []
+
+  // 닉네임별 총점 집계
+  const userMap: Record<string, { nickname: string; totalScore: number; totalMax: number; courses: string[]; lastActive: string }> = {}
+  data.forEach(r => {
+    if (!userMap[r.nickname]) {
+      userMap[r.nickname] = { nickname: r.nickname, totalScore: 0, totalMax: 0, courses: [], lastActive: r.completed_at }
+    }
+    userMap[r.nickname].totalScore += r.score
+    userMap[r.nickname].totalMax += r.total
+    if (!userMap[r.nickname].courses.includes(r.course_id)) {
+      userMap[r.nickname].courses.push(r.course_id)
+    }
+    if (r.completed_at > userMap[r.nickname].lastActive) {
+      userMap[r.nickname].lastActive = r.completed_at
+    }
+  })
+
+  return Object.values(userMap)
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .slice(0, 20)
+}
