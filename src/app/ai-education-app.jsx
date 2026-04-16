@@ -3820,6 +3820,538 @@ const Tab6 = ({ onScore }) => {
   );
 };
 
+// ─── TAB 7: CNN — 본다는 것의 원리 (Course 3) ─────────
+const Tab7 = ({ onScore }) => {
+  const t = T.expert;
+  const [step, setStep] = useState(0);
+
+  // CH2: CNN - 후레시 비유
+  const CNNStep1 = () => {
+    const [filterPos, setFilterPos] = useState(0);
+    const maxPos = 4;
+    const imageGrid = [
+      [0, 0, 50, 100, 100],
+      [0, 50, 100, 100, 50],
+      [50, 100, 100, 50, 0],
+      [100, 100, 50, 0, 0],
+      [100, 50, 0, 0, 0],
+    ];
+    const filter = [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]; // 세로 엣지 필터
+    const row = Math.floor(filterPos / 3);
+    const col = filterPos % 3;
+    // Compute convolution at current position
+    let convVal = 0;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      convVal += (imageGrid[row + i]?.[col + j] || 0) * filter[i][j];
+    }
+    convVal = Math.abs(convVal);
+
+    return (
+      <div className="space-y-5">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">어두운 벽에 후레시를 비추다</p>
+          <p className="text-xs text-purple-600">CNN은 이미지를 한 번에 보지 않습니다. 작은 필터(후레시)를 이미지 위로 슬라이딩하며 패턴을 찾습니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 1 — 합성곱(Convolution) 연산</p>
+
+          <div className="flex gap-6 items-start flex-wrap justify-center">
+            {/* Image grid */}
+            <div>
+              <p className="text-[10px] text-gray-400 mb-2 text-center">입력 이미지 (5×5 픽셀)</p>
+              <div className="relative inline-block">
+                <div className="grid grid-cols-5 gap-0.5">
+                  {imageGrid.flat().map((v, i) => {
+                    const r = Math.floor(i / 5), c2 = i % 5;
+                    const isInFilter = r >= row && r < row + 3 && c2 >= col && c2 < col + 3;
+                    return (
+                      <div key={i} className={`w-9 h-9 flex items-center justify-center text-[9px] font-mono font-bold rounded-sm transition-all ${isInFilter ? "ring-2 ring-purple-500 z-10" : ""}`}
+                        style={{ background: `rgba(0,0,0,${v / 100})`, color: v > 50 ? "white" : "#333" }}>
+                        {v}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Filter (flashlight) */}
+            <div>
+              <p className="text-[10px] text-gray-400 mb-2 text-center">🔦 필터 (3×3)</p>
+              <div className="grid grid-cols-3 gap-0.5 mb-2">
+                {filter.flat().map((v, i) => (
+                  <div key={i} className="w-9 h-9 flex items-center justify-center text-xs font-mono font-bold rounded-sm"
+                    style={{ background: v < 0 ? "#fecaca" : v > 0 ? "#bbf7d0" : "#f1f5f9", color: v < 0 ? "#dc2626" : v > 0 ? "#16a34a" : "#9ca3af" }}>
+                    {v > 0 ? "+" : ""}{v}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] text-gray-400 text-center">세로 엣지 검출 필터</p>
+            </div>
+
+            {/* Output value */}
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 mb-2">출력값</p>
+              <div className="w-16 h-16 flex items-center justify-center rounded-xl text-lg font-black transition-all"
+                style={{ background: `rgba(168,85,247,${Math.min(convVal / 300, 1)})`, color: convVal > 150 ? "white" : "#6b21a8" }}>
+                {convVal}
+              </div>
+              <p className="text-[9px] text-gray-400 mt-1">{convVal > 200 ? "🔥 강한 엣지!" : convVal > 100 ? "엣지 감지" : "약한 신호"}</p>
+            </div>
+          </div>
+
+          {/* Slider to move filter */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500">필터 위치:</span>
+            <input type="range" min="0" max={maxPos} value={filterPos}
+              onChange={e => setFilterPos(parseInt(e.target.value))}
+              className="flex-1" style={{ accentColor: "#a855f7" }} />
+            <span className="text-xs font-mono text-purple-600">({row},{col})</span>
+          </div>
+
+          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-xs text-purple-800">💡 필터가 이미지 위를 이동하며, 밝기가 급변하는 곳(=엣지)에서 높은 값을 출력합니다. <strong>이것이 "후레시로 벽을 비추는 것"</strong>입니다 — 빛이 닿은 곳의 패턴만 보입니다.</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CNNStep2 = () => {
+    const [activeLayer, setActiveLayer] = useState(0);
+    const layers = [
+      { name: "Layer 1", filters: 32, detects: "가로선, 세로선, 대각선", icon: "📐", example: "전주 사진에서 직선 성분 검출" },
+      { name: "Layer 3", filters: 64, detects: "모서리, 곡선, 텍스처", icon: "🔲", example: "콘크리트 표면의 균열 패턴 포착" },
+      { name: "Layer 5", filters: 128, detects: "부분 형태 (볼트, 너트, 와이어)", icon: "🔩", example: "애자, 클램프 등 부품 형태 인식" },
+      { name: "Layer 8", filters: 256, detects: "전체 물체 (전주, 변압기)", icon: "🏗️", example: "'이것은 전주다' — 최종 판정" },
+    ];
+    return (
+      <div className="space-y-5">
+        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-1">후레시가 점점 넓어진다</p>
+          <p className="text-xs text-purple-600">레이어가 깊어질수록 더 넓은 영역을, 더 추상적인 패턴으로 인식합니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 2 — 레이어별 추상화</p>
+
+          <div className="space-y-2">
+            {layers.map((l, i) => (
+              <button key={i} onClick={() => setActiveLayer(i)}
+                className={`w-full text-left p-3 rounded-xl border-2 transition-all ${i === activeLayer ? "border-purple-500" : "border-gray-100 hover:border-gray-200"}`}
+                style={i === activeLayer ? { background: "rgba(168,85,247,0.06)" } : {}}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{l.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-gray-800">{l.name}</p>
+                      <span className="text-[9px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full">{l.filters} 필터</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500">감지: {l.detects}</p>
+                  </div>
+                  {/* Abstraction level bar */}
+                  <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${(i + 1) * 25}%`, background: "#a855f7" }} />
+                  </div>
+                </div>
+                {i === activeLayer && (
+                  <div className="mt-2 p-2 bg-white rounded-lg" style={{ animation: "fadeIn 0.3s" }}>
+                    <p className="text-[10px] text-gray-600">⚡ 전력산업 적용: {l.example}</p>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 text-[9px] text-gray-400 justify-center">
+            <span>구체적</span>
+            <div className="flex gap-0.5">{[...Array(4)].map((_, i) => <div key={i} className="w-8 h-1.5 rounded-full" style={{ background: `rgba(168,85,247,${(i + 1) * 0.25})` }} />)}</div>
+            <span>추상적</span>
+          </div>
+
+          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-xs text-amber-800"><strong>핵심:</strong> 사람의 시각도 동일합니다 — 망막(엣지) → V1(방향) → V4(형태) → IT(물체 인식). CNN은 이 과정을 수학으로 구현한 것입니다. TEPCO가 전주 불량을 탐지하는 AI도 이 구조입니다.</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CNNStep3 = () => (
+    <div className="space-y-5">
+      <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+        <p className="text-sm text-purple-800 font-medium mb-1">Pooling — 멀리서 비추기</p>
+        <p className="text-xs text-purple-600">세부사항을 버리고 핵심만 남기는 과정입니다. 해상도를 줄여 계산량을 낮추면서 중요한 특징은 유지합니다.</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 3 — Max Pooling</p>
+
+        <div className="flex gap-4 items-center justify-center flex-wrap">
+          {/* Before pooling */}
+          <div>
+            <p className="text-[10px] text-gray-400 mb-2 text-center">특징맵 (4×4)</p>
+            <div className="grid grid-cols-4 gap-0.5">
+              {[
+                [220, 50, 180, 30],
+                [10, 190, 40, 160],
+                [170, 20, 200, 60],
+                [30, 150, 10, 210],
+              ].flat().map((v, i) => {
+                const group = Math.floor(Math.floor(i / 4) / 2) * 2 + Math.floor((i % 4) / 2);
+                const colors = ["#ddd6fe", "#bfdbfe", "#d1fae5", "#fef3c7"];
+                return (
+                  <div key={i} className="w-10 h-10 flex items-center justify-center text-[9px] font-mono font-bold rounded-sm"
+                    style={{ background: colors[group], color: "#374151" }}>{v}</div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <ArrowRight size={20} className="text-purple-400" />
+            <p className="text-[9px] text-gray-400 mt-1">Max</p>
+          </div>
+
+          {/* After pooling */}
+          <div>
+            <p className="text-[10px] text-gray-400 mb-2 text-center">풀링 결과 (2×2)</p>
+            <div className="grid grid-cols-2 gap-0.5">
+              {[220, 180, 170, 210].map((v, i) => {
+                const colors = ["#c4b5fd", "#93c5fd", "#6ee7b7", "#fde68a"];
+                return (
+                  <div key={i} className="w-14 h-14 flex items-center justify-center text-sm font-mono font-black rounded-sm"
+                    style={{ background: colors[i], color: "#374151" }}>{v}</div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-600">각 2×2 영역에서 <strong>최댓값</strong>만 남깁니다. 4×4 → 2×2로 크기가 절반으로. 후레시를 멀리서 비추면 세부사항은 사라지지만 전체 윤곽이 선명해지는 것과 같습니다.</p>
+        </div>
+
+        <div className="p-3 bg-gray-100 rounded-lg">
+          <p className="text-xs text-gray-600"><strong>📊 수치:</strong> 224×224 입력 이미지가 Conv+Pool을 거치면 7×7까지 축소. 픽셀 수 50,176개 → 49개로 1,000배 압축되지만, "전주인지 변압기인지"는 정확히 판별합니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const cnnSteps = [
+    { title: "합성곱 연산", subtitle: "후레시로 비추기", icon: Eye, content: CNNStep1 },
+    { title: "레이어별 추상화", subtitle: "점점 넓게 보기", icon: Layers, content: CNNStep2 },
+    { title: "풀링", subtitle: "핵심만 남기기", icon: Target, content: CNNStep3 },
+  ];
+
+  const StepContent = cnnSteps[step]?.content;
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Eye size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>CNN — CONVOLUTIONAL NEURAL NETWORK</p>
+            <h2 className="text-lg font-black text-slate-800">"본다"는 것의 원리</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">어두운 벽에 후레시를 비추듯, AI가 이미지에서 패턴을 찾아내는 원리를 해부합니다.</p>
+
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {cnnSteps.map((s, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === step ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            {(() => { const Icon = cnnSteps[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+            <div>
+              <h3 className="font-semibold text-gray-900">{cnnSteps[step].title}</h3>
+              <p className="text-xs text-gray-400">{cnnSteps[step].subtitle}</p>
+            </div>
+          </div>
+          <StepContent />
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30"><ArrowLeft size={14} /> 이전</button>
+          <span className="text-xs text-gray-400 self-center">{step + 1} / {cnnSteps.length}</span>
+          <button onClick={() => setStep(Math.min(cnnSteps.length - 1, step + 1))} disabled={step === cnnSteps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">다음 <ArrowRight size={14} /></button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TAB 8: RNN/LSTM — 시간을 기억하는 구조 (Course 3) ──
+const Tab8 = ({ onScore }) => {
+  const t = T.expert;
+  const [modelType, setModelType] = useState("rnn");
+  const [timeStep, setTimeStep] = useState(0);
+
+  const data = [65, 70, 68, 72, 78, 85, 92, 88, 82, 75];
+  const labels = ["6시", "8시", "10시", "12시", "14시", "16시", "18시", "20시", "22시", "24시"];
+
+  const models = {
+    rnn: {
+      name: "단순 RNN",
+      icon: "📝",
+      metaphor: "포스트잇 1장",
+      desc: "직전 정보만 기억. 오래된 정보는 잊어버림",
+      memory: 2,
+      predictions: [65, 68, 67, 70, 74, 80, 90, 86, 80, 73],
+      weakness: "어제 같은 시간대 수요? 기억 못 합니다 (기울기 소실)"
+    },
+    lstm: {
+      name: "LSTM",
+      icon: "📓",
+      metaphor: "메모장 + 지우개 + 형광펜",
+      desc: "중요한 건 형광펜, 불필요한 건 지우개. 선택적 기억",
+      memory: 6,
+      predictions: [65, 69, 68, 71, 77, 84, 91, 87, 81, 74],
+      weakness: "장기 기억 가능하지만 순차 처리라 느림"
+    },
+    transformer: {
+      name: "Transformer",
+      icon: "📚",
+      metaphor: "모든 페이지를 동시에 펼침",
+      desc: "과거 전체를 한 번에 참조. 병렬 처리로 빠름",
+      memory: 10,
+      predictions: [65, 70, 68, 72, 78, 85, 92, 88, 82, 75],
+      weakness: "메모리 사용량이 크고 비용이 높음"
+    },
+  };
+
+  const model = models[modelType];
+  const maxVal = Math.max(...data) + 5;
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <RefreshCw size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>RNN → LSTM → TRANSFORMER</p>
+            <h2 className="text-lg font-black text-slate-800">시간을 기억하는 구조</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">기억력 나쁜 메모장에서 모든 페이지를 동시에 펼치는 구조로 — 시계열 AI의 진화</p>
+
+        {/* Model selector */}
+        <div className="flex gap-2 mb-6">
+          {Object.entries(models).map(([key, m]) => (
+            <button key={key} onClick={() => setModelType(key)}
+              className={`flex-1 p-3 rounded-xl border-2 text-center transition-all ${modelType === key ? "border-purple-500" : "border-gray-100 hover:border-gray-200"}`}
+              style={modelType === key ? { background: "rgba(168,85,247,0.06)" } : {}}>
+              <p className="text-xl mb-1">{m.icon}</p>
+              <p className="text-xs font-bold text-gray-800">{m.name}</p>
+              <p className="text-[9px] text-gray-500">{m.metaphor}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Model description */}
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium">{model.icon} {model.name} — "{model.metaphor}"</p>
+          <p className="text-xs text-purple-600 mt-1">{model.desc}</p>
+        </div>
+
+        {/* Prediction comparison chart */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">전력 수요 예측 비교</p>
+
+          <div className="flex items-end gap-1 h-40">
+            {data.map((actual, i) => {
+              const pred = model.predictions[i];
+              const visible = i <= timeStep;
+              const actualH = (actual / maxVal) * 100;
+              const predH = (pred / maxVal) * 100;
+              const error = Math.abs(actual - pred);
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-0.5 relative">
+                  {visible && (
+                    <>
+                      {/* Error indicator */}
+                      {error > 2 && <span className="text-[7px] font-mono text-red-500 absolute -top-3">-{error}</span>}
+                      {/* Actual bar */}
+                      <div className="w-full flex gap-0.5 items-end" style={{ height: "100%" }}>
+                        <div className="flex-1 rounded-t-sm bg-gray-300 transition-all duration-500" style={{ height: `${actualH}%` }} />
+                        <div className="flex-1 rounded-t-sm transition-all duration-500" style={{ height: `${predH}%`, background: error <= 2 ? "#a855f7" : error <= 5 ? "#f59e0b" : "#ef4444" }} />
+                      </div>
+                    </>
+                  )}
+                  <span className="text-[7px] text-gray-400 mt-0.5">{labels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 justify-center text-[9px] text-gray-500">
+            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-gray-300 rounded-sm" />실제</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-purple-500 rounded-sm" />예측</div>
+          </div>
+
+          {/* Time step slider */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500">시간 진행:</span>
+            <input type="range" min="0" max={data.length - 1} value={timeStep}
+              onChange={e => setTimeStep(parseInt(e.target.value))}
+              className="flex-1" style={{ accentColor: "#a855f7" }} />
+            <span className="text-xs font-mono text-purple-600">{labels[timeStep]}</span>
+          </div>
+
+          {/* Memory window visualization */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-[10px] text-gray-500 mb-2">기억 범위 (참조 가능한 과거 데이터):</p>
+            <div className="flex gap-0.5">
+              {data.map((_, i) => {
+                const inMemory = i <= timeStep && i > timeStep - model.memory;
+                return (
+                  <div key={i} className={`flex-1 h-3 rounded-sm transition-all ${i <= timeStep ? (inMemory ? "bg-purple-400" : "bg-gray-200") : "bg-gray-100"}`} />
+                );
+              })}
+            </div>
+            <p className="text-[9px] text-gray-400 mt-1">💬 {model.weakness}</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>전력산업 적용:</strong> National Grid는 Transformer 기반 모델로 수요예측 정확도 98%+를 달성했습니다. 단순 RNN으로는 "어제 같은 시간" 패턴을 놓치지만, Transformer는 일주일 전, 작년 같은 날까지 한 번에 참조합니다.</p>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TAB 9: 강화학습 — 스스로 배우는 AI (Course 3) ──────
+const Tab9 = ({ onScore }) => {
+  const t = T.expert;
+  const [episode, setEpisode] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const timerRef = useRef(null);
+
+  const maxEpisodes = 10;
+  const episodes = Array.from({ length: maxEpisodes }, (_, i) => {
+    const exploration = Math.max(0.1, 1 - i * 0.1);
+    const reward = Math.min(95, 20 + i * 9 + Math.sin(i) * 5);
+    const cost = Math.max(5, 100 - i * 10 + Math.cos(i) * 3);
+    const blackout = Math.max(0, 5 - Math.floor(i / 2));
+    return { episode: i + 1, exploration: Math.round(exploration * 100), reward: Math.round(reward), cost: Math.round(cost), blackout };
+  });
+
+  useEffect(() => {
+    if (autoPlay && episode < maxEpisodes - 1) {
+      timerRef.current = setTimeout(() => setEpisode(p => p + 1), 800);
+      return () => clearTimeout(timerRef.current);
+    }
+    if (episode >= maxEpisodes - 1) setAutoPlay(false);
+  }, [autoPlay, episode]);
+
+  const ep = episodes[episode];
+
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Gamepad2 size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>REINFORCEMENT LEARNING</p>
+            <h2 className="text-lg font-black text-slate-800">스스로 배우는 AI</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">게임을 공략하듯 — AI가 시행착오를 거쳐 최적의 전략을 스스로 찾아내는 원리</p>
+
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-sm text-purple-800 font-medium mb-2">마이크로그리드 운영 = 게임 공략</p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2 bg-white rounded-lg"><strong className="text-purple-700">상태(State):</strong> 현재 전력량, 배터리, 기상, 가격</div>
+            <div className="p-2 bg-white rounded-lg"><strong className="text-purple-700">행동(Action):</strong> 발전량 조절, 배터리 충/방전</div>
+            <div className="p-2 bg-white rounded-lg"><strong className="text-purple-700">보상(Reward):</strong> 비용 절감 +점, 정전 -점</div>
+            <div className="p-2 bg-white rounded-lg"><strong className="text-purple-700">정책(Policy):</strong> 최적 행동 규칙 (=공략법)</div>
+          </div>
+        </div>
+
+        {/* Training simulation */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">AI 학습 시뮬레이션 — {maxEpisodes}판 플레이</p>
+
+          {/* Episode indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">에피소드:</span>
+            <div className="flex gap-0.5 flex-1">
+              {episodes.map((_, i) => (
+                <div key={i} className={`flex-1 h-2 rounded-full transition-all ${i <= episode ? "bg-purple-500" : "bg-gray-100"}`} />
+              ))}
+            </div>
+            <span className="text-xs font-mono font-bold text-purple-600">{ep.episode}/{maxEpisodes}</span>
+          </div>
+
+          {/* Stats dashboard */}
+          <div className="grid grid-cols-4 gap-2">
+            <div className="p-3 rounded-xl text-center bg-purple-50 border border-purple-200">
+              <p className="text-lg font-black text-purple-700">{ep.reward}</p>
+              <p className="text-[9px] text-purple-500">보상 점수</p>
+            </div>
+            <div className="p-3 rounded-xl text-center bg-emerald-50 border border-emerald-200">
+              <p className="text-lg font-black text-emerald-700">{ep.cost}%</p>
+              <p className="text-[9px] text-emerald-500">비용 (낮을수록 ↑)</p>
+            </div>
+            <div className="p-3 rounded-xl text-center" style={{ background: ep.blackout === 0 ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${ep.blackout === 0 ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}` }}>
+              <p className={`text-lg font-black ${ep.blackout === 0 ? "text-emerald-700" : "text-red-700"}`}>{ep.blackout}</p>
+              <p className="text-[9px] text-gray-500">정전 횟수</p>
+            </div>
+            <div className="p-3 rounded-xl text-center bg-amber-50 border border-amber-200">
+              <p className="text-lg font-black text-amber-700">{ep.exploration}%</p>
+              <p className="text-[9px] text-amber-500">탐험률</p>
+            </div>
+          </div>
+
+          {/* Exploration vs Exploitation */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs text-gray-600">
+              {episode < 3 ? "🔍 탐험 단계 — 이것저것 시도하며 배우는 중 (실수가 많음)" : episode < 7 ? "⚖️ 균형 단계 — 배운 것 활용 + 새로운 시도 병행" : "🎯 활용 단계 — 최적 전략을 찾아 안정적으로 운영"}
+            </p>
+          </div>
+
+          {/* Controls */}
+          <div className="flex gap-2">
+            <button onClick={() => setAutoPlay(!autoPlay)}
+              className="px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: t.accent }}>
+              {autoPlay ? "⏸ 일시정지" : "▶️ 자동 학습"}
+            </button>
+            <button onClick={() => setEpisode(Math.min(maxEpisodes - 1, episode + 1))} disabled={episode >= maxEpisodes - 1 || autoPlay}
+              className="px-4 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 disabled:opacity-30">
+              다음 에피소드
+            </button>
+            <button onClick={() => { setEpisode(0); setAutoPlay(false); }}
+              className="px-3 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-800"><RotateCcw size={12} className="inline mr-1" />리셋</button>
+          </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>전력산업 적용:</strong> Schneider Electric의 EcoStruxure Microgrid Advisor가 바로 이 원리입니다. AI가 수천 번의 시뮬레이션(에피소드)을 돌리며 "태양광이 줄면 배터리를 방전", "야간에는 충전" 같은 최적 정책을 스스로 학습합니다. 비용 30% 절감이라는 결과가 여기서 나옵니다.</p>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ─── COURSE STRUCTURE ──────────────────────────────────
 const courses = [
   {
@@ -3864,6 +4396,9 @@ const courses = [
     color: { accent: "#a855f7", dim: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.2)", grad: "linear-gradient(135deg,#7c3aed,#c084fc)" },
     chapters: [
       { id: "transformer", label: "트랜스포머 아키텍처", icon: CircuitBoard, component: Tab6, themeKey: "expert" },
+      { id: "cnn", label: "\"본다\"는 것의 원리 (CNN)", icon: Eye, component: Tab7, themeKey: "expert" },
+      { id: "rnn-lstm", label: "시간을 기억하는 구조", icon: RefreshCw, component: Tab8, themeKey: "expert" },
+      { id: "rl", label: "스스로 배우는 AI (강화학습)", icon: Gamepad2, component: Tab9, themeKey: "expert" },
     ],
   },
 ];
