@@ -12,7 +12,7 @@ import {
   ChevronDown, Layers, SlidersHorizontal, Settings, BarChart3,
   Users, LogOut, KeyRound
 } from "lucide-react";
-import { verifyAdmin, getStudyStats, saveQuizResult } from "@/lib/supabase";
+import { verifyAdmin, getStudyStats, saveQuizResult, getProfileByNickname } from "@/lib/supabase";
 
 // ─── Design Tokens ────────────────────────────────────
 const T = {
@@ -3383,18 +3383,42 @@ export default function App() {
   const [scores, setScores] = useState({});
   const [completedChapters, setCompletedChapters] = useState(new Set());
 
-  // Admin state
+  // Admin & user state
   const [isAdmin, setIsAdmin] = useState(false);
+  const [nickname, setNickname] = useState("");
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [adminCode, setAdminCode] = useState("");
   const [adminError, setAdminError] = useState("");
 
-  // Check persisted admin session
+  // URL 파라미터로 자동 로그인 (knai-zone 연동)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("ai_study_admin");
-      if (saved === "true") setIsAdmin(true);
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlNickname = params.get("nickname");
+
+    if (urlNickname) {
+      // knai-zone에서 닉네임과 함께 넘어온 경우
+      setNickname(urlNickname);
+      localStorage.setItem("ai_study_nickname", urlNickname);
+
+      // profiles 테이블에서 관리자 여부 확인
+      getProfileByNickname(urlNickname).then(profile => {
+        if (profile?.is_admin) {
+          setIsAdmin(true);
+          localStorage.setItem("ai_study_admin", "true");
+        }
+      });
+
+      // URL에서 파라미터 제거 (깔끔하게)
+      window.history.replaceState({}, "", window.location.pathname);
+    } else {
+      // 기존 세션 복원
+      const savedAdmin = localStorage.getItem("ai_study_admin");
+      const savedNickname = localStorage.getItem("ai_study_nickname");
+      if (savedAdmin === "true") setIsAdmin(true);
+      if (savedNickname) setNickname(savedNickname);
     }
   }, []);
 
@@ -3413,7 +3437,9 @@ export default function App() {
 
   const handleAdminLogout = () => {
     setIsAdmin(false);
+    setNickname("");
     localStorage.removeItem("ai_study_admin");
+    localStorage.removeItem("ai_study_nickname");
   };
 
   const handleScore = (tabId, score, total) => {
@@ -3480,7 +3506,7 @@ export default function App() {
                   <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">ADMIN</span>
                 )}
               </div>
-              <p className="text-xs text-slate-400">전력산업 종사자를 위한 단계별 AI 학습</p>
+              <p className="text-xs text-slate-400">{nickname ? `${nickname}님의 학습 공간` : "전력산업 종사자를 위한 단계별 AI 학습"}</p>
             </div>
             {totalScore > 0 && (
               <div className="flex items-center gap-2 shrink-0">

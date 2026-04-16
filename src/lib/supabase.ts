@@ -16,6 +16,19 @@ export async function sha256(text: string): Promise<string> {
 // 관리자 코드 해시 (knai-zone 폴백과 동일)
 const ADMIN_HASH = 'a98259fec378da0a51efcc0087ba53ba709f23f6500ed4ecf02ef7fe5accab67'
 
+/** 닉네임으로 프로필 조회 — knai-zone에서 넘어온 사용자 확인 */
+export async function getProfileByNickname(nickname: string): Promise<{ nickname: string; is_admin: boolean } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('nickname, is_admin')
+      .eq('nickname', nickname)
+      .single()
+    if (!error && data) return data as { nickname: string; is_admin: boolean }
+  } catch { /* 프로필 없음 */ }
+  return null
+}
+
 /** 관리자 인증 — DB 우선, 폴백 해시 */
 export async function verifyAdmin(code: string): Promise<boolean> {
   const hash = await sha256(code)
