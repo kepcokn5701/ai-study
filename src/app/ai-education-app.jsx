@@ -4676,6 +4676,77 @@ const Tab9 = ({ onScore }) => {
     { id: "quiz",     title: "STEP 6 — 퀴즈",        subtitle: "개념 점검" },
   ];
 
+  const RlhfSFT = () => {
+    const [showBefore, setShowBefore] = useState(false);
+    const question = "파이썬에서 리스트를 역순으로 뒤집으려면?";
+    const answerTokens = [".reverse()", "메서드", "를", "쓰거나,", "list[::-1]", "슬라이싱", "으로", "역순", "복사본", "을", "얻을", "수", "있습니다", "."];
+    const beforeAnswer = "파이썬은 귀도 반 로섬이 1991년에 만든 언어로, 리스트는 정말 유연한 자료구조이고 파이썬의 자료형 중 가장 자주 쓰이는 컬렉션이며… (계속 맴돌기)";
+
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🧑‍🏫 <strong>사수 김과장</strong>이 "이런 질문엔 이렇게 답해" 라고 수만 개의 정답 Q&amp;A를 신입에게 보여줍니다. 신입(=사전학습된 LLM)은 시범을 보며 <strong>답변 스타일</strong>을 익힙니다.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">핵심 — 학습 방식은 그대로, 데이터만 고품질</p>
+          <p className="text-xs text-gray-700 leading-relaxed">
+            사전학습과 <strong>똑같은 "다음 단어 맞추기"</strong> 훈련입니다. 다만 데이터가 <strong>사람이 정성껏 만든 고품질 Q&amp;A (수만 개)</strong>로 바뀝니다.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+              <p className="font-bold text-gray-500 mb-1">사전학습</p>
+              <p className="text-gray-600">인터넷 텍스트 ~1T 토큰</p>
+              <p className="text-gray-400 text-[10px] mt-1">"도서관에서 책 읽기"</p>
+            </div>
+            <div className="p-2.5 rounded-lg border border-purple-200" style={{ background: "rgba(168,85,247,0.08)" }}>
+              <p className="font-bold text-purple-700 mb-1">SFT</p>
+              <p className="text-purple-700">사람이 만든 Q&amp;A ~10만 개</p>
+              <p className="text-purple-500 text-[10px] mt-1">"사수 김과장 시범"</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">예시 — 실제 학습 데이터 한 쌍</p>
+
+          <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+            <p className="text-[10px] font-bold text-gray-500 mb-1">질문 (입력)</p>
+            <p className="text-xs text-gray-800 font-medium">{question}</p>
+          </div>
+
+          <div className="p-3 rounded-lg border-2 border-purple-200" style={{ background: "rgba(168,85,247,0.04)" }}>
+            <p className="text-[10px] font-bold text-purple-700 mb-2">사수 김과장의 모범 답변 (= 학습 목표 토큰)</p>
+            <div className="flex flex-wrap gap-1">
+              {answerTokens.map((tok, i) => (
+                <span key={i} className="px-1.5 py-0.5 text-[11px] font-mono rounded bg-purple-100 text-purple-800 border border-purple-200">
+                  {tok}
+                </span>
+              ))}
+            </div>
+            <p className="text-[10px] text-purple-600 mt-2">↑ 보라색 토큰 하나하나를 "정답"으로 삼아, 모델이 앞 토큰들만 보고 다음을 맞추도록 학습</p>
+          </div>
+
+          <button onClick={() => setShowBefore(!showBefore)}
+            className="w-full px-3 py-2 rounded-lg text-xs font-medium border border-dashed border-gray-300 hover:border-gray-400 text-gray-500 hover:text-gray-700 transition-all">
+            {showBefore ? "SFT 전 답변 접기" : "SFT 전, 사전학습만 된 신입의 답은?"}
+            <ChevronDown size={12} className={`inline ml-1 transition-transform ${showBefore ? "rotate-180" : ""}`} />
+          </button>
+
+          {showBefore && (
+            <div className="p-3 rounded-lg bg-gray-50 border border-gray-200" style={{ animation: "fadeIn 0.3s ease-out" }}>
+              <p className="text-[10px] font-bold text-gray-500 mb-2">사전학습만 된 신입의 답변</p>
+              <p className="text-xs text-gray-500 italic leading-relaxed">"{beforeAnswer}"</p>
+              <p className="text-[10px] text-gray-400 mt-2">← 배경지식은 있지만 <strong>핵심만 간결히 답하는 스타일</strong>을 모름. SFT가 이 차이를 메웁니다.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const maxEpisodes = 10;
   const episodes = Array.from({ length: maxEpisodes }, (_, i) => {
     const exploration = Math.max(0.1, 1 - i * 0.1);
@@ -4932,7 +5003,7 @@ const Tab9 = ({ onScore }) => {
           ))}
         </div>
 
-        {/* Step content — 다음 커밋들에서 채워집니다 */}
+        {/* Step content */}
         <div className="mb-4">
           <div className="flex items-center gap-3 mb-4">
             <div>
@@ -4940,9 +5011,11 @@ const Tab9 = ({ onScore }) => {
               <p className="text-xs text-gray-400">{rlhfSteps[rlhfStep].subtitle}</p>
             </div>
           </div>
-          <div className="p-6 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-center text-sm text-gray-400">
-            (STEP {rlhfStep + 1} 내용은 다음 커밋에서 채워집니다)
-          </div>
+          {rlhfStep === 0 ? <RlhfSFT /> : (
+            <div className="p-6 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-center text-sm text-gray-400">
+              (STEP {rlhfStep + 1} 내용은 다음 커밋에서 채워집니다)
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
