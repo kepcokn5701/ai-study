@@ -3870,7 +3870,7 @@ const Tab10 = ({ onScore }) => {
     {
       year: "1998", title: "LeNet-5 (CNN 탄생)", icon: "👁️", color: "#2563eb",
       oneLiner: "AI가 눈을 떴다",
-      story: "얀 르쿤이 합성곱 신경망(CNN)으로 손글씨 숫자를 인식하는 LeNet-5를 만들었습니다. 미국 우체국이 이 기술로 우편번호를 자동 분류하기 시작했습니다. '후레시로 이미지를 비추는' 합성곱 아이디어가 여기서 시작됐습니다.",
+      story: "얀 르쿤이 합성곱 신경망(CNN)으로 손글씨 숫자를 인식하는 LeNet-5를 만들었습니다. 미국 우체국이 이 기술로 우편번호를 자동 분류하기 시작했습니다. '손전등으로 이미지를 비추는' 합성곱 아이디어가 여기서 시작됐습니다.",
       impact: "이것이 없었다면 → TEPCO의 전주 자동 점검, 자율주행 모두 불가능",
       quiz: { q: "LeNet-5의 실제 활용 사례는?", opts: ["음악 생성", "우편번호 자동 분류", "날씨 예측"], a: 1 },
     },
@@ -4019,7 +4019,7 @@ const Tab7 = ({ onScore }) => {
   const t = T.expert;
   const [step, setStep] = useState(0);
 
-  // CH2: CNN - 후레시 비유
+  // CH2: CNN - 손전등 비유
   const CNNStep1 = () => {
     const [filterPos, setFilterPos] = useState(0);
     const maxPos = 4;
@@ -4043,8 +4043,8 @@ const Tab7 = ({ onScore }) => {
     return (
       <div className="space-y-5">
         <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">어두운 벽에 후레시를 비추다</p>
-          <p className="text-xs text-purple-600">CNN은 이미지를 한 번에 보지 않습니다. 작은 필터(후레시)를 이미지 위로 슬라이딩하며 패턴을 찾습니다.</p>
+          <p className="text-sm text-purple-800 font-medium mb-1">어두운 벽에 손전등을 비추다</p>
+          <p className="text-xs text-purple-600">CNN은 이미지를 한 번에 보지 않습니다. 작은 필터(손전등)를 이미지 위로 슬라이딩하며 패턴을 찾습니다.</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
@@ -4105,7 +4105,7 @@ const Tab7 = ({ onScore }) => {
           </div>
 
           <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-xs text-purple-800">💡 필터가 이미지 위를 이동하며, 밝기가 급변하는 곳(=엣지)에서 높은 값을 출력합니다. <strong>이것이 "후레시로 벽을 비추는 것"</strong>입니다 — 빛이 닿은 곳의 패턴만 보입니다.</p>
+            <p className="text-xs text-purple-800">💡 필터가 이미지 위를 이동하며, 밝기가 급변하는 곳(=엣지)에서 높은 값을 출력합니다. <strong>이것이 "손전등으로 벽을 비추는 것"</strong>입니다 — 빛이 닿은 곳의 패턴만 보입니다.</p>
           </div>
         </div>
       </div>
@@ -4123,7 +4123,7 @@ const Tab7 = ({ onScore }) => {
     return (
       <div className="space-y-5">
         <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">후레시가 점점 넓어진다</p>
+          <p className="text-sm text-purple-800 font-medium mb-1">손전등이 점점 넓어진다</p>
           <p className="text-xs text-purple-600">레이어가 깊어질수록 더 넓은 영역을, 더 추상적인 패턴으로 인식합니다.</p>
         </div>
 
@@ -4224,7 +4224,7 @@ const Tab7 = ({ onScore }) => {
         </div>
 
         <div className="p-3 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-600">각 2×2 영역에서 <strong>최댓값</strong>만 남깁니다. 4×4 → 2×2로 크기가 절반으로. 후레시를 멀리서 비추면 세부사항은 사라지지만 전체 윤곽이 선명해지는 것과 같습니다.</p>
+          <p className="text-xs text-gray-600">각 2×2 영역에서 <strong>최댓값</strong>만 남깁니다. 4×4 → 2×2로 크기가 절반으로. 손전등을 멀리서 비추면 세부사항은 사라지지만 전체 윤곽이 선명해지는 것과 같습니다.</p>
         </div>
 
         <div className="p-3 bg-gray-100 rounded-lg">
@@ -4253,7 +4253,7 @@ const Tab7 = ({ onScore }) => {
     return (
       <div className="space-y-5">
         <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">나만의 후레시 만들기</p>
+          <p className="text-sm text-purple-800 font-medium mb-1">나만의 손전등 만들기</p>
           <p className="text-xs text-purple-600">필터 값을 직접 설정하고, 이미지에 적용 결과를 실험해보세요. 프리셋을 먼저 눌러보고, 값을 바꿔보세요.</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
@@ -4344,7 +4344,7 @@ const Tab7 = ({ onScore }) => {
   };
 
   const cnnSteps = [
-    { title: "합성곱 연산", subtitle: "후레시로 비추기", icon: Eye, content: CNNStep1 },
+    { title: "합성곱 연산", subtitle: "손전등으로 비추기", icon: Eye, content: CNNStep1 },
     { title: "레이어별 추상화", subtitle: "점점 넓게 보기", icon: Layers, content: CNNStep2 },
     { title: "풀링", subtitle: "핵심만 남기기", icon: Target, content: CNNStep3 },
     { title: "필터 실험실", subtitle: "직접 만들어보기", icon: SlidersHorizontal, content: CNNStep4 },
@@ -4366,7 +4366,7 @@ const Tab7 = ({ onScore }) => {
             <h2 className="text-lg font-black text-slate-800">"본다"는 것의 원리</h2>
           </div>
         </div>
-        <p className="text-sm text-slate-500 mb-4">어두운 벽에 후레시를 비추듯, AI가 이미지에서 패턴을 찾아내는 원리를 해부합니다.</p>
+        <p className="text-sm text-slate-500 mb-4">어두운 벽에 손전등을 비추듯, AI가 이미지에서 패턴을 찾아내는 원리를 해부합니다.</p>
 
         <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
           <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 1998 → 2012</p>
