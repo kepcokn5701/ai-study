@@ -4666,6 +4666,16 @@ const Tab9 = ({ onScore }) => {
   const [autoPlay, setAutoPlay] = useState(false);
   const timerRef = useRef(null);
 
+  const [rlhfStep, setRlhfStep] = useState(0);
+  const rlhfSteps = [
+    { id: "sft",      title: "STEP 1 — SFT",         subtitle: "사수의 시범" },
+    { id: "rm",       title: "STEP 2 — 평가 모델",   subtitle: "인사팀의 채점" },
+    { id: "ppo",      title: "STEP 3 — PPO",         subtitle: "조심스러운 개선" },
+    { id: "pipeline", title: "STEP 4 — 파이프라인",  subtitle: "한 장 요약" },
+    { id: "deepdive", title: "STEP 5 — 심화",        subtitle: "수식 꼬리물기" },
+    { id: "quiz",     title: "STEP 6 — 퀴즈",        subtitle: "개념 점검" },
+  ];
+
   const maxEpisodes = 10;
   const episodes = Array.from({ length: maxEpisodes }, (_, i) => {
     const exploration = Math.max(0.1, 1 - i * 0.1);
@@ -4883,6 +4893,67 @@ const Tab9 = ({ onScore }) => {
             </div>
           );
         })()}
+      </Card>
+
+      {/* ═══════════════ RLHF SECTION (SFT · 평가 모델 · PPO) ═══════════════ */}
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Sparkles size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>RLHF · LLM POST-TRAINING</p>
+            <p className="text-[9px] text-gray-400 font-mono">사후학습 — 사전학습된 LLM을 사람이 원하는 방식으로 다듬는 3단계</p>
+            <h2 className="text-lg font-black text-slate-800">그런데 ChatGPT는 어떻게 가르쳤을까?</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">SFT · 평가 모델 · PPO — 앞의 Q-learning과는 또 다른 "사람 피드백" 기반 강화학습</p>
+
+        {/* 전환부 */}
+        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-2">🧭 전환 — 사전학습만으로는 왜 부족할까?</p>
+          <p className="text-xs text-gray-700 leading-relaxed mb-2">
+            GPT 같은 LLM은 먼저 <strong>인터넷의 수많은 글</strong>을 읽으며 "다음 단어 맞추기"를 끝없이 연습합니다 (사전학습). 이 과정을 마치면 문법·상식·코딩까지 어느 정도 압니다 — 하지만 <strong>도서관에서 책만 잔뜩 읽은 신입</strong> 같아서 실무에는 서툴러요.
+          </p>
+          <p className="text-xs text-gray-700 leading-relaxed">
+            "질문에 친절히 답해" "위험한 요청은 거절해" 같은 <strong>실무 감각</strong>은 누가 가르쳐야 할까요? 아래 <strong>3단계 사후학습 (SFT → 평가 모델 → PPO)</strong>이 바로 그 과정입니다.
+          </p>
+        </div>
+
+        {/* Step nav */}
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {rlhfSteps.map((s, i) => (
+            <button key={s.id} onClick={() => setRlhfStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === rlhfStep ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === rlhfStep ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Step content — 다음 커밋들에서 채워집니다 */}
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div>
+              <h3 className="font-semibold text-gray-900">{rlhfSteps[rlhfStep].title}</h3>
+              <p className="text-xs text-gray-400">{rlhfSteps[rlhfStep].subtitle}</p>
+            </div>
+          </div>
+          <div className="p-6 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-center text-sm text-gray-400">
+            (STEP {rlhfStep + 1} 내용은 다음 커밋에서 채워집니다)
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setRlhfStep(Math.max(0, rlhfStep - 1))} disabled={rlhfStep === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            <ArrowLeft size={14} /> 이전
+          </button>
+          <span className="text-xs text-gray-400 self-center">{rlhfStep + 1} / {rlhfSteps.length}</span>
+          <button onClick={() => setRlhfStep(Math.min(rlhfSteps.length - 1, rlhfStep + 1))} disabled={rlhfStep === rlhfSteps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            다음 <ArrowRight size={14} />
+          </button>
+        </div>
       </Card>
     </div>
   );
