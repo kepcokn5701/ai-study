@@ -4747,6 +4747,371 @@ const Tab9 = ({ onScore }) => {
     );
   };
 
+  // ─── STEP 2 — 평가 모델 (Reward Model, RM) · "인사팀의 채점" ───
+  const RlhfRM = () => {
+    const [picked, setPicked] = useState(null);
+    const prompt = "신입 후배에게 첫 회의 준비를 안내하는 메시지를 써줘";
+    const candidates = [
+      { id: "A", text: "안녕하세요! 첫 회의 준비하시느라 긴장되시겠지만, 1) 의제 사전 공유, 2) 본인 소개 멘트 30초, 3) 질문 1~2개만 미리 준비하시면 충분합니다. 부담 갖지 마세요 🙂", good: true, score: 8.7, label: "정중 + 구체적 + 따뜻함" },
+      { id: "B", text: "의제 숙지하고 오세요. 늦지 마시고요.", good: false, score: 3.1, label: "차갑고 위압적, 정보량 부족" },
+    ];
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🏢 신입이 답변 여러 개를 내놓으면, <strong>인사팀</strong>이 "이 답변이 더 좋네, 저건 별로네" 하고 <strong>점수를 매깁니다</strong>. 이 평가 데이터를 학습한 AI가 곧 <strong>평가 모델(Reward Model, RM)</strong> — 자동 채점관입니다.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">왜 필요한가 — SFT만으로는 부족</p>
+          <p className="text-xs text-gray-700 leading-relaxed">
+            SFT로 "질문→답변" 형식은 배웠지만, <strong>어떤 답변이 "더 좋은지"</strong>는 사수가 직접 매번 알려줄 수 없습니다. 대신 <strong>"답변 A vs B 중 뭐가 더 좋아?"</strong>를 수만 쌍 평가시키고, 그 취향을 AI에 학습시킵니다.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+              <p className="font-bold text-gray-500 mb-1">SFT 데이터</p>
+              <p className="text-gray-600">Q + 정답 A ~10만 쌍</p>
+              <p className="text-gray-400 text-[10px] mt-1">"이렇게 답해"</p>
+            </div>
+            <div className="p-2.5 rounded-lg border border-purple-200" style={{ background: "rgba(168,85,247,0.08)" }}>
+              <p className="font-bold text-purple-700 mb-1">RM 데이터</p>
+              <p className="text-purple-700">Q + 답변A vs B 선호 ~5만 쌍</p>
+              <p className="text-purple-500 text-[10px] mt-1">"이게 더 좋아"</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">인터랙티브 — 당신이 인사팀 평가자</p>
+
+          <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+            <p className="text-[10px] font-bold text-gray-500 mb-1">프롬프트</p>
+            <p className="text-xs text-gray-800 font-medium">{prompt}</p>
+          </div>
+
+          <p className="text-xs text-gray-600">두 답변 중 <strong>더 좋은 것</strong>을 선택하세요:</p>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            {candidates.map(c => (
+              <button key={c.id} onClick={() => setPicked(c.id)} disabled={picked !== null}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${picked === null ? "border-gray-200 hover:border-purple-300" : picked === c.id ? (c.good ? "border-emerald-400 bg-emerald-50" : "border-red-300 bg-red-50") : c.good ? "border-emerald-400 bg-emerald-50/40" : "border-gray-200 opacity-60"}`}>
+                <p className="text-[10px] font-bold text-gray-400 mb-1">답변 {c.id}</p>
+                <p className="text-xs text-gray-700 leading-relaxed">{c.text}</p>
+                {picked !== null && (
+                  <div className="mt-2 pt-2 border-t border-gray-200" style={{ animation: "fadeIn 0.3s" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-500">RM 점수:</span>
+                      <span className={`text-sm font-black ${c.good ? "text-emerald-600" : "text-red-500"}`}>{c.score}/10</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{c.label}</p>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {picked !== null && (
+            <div className="p-3 rounded-lg" style={{ background: candidates.find(c => c.id === picked).good ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", animation: "fadeIn 0.3s" }}>
+              <p className="text-xs" style={{ color: candidates.find(c => c.id === picked).good ? "#059669" : "#dc2626" }}>
+                {candidates.find(c => c.id === picked).good
+                  ? "✅ 대부분의 평가자가 A를 선호합니다. 이런 선호 데이터 수만 쌍이 쌓이면, RM이 자동으로 '좋은 답'을 판별합니다."
+                  : "❌ 대부분의 평가자는 A를 선호합니다. B는 정보량이 적고 차갑습니다."}
+              </p>
+              <button onClick={() => setPicked(null)} className="text-[10px] text-gray-500 mt-1 hover:text-gray-800"><RotateCcw size={10} className="inline mr-1" />다시</button>
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>핵심:</strong> RM은 답변을 <strong>생성하지 않습니다</strong>. 답변을 받아서 "이건 7.8점, 저건 3.2점" 하고 <strong>점수만 출력</strong>합니다. 다음 STEP PPO가 이 점수를 나침반 삼아 모델을 개선합니다.</p>
+        </div>
+        <div className="p-3 bg-gray-100 rounded-lg">
+          <p className="text-xs text-gray-600"><strong>📊 수치:</strong> InstructGPT 논문 기준, RM 학습에 <strong>약 33,000개의 비교 쌍</strong>을 사용. 평가자는 응답의 유용성·정확성·안전성을 종합 평가합니다.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── STEP 3 — PPO · "조심스러운 개선" ───
+  const RlhfPPO = () => {
+    const [iter, setIter] = useState(0);
+    const [beta, setBeta] = useState(0.1); // 조심성
+    const iterations = [
+      { name: "초기 (SFT 직후)", rmScore: 5.2, drift: 0, answer: "첫 회의는 의제 숙지하고 참여하세요.", note: "기본적인 답변" },
+      { name: "Iter 10", rmScore: 6.4, drift: 0.08, answer: "첫 회의는 의제를 숙지하고 질문 1~2개 준비해 참여하세요.", note: "정보량 증가" },
+      { name: "Iter 50", rmScore: 7.8, drift: 0.18, answer: "첫 회의 준비하시느라 긴장되실 텐데요, 1) 의제 확인 2) 자기소개 30초 3) 질문 준비면 충분합니다.", note: "정중함 + 구조화" },
+      { name: "Iter 100", rmScore: 9.0, drift: 0.28, answer: "안녕하세요! 첫 회의 잘 준비하고 계시죠? 의제 사전 공유 받으셨으면 읽어보시고, 본인 소개 멘트 30초와 질문 1~2개만 미리 적어오시면 충분합니다. 긴장 마세요 🙂", note: "따뜻함 + 실용성 + 이모지" },
+    ];
+    const curr = iterations[iter];
+    const driftCap = beta * 2;
+    const isDivergent = curr.drift > driftCap;
+
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🎯 <strong>PPO (Proximal Policy Optimization, 근접 정책 최적화)</strong> — 인사팀(=RM) 점수가 높은 방향으로 모델을 <strong>조금씩 조심스럽게</strong> 수정합니다. 너무 크게 바꾸면 기존 실력(수학·코딩)을 잃어버리거든요. "조심성(β)"이 이 속도를 조절합니다.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">왜 "조심스럽게"인가?</p>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <div className="p-2.5 bg-red-50 rounded-lg border border-red-200">
+              <p className="font-bold text-red-700 mb-1">⚠️ 조심성 낮음 (β↓)</p>
+              <p className="text-red-600">RM 점수만 쫓아 빨리 개선 → 기존 지식 손실, 이상한 답변 생성 위험</p>
+            </div>
+            <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+              <p className="font-bold text-emerald-700 mb-1">✅ 조심성 적절 (β 균형)</p>
+              <p className="text-emerald-600">SFT 실력은 보존하며, 점수는 서서히 개선. 안정적 수렴.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 조심성 슬라이더 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-700">🎛️ 조심성 (β) 슬라이더</p>
+            <span className="text-xs font-mono font-bold text-purple-600">β = {beta.toFixed(2)}</span>
+          </div>
+          <input type="range" min="0.02" max="0.3" step="0.02" value={beta}
+            onChange={e => setBeta(parseFloat(e.target.value))}
+            className="w-full" style={{ accentColor: "#a855f7" }} />
+          <div className="flex justify-between text-[9px] text-gray-400">
+            <span>무모 ← 0.02</span>
+            <span>보수적 → 0.30</span>
+          </div>
+          <p className="text-[10px] text-gray-500">β가 작으면 과감하게 변하지만 기존 능력을 잃을 위험. 크면 안정적이지만 개선이 느림.</p>
+        </div>
+
+        {/* Iteration 선택 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">학습 반복 (Iteration)</p>
+          <div className="flex gap-1.5">
+            {iterations.map((it, i) => (
+              <button key={i} onClick={() => setIter(i)}
+                className={`flex-1 p-2 rounded-lg text-[10px] font-medium transition-all ${i === iter ? "bg-purple-500 text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}>
+                {it.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-3 rounded-xl border-2 border-purple-200 bg-purple-50/30 space-y-2" key={iter} style={{ animation: "fadeIn 0.3s" }}>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold text-purple-700">{curr.name}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-500">RM 점수:</span>
+                <span className={`text-sm font-black ${curr.rmScore >= 8 ? "text-emerald-600" : curr.rmScore >= 6.5 ? "text-amber-600" : "text-gray-600"}`}>{curr.rmScore}/10</span>
+              </div>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${curr.rmScore * 10}%`, background: curr.rmScore >= 8 ? "#10b981" : curr.rmScore >= 6.5 ? "#f59e0b" : "#94a3b8" }} />
+            </div>
+
+            <div className="p-2.5 bg-white rounded-lg border border-gray-100">
+              <p className="text-[10px] text-gray-400 mb-1">🤖 모델 답변:</p>
+              <p className="text-[11px] text-gray-700 leading-relaxed">{curr.answer}</p>
+            </div>
+
+            <p className="text-[10px] text-gray-500 italic">💬 {curr.note}</p>
+
+            {/* 조심성 경고 */}
+            <div className={`p-2 rounded-lg flex items-center gap-2 ${isDivergent ? "bg-red-50 border border-red-200" : "bg-emerald-50 border border-emerald-200"}`}>
+              <span className="text-xs">{isDivergent ? "⚠️" : "✅"}</span>
+              <p className="text-[10px]" style={{ color: isDivergent ? "#dc2626" : "#059669" }}>
+                {isDivergent
+                  ? `모델 변화량 ${curr.drift.toFixed(2)} > 허용치 ${driftCap.toFixed(2)} — β가 너무 작음! 기존 능력 손실 위험.`
+                  : `모델 변화량 ${curr.drift.toFixed(2)} ≤ 허용치 ${driftCap.toFixed(2)} — 안정적 개선 중.`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>PPO의 Proximal(근접):</strong> 매 iteration마다 "기존 모델과 너무 멀어지지 말자"는 <strong>KL-divergence 제약</strong>을 걸어둡니다. 이 제약의 강도가 바로 β입니다. 이렇게 해야 SFT에서 배운 실력을 유지하면서 RM 점수를 높일 수 있습니다.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── STEP 4 — 파이프라인 "한 장 요약" ───
+  const RlhfPipeline = () => (
+    <div className="space-y-4">
+      <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+        <p className="text-xs text-purple-800 leading-relaxed">
+          🗺️ 지금까지 배운 내용을 <strong>한 장의 지도</strong>로 정리합니다. 빈 모델이 ChatGPT/Claude가 되는 전체 여정입니다.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">ChatGPT/Claude 제작 공정</p>
+
+        {[
+          { step: "0", name: "Raw Transformer", desc: "랜덤 초기화된 빈 신경망", icon: "⚪", color: "#9ca3af", metaphor: "입사 전 — 백지 상태" },
+          { step: "1", name: "Pre-training (사전학습)", desc: "인터넷 글 수조 토큰 학습 → 언어·지식·상식 획득", icon: "🌍", color: "#3b82f6", metaphor: "도서관에서 책 읽기" },
+          { step: "2", name: "SFT (지도 미세조정)", desc: "사람이 만든 Q&A 수만 개로 답변 스타일 학습", icon: "👨‍🏫", color: "#059669", metaphor: "사수 김과장의 시범" },
+          { step: "3", name: "RM (평가 모델)", desc: "사람 선호 쌍 학습 → 답변 자동 채점 AI 구축", icon: "📊", color: "#d97706", metaphor: "인사팀의 채점표" },
+          { step: "4", name: "PPO (조심스러운 개선)", desc: "RM 점수 높은 쪽으로 모델 미세 수정 (β 제약)", icon: "🎯", color: "#a855f7", metaphor: "칭찬받는 방향으로 성장" },
+          { step: "5", name: "배포", desc: "ChatGPT, Claude, Gemini로 서비스", icon: "🚀", color: "#ef4444", metaphor: "정식 출근 — 현업 투입" },
+        ].map((s, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ background: s.color }}>{s.step}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-bold text-gray-800">{s.icon} {s.name}</p>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: s.color + "15", color: s.color }}>{s.metaphor}</span>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-0.5">{s.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: "사전학습 데이터", val: "~10조 토큰", sub: "인터넷 텍스트" },
+          { label: "SFT 데이터", val: "~10만 쌍", sub: "사람이 직접 작성" },
+          { label: "RM 데이터", val: "~3만 쌍", sub: "사람이 선호 평가" },
+        ].map((v, i) => (
+          <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-center">
+            <p className="text-[9px] text-gray-400 font-bold uppercase">{v.label}</p>
+            <p className="text-sm font-black text-gray-800 mt-1">{v.val}</p>
+            <p className="text-[9px] text-gray-400">{v.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <p className="text-xs text-amber-800"><strong>핵심 통찰:</strong> 데이터 규모가 <strong>10조 → 10만 → 3만</strong>으로 극적으로 줄어듭니다. 사전학습은 "양", 사후학습은 "질". 후자가 적은 데이터로도 강력한 이유는, 이미 학습된 방대한 기반 위에서 <strong>방향만 조정</strong>하기 때문입니다.</p>
+      </div>
+    </div>
+  );
+
+  // ─── STEP 5 — 심화 "수식 꼬리물기" ───
+  const RlhfDeepDive = () => {
+    const [showSFT, setShowSFT] = useState(false);
+    const [showRM, setShowRM] = useState(false);
+    const [showPPO, setShowPPO] = useState(false);
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🔬 각 단계의 실제 <strong>목적 함수 (Loss Function)</strong>를 펼쳐봅니다. "어떤 값을 최소화/최대화하는가"만 이해하면 내부 동작이 보입니다.
+          </p>
+        </div>
+
+        {/* SFT 수식 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+          <button onClick={() => setShowSFT(!showSFT)} className="w-full flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-700">📘 SFT 수식 — Cross-Entropy Loss</p>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${showSFT ? "rotate-180" : ""}`} />
+          </button>
+          {showSFT && (
+            <div className="space-y-2 pt-2 border-t border-gray-100" style={{ animation: "fadeIn 0.3s" }}>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center">
+                <p className="text-purple-400 text-sm">L_SFT = − Σ log P(y_t | x, y_&lt;t)</p>
+              </div>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                입력 x가 주어졌을 때, 사수의 정답 토큰 y_t를 예측할 <strong>로그 확률</strong>을 최대화 (= 음수 로그를 최소화). 다음 토큰 맞추기와 완전히 동일한 수식입니다 — 데이터만 고품질로 바뀐 것.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* RM 수식 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+          <button onClick={() => setShowRM(!showRM)} className="w-full flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-700">📗 RM 수식 — Bradley-Terry Preference Loss</p>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${showRM ? "rotate-180" : ""}`} />
+          </button>
+          {showRM && (
+            <div className="space-y-2 pt-2 border-t border-gray-100" style={{ animation: "fadeIn 0.3s" }}>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center">
+                <p className="text-emerald-400 text-sm">L_RM = − log σ(r(x, y_좋음) − r(x, y_나쁨))</p>
+              </div>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                선호된 답변(y_좋음)의 점수가 비선호된 답변(y_나쁨)보다 <strong>높도록</strong> 학습. σ는 sigmoid로 점수 차이를 확률로 변환합니다. 절대 점수가 아닌 <strong>상대 순위</strong>가 학습됩니다.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* PPO 수식 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+          <button onClick={() => setShowPPO(!showPPO)} className="w-full flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-700">📕 PPO 수식 — 정책 목적 함수</p>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${showPPO ? "rotate-180" : ""}`} />
+          </button>
+          {showPPO && (
+            <div className="space-y-2 pt-2 border-t border-gray-100" style={{ animation: "fadeIn 0.3s" }}>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center space-y-1">
+                <p className="text-amber-400 text-sm">L_PPO = E[ r(x, y) − β · KL(π_new ‖ π_SFT) ]</p>
+              </div>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                <strong>첫 항 (r)</strong>: RM 점수를 최대화. <strong>둘째 항 (KL)</strong>: 기존 SFT 모델과 너무 달라지지 않도록 페널티. <strong>β (조심성)</strong>가 이 페널티 강도를 조절합니다. β가 클수록 보수적, 작을수록 과감.
+              </p>
+              <p className="text-[10px] text-gray-500 italic">💡 이 수식 하나로 앞의 STEP 3 슬라이더가 왜 "조심성"인지 이해됩니다.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 bg-gray-100 rounded-lg">
+          <p className="text-xs text-gray-600"><strong>한 줄 요약:</strong> SFT는 <em>정답 모방</em>, RM은 <em>선호 학습</em>, PPO는 <em>보상 최대화 + 조심성</em>. 세 수식이 함께 작동해야 ChatGPT 품질이 나옵니다.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── STEP 6 — 퀴즈 ───
+  const RlhfQuiz = () => {
+    const [ans, setAns] = useState({});
+    const [done, setDone] = useState(false);
+    const qs = [
+      { id:"q1", q:"SFT(Supervised Fine-Tuning)의 목표는?", opts:["다음 단어 예측 확률 최대화 — 방식은 사전학습과 동일, 데이터만 고품질 Q&A", "모델 크기를 늘림", "하드웨어 가속"], a:0 },
+      { id:"q2", q:"평가 모델(RM)이 하는 일은?", opts:["답변을 생성", "답변의 품질을 숫자로 채점 (상대 순위 학습)", "문서를 분류"], a:1 },
+      { id:"q3", q:"PPO에서 β(조심성) 파라미터의 역할은?", opts:["학습 속도를 빠르게 함", "기존 SFT 모델과 너무 멀어지지 않도록 제약", "데이터 크기를 조절"], a:1 },
+      { id:"q4", q:"사후학습 전체 파이프라인 순서는?", opts:["RM → SFT → PPO", "SFT → RM → PPO", "PPO → RM → SFT"], a:1 },
+      { id:"q5", q:"왜 RM은 '점수'가 아니라 '쌍 비교'로 학습할까?", opts:["사람은 절대점수보다 상대비교를 훨씬 일관되게 잘함", "계산이 빠름", "메모리 절약"], a:0 },
+    ];
+    const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🎯 5문항으로 사후학습 전체 개념을 점검합니다. 모두 맞히면 RLHF 마스터!
+          </p>
+        </div>
+
+        {qs.map((q, qi) => (
+          <div key={q.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
+            <div className="space-y-1.5">
+              {q.opts.map((o, oi) => {
+                const sel = ans[q.id] === oi, cor = done && oi === q.a, wr = done && sel && oi !== q.a;
+                return (
+                  <button key={oi} onClick={() => !done && setAns(p => ({...p, [q.id]: oi}))} disabled={done}
+                    className={`w-full text-left p-2 rounded-lg text-[11px] border transition-all ${cor ? "bg-emerald-50 border-emerald-300 font-bold text-emerald-800" : wr ? "bg-red-50 border-red-300 text-red-700" : sel ? "border-purple-400 bg-purple-50 text-purple-700" : "border-gray-100 hover:border-gray-200 text-gray-600"}`}>{o}</button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {!done ? (
+          <button onClick={() => setDone(true)} disabled={Object.keys(ans).length < qs.length}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{ background: "#a855f7" }}>제출하기</button>
+        ) : (
+          <div className="p-4 rounded-xl text-center" style={{ background: sc === qs.length ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)" }}>
+            <p className="text-lg font-black" style={{ color: sc === qs.length ? "#059669" : "#d97706" }}>{sc}/{qs.length} 정답</p>
+            <p className="text-xs text-gray-500 mt-1">{sc === qs.length ? "RLHF 마스터! 🎉 ChatGPT 제작 과정을 완벽히 이해하셨습니다." : "틀린 문제의 초록색 정답을 확인하세요."}</p>
+            <button onClick={() => { setAns({}); setDone(false); }} className="mt-2 text-xs text-gray-500 hover:text-gray-800"><RotateCcw size={12} className="inline mr-1" />다시 풀기</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const maxEpisodes = 10;
   const episodes = Array.from({ length: maxEpisodes }, (_, i) => {
     const exploration = Math.max(0.1, 1 - i * 0.1);
@@ -5011,11 +5376,12 @@ const Tab9 = ({ onScore }) => {
               <p className="text-xs text-gray-400">{rlhfSteps[rlhfStep].subtitle}</p>
             </div>
           </div>
-          {rlhfStep === 0 ? <RlhfSFT /> : (
-            <div className="p-6 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-center text-sm text-gray-400">
-              (STEP {rlhfStep + 1} 내용은 다음 커밋에서 채워집니다)
-            </div>
-          )}
+          {rlhfStep === 0 && <RlhfSFT />}
+          {rlhfStep === 1 && <RlhfRM />}
+          {rlhfStep === 2 && <RlhfPPO />}
+          {rlhfStep === 3 && <RlhfPipeline />}
+          {rlhfStep === 4 && <RlhfDeepDive />}
+          {rlhfStep === 5 && <RlhfQuiz />}
         </div>
 
         <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
@@ -5026,407 +5392,6 @@ const Tab9 = ({ onScore }) => {
           <button onClick={() => setRlhfStep(Math.min(rlhfSteps.length - 1, rlhfStep + 1))} disabled={rlhfStep === rlhfSteps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">
             다음 <ArrowRight size={14} />
           </button>
-        </div>
-      </Card>
-    </div>
-  );
-};
-
-// ─── TAB 11: LLM 학습 파이프라인 (Course 3) ────────────
-const Tab11 = ({ onScore }) => {
-  const t = T.expert;
-  const [stage, setStage] = useState(0);
-
-  // Stage 1: Pre-training
-  const PreTrainStep = () => {
-    const [input, setInput] = useState("나는 오늘 아침에 커피를");
-    const predictions = [
-      { word: "마셨다", prob: 42, reason: "'커피를' 다음에 가장 자주 등장" },
-      { word: "샀다", prob: 18, reason: "'아침에 커피를' 패턴에서 종종 등장" },
-      { word: "내렸다", prob: 12, reason: "'커피를 내리다' 표현 학습" },
-      { word: "쏟았다", prob: 8, reason: "드물지만 가능한 전개" },
-      { word: "먹었다", prob: 20, reason: "구어체에서 자주 사용" },
-    ];
-    return (
-      <div className="space-y-5">
-        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">🌍 "세상의 모든 글을 읽은 사람" 만들기</p>
-          <p className="text-xs text-purple-600 leading-relaxed">사전학습(Pre-training)은 인터넷의 방대한 텍스트 — 위키피디아, 책, 뉴스, 코드 — 를 AI에게 보여주고 <strong>"다음 단어 맞추기"</strong>만 수천억 번 시키는 과정입니다. 이 단순한 과제가 놀랍게도 언어의 문법, 상식, 세상의 지식을 모두 학습하게 만듭니다.</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 1 — 다음 단어 예측 (Next Token Prediction)</p>
-
-          <div className="p-4 bg-gray-50 rounded-xl">
-            <p className="text-[10px] text-gray-400 mb-2">📖 입력 문장</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-mono text-gray-700">"{input}</span>
-              <span className="inline-block w-6 h-5 rounded bg-purple-200 animate-pulse" />
-              <span className="text-sm font-mono text-gray-700">"</span>
-            </div>
-            <p className="text-[10px] text-gray-500 mt-2">AI는 빈칸에 올 단어를 예측합니다. 수천억 문장에서 이 게임을 반복하며 확률 분포를 학습합니다.</p>
-          </div>
-
-          <div className="space-y-1.5">
-            <p className="text-[10px] text-gray-400 mb-1">🎯 AI의 예측 확률 분포:</p>
-            {predictions.sort((a, b) => b.prob - a.prob).map((p, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold w-16 text-gray-700">{p.word}</span>
-                <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.prob * 2}%`, background: i === 0 ? "#a855f7" : "#cbd5e1" }} />
-                </div>
-                <span className="text-[10px] font-mono w-10 text-right">{p.prob}%</span>
-                <span className="text-[9px] text-gray-400 flex-1 hidden md:inline">{p.reason}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-800"><strong>놀라운 점:</strong> "다음 단어 맞추기"만 시켰는데, 문법과 지식이 저절로 생깁니다. "세종대왕은 ___을 창제했다" → "한글". "1+1=___" → "2". <strong>창발(emergence)</strong> 현상이라 부릅니다.</p>
-          </div>
-
-          <div className="p-3 bg-gray-100 rounded-lg">
-            <p className="text-xs text-gray-600"><strong>📊 규모:</strong> GPT-3 학습 데이터 ≈ 인터넷 텍스트 <strong>45TB</strong> (≈ 인쇄 시 2억 페이지). 학습 비용 ≈ <strong>수백만~수천만 달러</strong>. 시간 ≈ 수개월, GPU 수천 대.</p>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200">
-          <p className="text-xs font-bold text-red-700 mb-1">⚠️ 한계: "아는 것은 많지만, 대화는 못함"</p>
-          <p className="text-xs text-red-600">사전학습만 끝낸 모델은 "질문 다음엔 답"이라는 개념이 없습니다. "프랑스의 수도는?"이라고 물으면 "영국의 수도는? 독일의 수도는? ..."처럼 비슷한 질문들을 줄줄이 나열할 수도 있습니다. 여기서 <strong>사후학습(Post-training)</strong>이 필요합니다.</p>
-        </div>
-      </div>
-    );
-  };
-
-  // Stage 2: SFT
-  const SFTStep = () => {
-    const [showAfter, setShowAfter] = useState(false);
-    return (
-      <div className="space-y-5">
-        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">👨‍🏫 사수 김과장의 정답지 교육</p>
-          <p className="text-xs text-purple-600 leading-relaxed"><strong>SFT (Supervised Fine-Tuning, 지도 미세조정)</strong> — 신입사원이 방대한 책을 읽었어도 실무는 다릅니다. 김과장이 "이런 질문에는 이렇게 답해"라며 <strong>우수 답변 예시</strong>를 수만 개 보여주면, 모델이 '질문→답변' 형식을 배웁니다.</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 2 — SFT 전/후 비교</p>
-
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-[10px] text-gray-400 mb-2">📝 질문:</p>
-            <p className="text-sm font-medium text-gray-800">"프랑스의 수도는?"</p>
-          </div>
-
-          <button onClick={() => setShowAfter(!showAfter)}
-            className="px-4 py-2 rounded-lg text-xs font-bold text-white" style={{ background: "#a855f7" }}>
-            {showAfter ? "SFT 전 보기" : "SFT 후 보기 🎓"}
-          </button>
-
-          {!showAfter ? (
-            <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200" style={{ animation: "fadeIn 0.3s" }}>
-              <p className="text-[10px] font-bold text-red-700 mb-2">❌ SFT 전 (사전학습만 마친 상태)</p>
-              <p className="text-xs text-red-600 font-mono leading-relaxed">"프랑스의 수도는? 독일의 수도는? 영국의 수도는? 스페인의 수도는? 이탈리아의 수도는? ..."</p>
-              <p className="text-[10px] text-red-500 mt-2">→ 질문 패턴만 학습한 상태. 실제로 답을 할 줄 모름.</p>
-            </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-200" style={{ animation: "fadeIn 0.3s" }}>
-              <p className="text-[10px] font-bold text-emerald-700 mb-2">✅ SFT 후 (김과장의 정답지 학습 완료)</p>
-              <p className="text-xs text-emerald-700 font-mono leading-relaxed">"프랑스의 수도는 파리(Paris)입니다. 파리는 센 강을 따라 위치한 도시로, 에펠탑과 루브르 박물관 등 세계적인 명소가 많습니다."</p>
-              <p className="text-[10px] text-emerald-600 mt-2">→ 질문에 '답변' 형식으로 응답하는 법을 학습.</p>
-            </div>
-          )}
-
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-            <p className="text-[10px] text-gray-500">📚 SFT 학습 데이터 예시:</p>
-            {[
-              { q: "물은 몇 도에서 끓나요?", a: "물은 1기압에서 100°C에 끓습니다." },
-              { q: "간단한 이메일 인사말을 써줘", a: "안녕하세요, [상대방 이름]님. 잘 지내고 계신가요?" },
-              { q: "코드에 버그가 있어요", a: "어떤 코드인지 공유해 주시면 함께 살펴보겠습니다." },
-            ].map((ex, i) => (
-              <div key={i} className="p-2 bg-white rounded border border-gray-100">
-                <p className="text-[10px] text-blue-700"><strong>Q:</strong> {ex.q}</p>
-                <p className="text-[10px] text-emerald-700 mt-0.5"><strong>A:</strong> {ex.a}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-800"><strong>핵심:</strong> SFT는 <strong>사람이 직접 만든 수만 개의 우수 답변</strong>으로 학습합니다. OpenAI는 박사급 전문가 수천 명을 고용하여 데이터를 만들었습니다. 품질이 SFT 데이터 품질에 따라 결정됩니다.</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Stage 3: RM (Reward Model)
-  const RMStep = () => {
-    const [picked, setPicked] = useState(null);
-    const responses = [
-      { id: 0, text: "회의 자료는 내일 아침까지 제출 부탁드립니다.", good: true, score: 8.5, label: "정중하고 명확한 업무 지시" },
-      { id: 1, text: "내일까지 해놔라. 늦으면 알지?", good: false, score: 2.3, label: "위압적이고 무례한 표현" },
-    ];
-    return (
-      <div className="space-y-5">
-        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">📊 팀장님의 취향을 배운 비서 (Reward Model)</p>
-          <p className="text-xs text-purple-600 leading-relaxed"><strong>RM (Reward Model, 보상 모델)</strong> — 어떤 답변이 '더 좋은지'를 채점하는 별도의 AI입니다. 사람이 직접 "답변 A vs B 중 뭐가 더 좋아요?"를 수만 번 평가하면, 그 취향을 학습하여 자동 채점을 할 수 있게 됩니다.</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 3 — 당신이 인간 평가자가 되어보세요</p>
-
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-[10px] text-gray-400 mb-1">📝 프롬프트:</p>
-            <p className="text-sm font-medium text-gray-800">"부하직원에게 회의 자료 제출 요청 메시지를 써줘"</p>
-          </div>
-
-          <p className="text-xs text-gray-600">다음 두 답변 중 <strong>더 좋은 답</strong>을 선택하세요:</p>
-
-          <div className="grid md:grid-cols-2 gap-3">
-            {responses.map(r => (
-              <button key={r.id} onClick={() => setPicked(r.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${picked === null ? "border-gray-200 hover:border-purple-300" : picked === r.id ? (r.good ? "border-emerald-400 bg-emerald-50" : "border-red-300 bg-red-50") : r.good ? "border-emerald-400 bg-emerald-50/50" : "border-gray-200 opacity-60"}`}
-                disabled={picked !== null}>
-                <p className="text-[10px] font-bold text-gray-400 mb-2">답변 {String.fromCharCode(65 + r.id)}</p>
-                <p className="text-xs text-gray-700 leading-relaxed">{r.text}</p>
-                {picked !== null && (
-                  <div className="mt-3 pt-3 border-t border-gray-200" style={{ animation: "fadeIn 0.3s" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-500">RM 점수:</span>
-                      <span className={`text-sm font-black ${r.good ? "text-emerald-600" : "text-red-500"}`}>{r.score}/10</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 mt-1">{r.label}</p>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {picked !== null && (
-            <div className="p-3 rounded-lg" style={{ background: responses[picked].good ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", animation: "fadeIn 0.3s" }}>
-              <p className="text-xs" style={{ color: responses[picked].good ? "#059669" : "#dc2626" }}>
-                {responses[picked].good ? "✅ 대부분의 사람이 A를 선호합니다. 이런 평가 수만 개가 모이면 RM이 '좋은 답'을 자동 판별하게 됩니다." : "❌ 대부분의 사람은 A를 선호합니다. B는 무례하고 불친절합니다."}
-              </p>
-              <button onClick={() => setPicked(null)} className="text-[10px] text-gray-500 mt-2 hover:text-gray-800"><RotateCcw size={10} className="inline mr-1" />다시 선택</button>
-            </div>
-          )}
-
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-800"><strong>핵심:</strong> RM은 모델이 아니라 <strong>평가자</strong>입니다. "답변 A가 B보다 얼마나 좋은가?"를 숫자로 출력합니다. OpenAI는 평가자를 수천 명 고용하여 수십만 쌍을 평가시켰습니다. 이것이 RLHF의 기반 데이터입니다.</p>
-          </div>
-
-          <div className="p-3 bg-gray-100 rounded-lg">
-            <p className="text-xs text-gray-600"><strong>📊 수치:</strong> InstructGPT 논문에서 RM 학습에 약 <strong>33,000개의 비교 쌍</strong>을 사용했습니다. 평가자는 응답의 유용성, 정확성, 안전성을 고려하여 선호도를 결정합니다.</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Stage 4: PPO
-  const PPOStep = () => {
-    const [iteration, setIteration] = useState(0);
-    const iterations = [
-      { name: "초기 (SFT 후)", rmScore: 5.2, response: "회의 자료 제출해 주세요.", note: "기본적인 답변, 존댓말 있음" },
-      { name: "Iter 10", rmScore: 6.4, response: "회의 자료를 내일까지 제출 부탁드립니다.", note: "마감일 추가됨" },
-      { name: "Iter 50", rmScore: 7.8, response: "내일 회의 준비를 위해, 자료를 오늘 오후 6시까지 공유해 주시면 감사하겠습니다.", note: "맥락 + 구체적 시간 + 정중함" },
-      { name: "Iter 100", rmScore: 9.1, response: "안녕하세요. 내일 2시 프로젝트 리뷰 회의 준비를 위해, 오늘 오후 6시까지 발표 자료 초안을 공유 부탁드립니다. 검토 후 피드백 드리겠습니다.", note: "인사말 + 목적 + 구체 시간 + 후속 조치" },
-    ];
-    const curr = iterations[iteration];
-    return (
-      <div className="space-y-5">
-        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">🎯 칭찬받는 방향으로 미세조정 (PPO)</p>
-          <p className="text-xs text-purple-600 leading-relaxed"><strong>PPO (Proximal Policy Optimization, 근접 정책 최적화)</strong> — 강화학습 알고리즘으로, 모델이 출력한 답변을 RM으로 채점하고, 점수가 높은 방향으로 모델을 조금씩 수정합니다. <strong>"조심스럽게(proximal)"</strong> 업데이트하여 기존 능력은 보존하면서 점점 더 좋은 답변을 하게 됩니다.</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">STEP 4 — PPO 학습 시뮬레이션</p>
-
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-[10px] text-gray-400 mb-1">📝 프롬프트 (고정):</p>
-            <p className="text-xs font-medium text-gray-800">"부하직원에게 회의 자료 제출 요청 메시지를 써줘"</p>
-          </div>
-
-          {/* Iteration selector */}
-          <div className="flex gap-1.5">
-            {iterations.map((it, i) => (
-              <button key={i} onClick={() => setIteration(i)}
-                className={`flex-1 p-2 rounded-lg text-[10px] font-medium transition-all ${i === iteration ? "bg-purple-500 text-white" : "bg-gray-50 text-gray-500"}`}>
-                {it.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Current iteration */}
-          <div className="p-4 rounded-xl border-2 border-purple-200 bg-purple-50/30 space-y-3" key={iteration} style={{ animation: "fadeIn 0.3s" }}>
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold text-purple-700">{curr.name}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-500">RM 점수:</span>
-                <span className={`text-sm font-black ${curr.rmScore >= 8 ? "text-emerald-600" : curr.rmScore >= 6.5 ? "text-amber-600" : "text-gray-600"}`}>{curr.rmScore}/10</span>
-              </div>
-            </div>
-
-            {/* Score bar */}
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${curr.rmScore * 10}%`, background: curr.rmScore >= 8 ? "#10b981" : curr.rmScore >= 6.5 ? "#f59e0b" : "#94a3b8" }} />
-            </div>
-
-            <div className="p-3 bg-white rounded-lg border border-gray-100">
-              <p className="text-[10px] text-gray-400 mb-1">🤖 모델의 답변:</p>
-              <p className="text-xs text-gray-700 leading-relaxed">{curr.response}</p>
-            </div>
-
-            <p className="text-[10px] text-gray-500 italic">💬 {curr.note}</p>
-          </div>
-
-          {/* Improvement chart */}
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-[10px] text-gray-400 mb-2">학습 진행에 따른 RM 점수 변화:</p>
-            <div className="flex items-end gap-1 h-20">
-              {iterations.map((it, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full rounded-t-sm transition-all duration-500" style={{ height: `${it.rmScore * 10}%`, background: i === iteration ? "#a855f7" : "#c4b5fd" }} />
-                  <span className="text-[8px] text-gray-400">{it.rmScore}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-800"><strong>왜 "근접(Proximal)" 최적화인가?</strong> 너무 크게 바꾸면 기존 능력을 잃어버립니다 (예: 수학 실력이 사라짐). 그래서 <strong>작은 변화만 허용</strong>하는 제약을 두고, 조심스럽게 개선합니다. <strong>β (조심성)</strong> 파라미터가 이 제약의 강도를 결정합니다.</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Stage 5: Overview
-  const OverviewStep = () => {
-    const [ans, setAns] = useState({});
-    const [done, setDone] = useState(false);
-    const qs = [
-      { id:"q1", q:"사전학습(Pre-training)에서 AI가 배우는 것은?", opts:["대화하는 법","다음 단어 맞추기를 통한 언어/지식","수학 계산"], a:1 },
-      { id:"q2", q:"SFT가 필요한 이유는?", opts:["사전학습만으론 질문-답변 형식을 모름","데이터가 부족해서","속도를 높이려고"], a:0 },
-      { id:"q3", q:"RM(Reward Model)의 역할은?", opts:["답변을 생성","답변의 품질을 점수로 평가","데이터 수집"], a:1 },
-      { id:"q4", q:"PPO의 핵심 아이디어는?", opts:["모델을 완전히 새로 훈련","RM 점수가 높은 방향으로 조심스럽게 업데이트","학습 속도 증가"], a:1 },
-    ];
-    const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
-    return (
-      <div className="space-y-5">
-        <div className="p-4 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-sm text-purple-800 font-medium mb-1">🎓 전체 파이프라인 — 한 장 정리</p>
-          <p className="text-xs text-purple-600">지금까지 배운 4단계를 한 번에 보며, 이해도를 점검합니다.</p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">ChatGPT/Claude가 만들어지는 과정</p>
-
-          {[
-            { step: "0", name: "Raw Transformer", desc: "랜덤 초기화된 빈 모델", icon: "⚪", color: "#9ca3af" },
-            { step: "1", name: "Pre-training (사전학습)", desc: "인터넷 텍스트로 '다음 단어 맞추기' 학습 → 언어/지식 획득", icon: "🌍", color: "#3b82f6" },
-            { step: "2", name: "SFT (지도 미세조정)", desc: "우수 답변 예시 수만 개로 학습 → '질문→답변' 형식 획득", icon: "👨‍🏫", color: "#059669" },
-            { step: "3", name: "RM (보상 모델 훈련)", desc: "사람 평가 수만 쌍 → 답변 품질 자동 채점 AI 구축", icon: "📊", color: "#d97706" },
-            { step: "4", name: "PPO (RLHF)", desc: "RM 점수 높은 답변이 나오도록 모델 조심스럽게 수정", icon: "🎯", color: "#a855f7" },
-            { step: "5", name: "배포 (Deployment)", desc: "ChatGPT, Claude로 서비스 제공", icon: "🚀", color: "#ef4444" },
-          ].map((s, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-black text-white" style={{ background: s.color }}>{s.step}</div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-gray-800">{s.icon} {s.name}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{s.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">🎯 최종 이해도 체크</p>
-
-          {qs.map((q, qi) => (
-            <div key={q.id} className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
-              <div className="space-y-1">
-                {q.opts.map((o, oi) => {
-                  const sel=ans[q.id]===oi, cor=done&&oi===q.a, wr=done&&sel&&oi!==q.a;
-                  return <button key={oi} onClick={() => !done&&setAns(p=>({...p,[q.id]:oi}))} disabled={done}
-                    className={`w-full text-left p-2 rounded-lg text-xs border transition-all ${cor?"bg-emerald-50 border-emerald-300 font-bold text-emerald-800":wr?"bg-red-50 border-red-300 text-red-700":sel?"border-purple-400 bg-purple-50 text-purple-700":"border-gray-100 hover:border-gray-200 text-gray-600"}`}>{o}</button>;
-                })}
-              </div>
-            </div>
-          ))}
-
-          {!done ? (
-            <button onClick={() => setDone(true)} disabled={Object.keys(ans).length<qs.length} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{background:"#a855f7"}}>제출하기</button>
-          ) : (
-            <div className="p-3 rounded-xl text-center" style={{background:sc===qs.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"}}>
-              <p className="text-lg font-black" style={{color:sc===qs.length?"#059669":"#d97706"}}>{sc}/{qs.length} 정답</p>
-              <p className="text-xs text-gray-500 mt-1">{sc===qs.length?"LLM 학습 파이프라인 마스터! 🎉":"틀린 문제의 초록색 정답을 확인하세요."}</p>
-              <button onClick={() => {setAns({});setDone(false);}} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1"/>다시 풀기</button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const stages = [
-    { title: "사전학습", subtitle: "세상의 글 읽기", icon: Globe, content: PreTrainStep },
-    { title: "SFT", subtitle: "정답지 학습", icon: BookOpen, content: SFTStep },
-    { title: "RM", subtitle: "평가자 양성", icon: Gauge, content: RMStep },
-    { title: "PPO", subtitle: "조심스러운 개선", icon: Target, content: PPOStep },
-    { title: "전체 정리", subtitle: "이해도 체크", icon: CheckCircle2, content: OverviewStep },
-  ];
-
-  const StepContent = stages[stage]?.content;
-
-  return (
-    <div className="space-y-8">
-      <Card t={t}>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
-            <Workflow size={18} style={{ color: t.accent }} />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>LLM TRAINING PIPELINE</p>
-            <p className="text-[9px] text-gray-400 font-mono">Pre-training → SFT → RM → PPO (RLHF)</p>
-            <h2 className="text-lg font-black text-slate-800">ChatGPT는 어떻게 만들어지나</h2>
-          </div>
-        </div>
-        <p className="text-sm text-slate-500 mb-4">빈 모델이 ChatGPT/Claude가 되기까지 — 4단계 학습 파이프라인을 해부합니다.</p>
-
-        <div className="p-4 rounded-xl mb-6" style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)" }}>
-          <p className="text-[10px] font-bold text-purple-600 tracking-widest uppercase mb-1">📜 ORIGIN STORY — 2022 InstructGPT</p>
-          <p className="text-xs text-gray-700 leading-relaxed">GPT-3는 똑똑했지만 쓰기 어려웠습니다. 질문에 답을 안 하고, 때로는 위험한 답을 했죠. 2022년 OpenAI가 발표한 <strong>InstructGPT 논문</strong>이 해법을 제시했습니다 — 사전학습 후 <strong>SFT + RLHF</strong>로 "사람이 원하는 방향"으로 조정. 이 기법이 곧 ChatGPT가 되었고, 모든 현대 LLM(Claude, Gemini)이 이 파이프라인을 따릅니다.</p>
-        </div>
-
-        {/* Stage nav */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
-          {stages.map((s, i) => (
-            <button key={i} onClick={() => setStage(i)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === stage ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
-              style={i === stage ? { background: t.accent } : {}}>
-              <span className="font-mono">{i + 1}</span>
-              <span className="hidden sm:inline">{s.subtitle}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-4">
-            {(() => { const Icon = stages[stage].icon; return <Icon size={20} className="text-gray-700" />; })()}
-            <div>
-              <h3 className="font-semibold text-gray-900">{stages[stage].title}</h3>
-              <p className="text-xs text-gray-400">{stages[stage].subtitle}</p>
-            </div>
-          </div>
-          <StepContent />
-        </div>
-
-        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
-          <button onClick={() => setStage(Math.max(0, stage - 1))} disabled={stage === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30"><ArrowLeft size={14} /> 이전</button>
-          <span className="text-xs text-gray-400 self-center">{stage + 1} / {stages.length}</span>
-          <button onClick={() => setStage(Math.min(stages.length - 1, stage + 1))} disabled={stage === stages.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">다음 <ArrowRight size={14} /></button>
         </div>
       </Card>
     </div>
@@ -5481,7 +5446,6 @@ const courses = [
       { id: "cnn", label: "\"본다\"는 것의 원리 (CNN)", icon: Eye, component: Tab7, themeKey: "expert" },
       { id: "rnn-lstm", label: "시간을 기억하는 구조", icon: RefreshCw, component: Tab8, themeKey: "expert" },
       { id: "rl", label: "스스로 배우는 AI (강화학습)", icon: Gamepad2, component: Tab9, themeKey: "expert" },
-      { id: "llm-pipeline", label: "ChatGPT는 어떻게 만들어지나", icon: Workflow, component: Tab11, themeKey: "expert" },
     ],
   },
 ];
