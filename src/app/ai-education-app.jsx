@@ -4672,8 +4672,9 @@ const Tab9 = ({ onScore }) => {
     { id: "rm",       title: "STEP 2 — 평가 모델",   subtitle: "인사팀의 채점" },
     { id: "ppo",      title: "STEP 3 — PPO",         subtitle: "조심스러운 개선" },
     { id: "pipeline", title: "STEP 4 — 파이프라인",  subtitle: "한 장 요약" },
-    { id: "deepdive", title: "STEP 5 — 심화",        subtitle: "수식 꼬리물기" },
-    { id: "quiz",     title: "STEP 6 — 퀴즈",        subtitle: "개념 점검" },
+    { id: "dpo",      title: "STEP 5 — 진화: DPO",   subtitle: "PPO를 뛰어넘다" },
+    { id: "deepdive", title: "STEP 6 — 심화",        subtitle: "수식 꼬리물기" },
+    { id: "quiz",     title: "STEP 7 — 퀴즈",        subtitle: "개념 점검" },
   ];
 
   const RlhfSFT = () => {
@@ -4988,11 +4989,186 @@ const Tab9 = ({ onScore }) => {
     </div>
   );
 
-  // ─── STEP 5 — 심화 "수식 꼬리물기" ───
+  // ─── STEP 5 — 진화: DPO "PPO를 뛰어넘다" ───
+  const RlhfDPO = () => {
+    const [compareMode, setCompareMode] = useState("pipeline"); // pipeline | cost | formula
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+          <p className="text-xs text-purple-800 leading-relaxed">
+            🚀 2023년 스탠포드의 한 논문이 AI 학계를 놀라게 합니다: <strong>"PPO의 복잡한 3단계, 사실 필요 없었다"</strong>. 이것이 <strong>DPO (Direct Preference Optimization, 직접 선호 최적화)</strong>입니다.
+          </p>
+        </div>
+
+        {/* 기술 진화 타임라인 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">📜 RLHF 기술 진화 타임라인</p>
+
+          <div className="relative pl-6 space-y-3">
+            <div className="absolute left-2 top-1 bottom-1 w-0.5 bg-gray-200" />
+
+            <div className="relative">
+              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-gray-400 border-2 border-white" />
+              <p className="text-[10px] font-mono font-bold text-gray-500">2017</p>
+              <p className="text-xs font-bold text-gray-800">RLHF 원조 (Christiano et al., OpenAI·DeepMind)</p>
+              <p className="text-[11px] text-gray-600 mt-0.5">강화학습에 인간 선호를 연결하는 아이디어 제시. 주로 게임·로봇 분야.</p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-white" />
+              <p className="text-[10px] font-mono font-bold text-blue-600">2022</p>
+              <p className="text-xs font-bold text-gray-800">InstructGPT / ChatGPT — PPO 기반 RLHF</p>
+              <p className="text-[11px] text-gray-600 mt-0.5">SFT → RM → PPO 3단계 파이프라인. LLM 사후학습 표준이 됨. 하지만 <strong>복잡하고 불안정</strong>.</p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-purple-600 border-2 border-white animate-pulse" />
+              <p className="text-[10px] font-mono font-bold text-purple-700">2023</p>
+              <p className="text-xs font-bold text-gray-800">DPO — 선호 데이터만으로 직접 최적화 (Rafailov et al., Stanford)</p>
+              <p className="text-[11px] text-gray-600 mt-0.5"><strong>"RM 학습 + PPO 학습"이 수학적으로 "선호 쌍에 직접 Loss 구성"과 동등함을 증명.</strong> 한 줄 요약: RM 없이 바로 학습.</p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
+              <p className="text-[10px] font-mono font-bold text-emerald-600">2024~</p>
+              <p className="text-xs font-bold text-gray-800">IPO · KTO · ORPO 등 DPO 계열 확산</p>
+              <p className="text-[11px] text-gray-600 mt-0.5">Llama 3, Mistral, Qwen 등 주요 오픈소스 LLM이 대부분 DPO 계열로 전환. OpenAI/Anthropic은 여전히 PPO 계열 사용 추정.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 비교 탭 */}
+        <div className="flex gap-1.5 overflow-x-auto">
+          {[
+            { id: "pipeline", label: "🛠️ 공정 비교" },
+            { id: "cost", label: "💰 비용 비교" },
+            { id: "formula", label: "🧮 수식 비교" },
+          ].map(m => (
+            <button key={m.id} onClick={() => setCompareMode(m.id)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${compareMode === m.id ? "text-white bg-purple-500" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 공정 비교 */}
+        {compareMode === "pipeline" && (
+          <div className="grid md:grid-cols-2 gap-3" style={{ animation: "fadeIn 0.3s" }}>
+            <div className="p-4 rounded-xl border-2 border-blue-200 bg-blue-50/40 space-y-2">
+              <p className="text-xs font-bold text-blue-700">🕰️ PPO 방식 (3단계)</p>
+              {[
+                { step: "1", label: "SFT 학습", detail: "사수의 시범" },
+                { step: "2", label: "RM 학습", detail: "인사팀 채점관 양성 (별도 AI)" },
+                { step: "3", label: "PPO 학습", detail: "4개 모델 메모리: actor / critic / reward / reference" },
+              ].map((s, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 bg-white rounded-lg">
+                  <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{s.step}</div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-800">{s.label}</p>
+                    <p className="text-[10px] text-gray-500">{s.detail}</p>
+                  </div>
+                </div>
+              ))}
+              <p className="text-[10px] text-red-600 mt-2">❌ 복잡 · 불안정 · GPU 메모리 4배</p>
+            </div>
+
+            <div className="p-4 rounded-xl border-2 border-purple-400 space-y-2" style={{ background: "rgba(168,85,247,0.08)" }}>
+              <p className="text-xs font-bold text-purple-700">⚡ DPO 방식 (2단계)</p>
+              {[
+                { step: "1", label: "SFT 학습", detail: "사수의 시범 (동일)" },
+                { step: "2", label: "DPO 학습", detail: "선호 쌍 직접 입력 → 2개 모델만 필요 (policy + reference)" },
+              ].map((s, i) => (
+                <div key={i} className="flex items-start gap-2 p-2 bg-white rounded-lg">
+                  <div className="w-5 h-5 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{s.step}</div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-800">{s.label}</p>
+                    <p className="text-[10px] text-gray-500">{s.detail}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="p-2 bg-white rounded-lg border border-dashed border-gray-300 mt-1">
+                <p className="text-[10px] text-gray-400 italic">(RM 학습 단계 제거 — 수식적으로 통합됨)</p>
+              </div>
+              <p className="text-[10px] text-emerald-600 mt-2">✅ 간단 · 안정 · GPU 메모리 2배</p>
+            </div>
+          </div>
+        )}
+
+        {/* 비용 비교 */}
+        {compareMode === "cost" && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3" style={{ animation: "fadeIn 0.3s" }}>
+            <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">왜 DPO가 "싸고 빠른가"</p>
+            <div className="space-y-2">
+              {[
+                { metric: "학습 단계 수", ppo: "3단계 (SFT→RM→PPO)", dpo: "2단계 (SFT→DPO)", dpoWin: true },
+                { metric: "동시 메모리 모델", ppo: "4개 (actor·critic·reward·reference)", dpo: "2개 (policy·reference)", dpoWin: true },
+                { metric: "하이퍼파라미터", ppo: "많음, 매우 민감", dpo: "거의 β 하나", dpoWin: true },
+                { metric: "학습 안정성", ppo: "불안정 (mode collapse 빈번)", dpo: "안정적", dpoWin: true },
+                { metric: "GPU 시간", ppo: "100% (기준)", dpo: "30~50%", dpoWin: true },
+                { metric: "이론적 성능 상한", ppo: "높음 (정교한 튜닝 시)", dpo: "PPO와 동등 (논문 증명)", dpoWin: false },
+              ].map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr,1.5fr,1.5fr] gap-2 p-2 rounded-lg bg-gray-50 text-[11px]">
+                  <span className="font-bold text-gray-700">{row.metric}</span>
+                  <span className="text-blue-700">🕰️ {row.ppo}</span>
+                  <span className={row.dpoWin ? "text-purple-700 font-bold" : "text-gray-600"}>⚡ {row.dpo}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 수식 비교 */}
+        {compareMode === "formula" && (
+          <div className="space-y-3" style={{ animation: "fadeIn 0.3s" }}>
+            <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40">
+              <p className="text-xs font-bold text-blue-700 mb-2">🕰️ PPO — 보상 최대화 + KL 제약</p>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center">
+                <p className="text-amber-400 text-sm">L_PPO = E[ r(x, y) − β · KL(π_new ‖ π_SFT) ]</p>
+              </div>
+              <p className="text-[10px] text-gray-600 mt-2">RM인 r(x, y)가 <strong>별도로 학습되어 있어야</strong> 이 수식을 쓸 수 있음 → 사전에 RM 필요</p>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <div className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold">수학적 변환 (Rafailov 2023)</div>
+            </div>
+
+            <div className="p-4 rounded-xl border-2 border-purple-400" style={{ background: "rgba(168,85,247,0.08)" }}>
+              <p className="text-xs font-bold text-purple-700 mb-2">⚡ DPO — 선호 쌍에서 직접 Loss 구성</p>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center text-[11px]">
+                <p className="text-purple-300">L_DPO = − log σ( β·log[π_θ(y_w|x)/π_SFT(y_w|x)] </p>
+                <p className="text-purple-300">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;− β·log[π_θ(y_l|x)/π_SFT(y_l|x)] )</p>
+              </div>
+              <div className="text-[10px] text-gray-600 mt-2 space-y-1">
+                <p>· <strong>y_w</strong>: 선호된 답변(chosen), <strong>y_l</strong>: 비선호 답변(rejected)</p>
+                <p>· <strong>π_θ</strong>: 학습 중인 모델, <strong>π_SFT</strong>: 기준 모델 (reference)</p>
+                <p>· <strong>β</strong>: 조심성 (PPO와 동일 의미)</p>
+                <p>· RM이 수식 안에 <strong>숨겨져 있음</strong> — 명시적 학습 불필요!</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800"><strong>💡 놀라운 통찰:</strong> "최적의 정책 π*"를 구하면 암묵적으로 "최적의 RM"도 결정됩니다. 그래서 RM을 따로 학습하지 않고, 정책 학습에 RM 역할을 <strong>녹여넣을 수 있다</strong>는 것이 DPO의 핵심 수학입니다.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="p-3 bg-gray-100 rounded-lg">
+          <p className="text-xs text-gray-600"><strong>그럼 PPO는 끝났나?</strong> 아닙니다. DPO는 선호 쌍 데이터에 강하게 의존합니다. 복잡한 보상 설계(안전성, 다중 목표 등)나 <strong>온라인 피드백</strong>이 필요한 경우엔 여전히 PPO가 유리합니다. OpenAI/Anthropic은 대부분 PPO 계열을 쓰고, 오픈소스 커뮤니티(Llama, Mistral)는 DPO를 주력으로 씁니다.</p>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>교훈:</strong> "더 정교한 알고리즘"이 항상 답은 아닙니다. 때로는 <strong>수식을 다시 보고 "이거 꼭 필요한가?"</strong>를 묻는 것이 더 큰 혁신을 만듭니다. DPO는 PPO에 "공정 하나를 통째로 지워도 된다"는 것을 증명했습니다.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── STEP 6 — 심화 "수식 꼬리물기" ───
   const RlhfDeepDive = () => {
     const [showSFT, setShowSFT] = useState(false);
     const [showRM, setShowRM] = useState(false);
     const [showPPO, setShowPPO] = useState(false);
+    const [showDPO, setShowDPO] = useState(false);
     return (
       <div className="space-y-4">
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
@@ -5056,8 +5232,28 @@ const Tab9 = ({ onScore }) => {
           )}
         </div>
 
+        {/* DPO 수식 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+          <button onClick={() => setShowDPO(!showDPO)} className="w-full flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-700">📙 DPO 수식 — Direct Preference Optimization</p>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${showDPO ? "rotate-180" : ""}`} />
+          </button>
+          {showDPO && (
+            <div className="space-y-2 pt-2 border-t border-gray-100" style={{ animation: "fadeIn 0.3s" }}>
+              <div className="p-3 bg-gray-900 rounded-lg font-mono text-center space-y-1 text-[11px]">
+                <p className="text-purple-300">L_DPO = − log σ( β·log[π_θ(y_w|x)/π_SFT(y_w|x)]</p>
+                <p className="text-purple-300">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;− β·log[π_θ(y_l|x)/π_SFT(y_l|x)] )</p>
+              </div>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                <strong>y_w</strong>=chosen(선호), <strong>y_l</strong>=rejected(비선호). 선호 답변의 확률 비율은 <strong>커지고</strong>, 비선호 답변의 비율은 <strong>작아지도록</strong> 학습. RM r(x,y)가 수식 안에 <strong>녹아 있어</strong> 별도 학습이 불필요합니다.
+              </p>
+              <p className="text-[10px] text-gray-500 italic">💡 "RM을 최적화하는 것 = 정책을 최적화하는 것" 이 수학적 동등성을 활용 (Rafailov 2023).</p>
+            </div>
+          )}
+        </div>
+
         <div className="p-3 bg-gray-100 rounded-lg">
-          <p className="text-xs text-gray-600"><strong>한 줄 요약:</strong> SFT는 <em>정답 모방</em>, RM은 <em>선호 학습</em>, PPO는 <em>보상 최대화 + 조심성</em>. 세 수식이 함께 작동해야 ChatGPT 품질이 나옵니다.</p>
+          <p className="text-xs text-gray-600"><strong>한 줄 요약:</strong> SFT는 <em>정답 모방</em>, RM은 <em>선호 학습</em>, PPO는 <em>보상 최대화 + 조심성</em>, DPO는 <em>선호 쌍으로 직접 학습</em>. 4개 수식이 LLM 사후학습의 전부입니다.</p>
         </div>
       </div>
     );
@@ -5071,8 +5267,10 @@ const Tab9 = ({ onScore }) => {
       { id:"q1", q:"SFT(Supervised Fine-Tuning)의 목표는?", opts:["다음 단어 예측 확률 최대화 — 방식은 사전학습과 동일, 데이터만 고품질 Q&A", "모델 크기를 늘림", "하드웨어 가속"], a:0 },
       { id:"q2", q:"평가 모델(RM)이 하는 일은?", opts:["답변을 생성", "답변의 품질을 숫자로 채점 (상대 순위 학습)", "문서를 분류"], a:1 },
       { id:"q3", q:"PPO에서 β(조심성) 파라미터의 역할은?", opts:["학습 속도를 빠르게 함", "기존 SFT 모델과 너무 멀어지지 않도록 제약", "데이터 크기를 조절"], a:1 },
-      { id:"q4", q:"사후학습 전체 파이프라인 순서는?", opts:["RM → SFT → PPO", "SFT → RM → PPO", "PPO → RM → SFT"], a:1 },
+      { id:"q4", q:"사후학습 전체 파이프라인 순서(PPO 방식)는?", opts:["RM → SFT → PPO", "SFT → RM → PPO", "PPO → RM → SFT"], a:1 },
       { id:"q5", q:"왜 RM은 '점수'가 아니라 '쌍 비교'로 학습할까?", opts:["사람은 절대점수보다 상대비교를 훨씬 일관되게 잘함", "계산이 빠름", "메모리 절약"], a:0 },
+      { id:"q6", q:"DPO가 PPO와 가장 크게 다른 점은?", opts:["GPU를 더 많이 씀", "RM을 별도로 학습하지 않고 선호 쌍으로 직접 최적화", "사전학습 단계를 생략"], a:1 },
+      { id:"q7", q:"Rafailov 2023 DPO 논문의 핵심 증명은?", opts:["PPO는 틀렸다", "'최적 정책 학습'과 '최적 보상함수 학습'이 수학적으로 동등", "Transformer는 필요 없다"], a:1 },
     ];
     const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
     return (
@@ -5380,8 +5578,9 @@ const Tab9 = ({ onScore }) => {
           {rlhfStep === 1 && <RlhfRM />}
           {rlhfStep === 2 && <RlhfPPO />}
           {rlhfStep === 3 && <RlhfPipeline />}
-          {rlhfStep === 4 && <RlhfDeepDive />}
-          {rlhfStep === 5 && <RlhfQuiz />}
+          {rlhfStep === 4 && <RlhfDPO />}
+          {rlhfStep === 5 && <RlhfDeepDive />}
+          {rlhfStep === 6 && <RlhfQuiz />}
         </div>
 
         <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
