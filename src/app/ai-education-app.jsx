@@ -4679,12 +4679,19 @@ const Tab9 = ({ onScore }) => {
 
   const RlhfSFT = () => {
     const [showBefore, setShowBefore] = useState(false);
-    const question = "파이썬에서 리스트를 역순으로 뒤집으려면?";
-    const answerTokens = [".reverse()", "메서드", "를", "쓰거나,", "list[::-1]", "슬라이싱", "으로", "역순", "복사본", "을", "얻을", "수", "있습니다", "."];
-    const beforeAnswer = "파이썬은 귀도 반 로섬이 1991년에 만든 언어로, 리스트는 정말 유연한 자료구조이고 파이썬의 자료형 중 가장 자주 쓰이는 컬렉션이며… (계속 맴돌기)";
+    const question = "신입인데 이번 달 월간 보고서는 어떻게 써야 할까요?";
+    const answerTokens = ["월간", "보고서는", "①", "이번 달", "주요", "실적", "3가지,", "②", "진행 중", "이슈와", "해결", "방안,", "③", "다음 달", "계획", "순서로", "핵심만", "적어주세요", "."];
+    const beforeAnswer = "보고서라는 형식은 고대 관료제부터 존재해왔고, 조직 내 의사소통의 중요 수단이며, 문서 작성 시에는 서론·본론·결론의 구조가 일반적이고, 전력산업에서도 유구한 역사를 가지며… (계속 맴돌기)";
 
     return (
       <div className="space-y-4">
+        {/* 약어 풀이 */}
+        <div className="p-3 rounded-xl bg-white border border-gray-200">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">📖 용어</p>
+          <p className="text-xs text-gray-700"><strong className="text-purple-700 font-mono">SFT</strong> = <strong>S</strong>upervised <strong>F</strong>ine-<strong>T</strong>uning</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">= <strong>지도 미세조정</strong>. "Supervised(지도)" — 사람이 만든 정답이 딸려 있다는 뜻. "Fine-Tuning(미세조정)" — 이미 학습된 모델을 조금만 손본다는 뜻.</p>
+        </div>
+
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-xs text-purple-800 leading-relaxed">
             🧑‍🏫 <strong>사수 김과장</strong>이 "이런 질문엔 이렇게 답해" 라고 수만 개의 정답 Q&amp;A를 신입에게 보여줍니다. 신입(=사전학습된 LLM)은 시범을 보며 <strong>답변 스타일</strong>을 익힙니다.
@@ -4758,6 +4765,13 @@ const Tab9 = ({ onScore }) => {
     ];
     return (
       <div className="space-y-4">
+        {/* 약어 풀이 */}
+        <div className="p-3 rounded-xl bg-white border border-gray-200">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">📖 용어</p>
+          <p className="text-xs text-gray-700"><strong className="text-purple-700 font-mono">RM</strong> = <strong>R</strong>eward <strong>M</strong>odel</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">= <strong>보상 모델</strong>. "답변이 얼마나 좋은지"를 점수로 매기는 AI. 직접 답변을 만들지는 않고 <strong>채점만</strong> 합니다.</p>
+        </div>
+
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-xs text-purple-800 leading-relaxed">
             🏢 신입이 답변 여러 개를 내놓으면, <strong>인사팀</strong>이 "이 답변이 더 좋네, 저건 별로네" 하고 <strong>점수를 매깁니다</strong>. 이 평가 데이터를 학습한 AI가 곧 <strong>평가 모델(Reward Model, RM)</strong> — 자동 채점관입니다.
@@ -4850,6 +4864,13 @@ const Tab9 = ({ onScore }) => {
 
     return (
       <div className="space-y-4">
+        {/* 약어 풀이 */}
+        <div className="p-3 rounded-xl bg-white border border-gray-200">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">📖 용어</p>
+          <p className="text-xs text-gray-700"><strong className="text-purple-700 font-mono">PPO</strong> = <strong>P</strong>roximal <strong>P</strong>olicy <strong>O</strong>ptimization</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">= <strong>근접 정책 최적화</strong>. "Proximal(근접)" — 기존 모델과 <strong>너무 멀어지지 않게</strong> 조심스럽게 바꾼다는 뜻. "Policy(정책)" — 모델이 답변을 선택하는 규칙.</p>
+        </div>
+
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-xs text-purple-800 leading-relaxed">
             🎯 <strong>PPO (Proximal Policy Optimization, 근접 정책 최적화)</strong> — 인사팀(=RM) 점수가 높은 방향으로 모델을 <strong>조금씩 조심스럽게</strong> 수정합니다. 너무 크게 바꾸면 기존 실력(수학·코딩)을 잃어버리거든요. "조심성(β)"이 이 속도를 조절합니다.
@@ -4994,6 +5015,13 @@ const Tab9 = ({ onScore }) => {
     const [compareMode, setCompareMode] = useState("pipeline"); // pipeline | cost | formula
     return (
       <div className="space-y-4">
+        {/* 약어 풀이 */}
+        <div className="p-3 rounded-xl bg-white border border-gray-200">
+          <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">📖 용어</p>
+          <p className="text-xs text-gray-700"><strong className="text-purple-700 font-mono">DPO</strong> = <strong>D</strong>irect <strong>P</strong>reference <strong>O</strong>ptimization</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">= <strong>직접 선호 최적화</strong>. "Direct(직접)" — RM 없이 <strong>선호 데이터로 바로</strong> 학습한다는 뜻. 공정 하나를 생략한 PPO의 후속 기법.</p>
+        </div>
+
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
           <p className="text-xs text-purple-800 leading-relaxed">
             🚀 2023년 스탠포드의 한 논문이 AI 학계를 놀라게 합니다: <strong>"PPO의 복잡한 3단계, 사실 필요 없었다"</strong>. 이것이 <strong>DPO (Direct Preference Optimization, 직접 선호 최적화)</strong>입니다.
