@@ -4679,8 +4679,8 @@ const Tab9 = ({ onScore }) => {
 
   const RlhfSFT = () => {
     const [showBefore, setShowBefore] = useState(false);
-    const question = "신입인데 이번 달 월간 보고서는 어떻게 써야 할까요?";
-    const answerTokens = ["월간", "보고서는", "①", "이번 달", "주요", "실적", "3가지,", "②", "진행 중", "이슈와", "해결", "방안,", "③", "다음 달", "계획", "순서로", "핵심만", "적어주세요", "."];
+    const question = "이번 달 우리 팀 월간 보고서 어떻게 쓰는 거지?";
+    const answerTokens = ["월간", "보고서는", "①", "이번 달", "주요", "실적", "3가지,", "②", "진행 중", "이슈와", "해결", "방안,", "③", "다음 달", "계획", "순서로", "핵심만", "정리하시면", "됩니다", "."];
     const beforeAnswer = "보고서라는 형식은 고대 관료제부터 존재해왔고, 조직 내 의사소통의 중요 수단이며, 문서 작성 시에는 서론·본론·결론의 구조가 일반적이고, 전력산업에서도 유구한 역사를 가지며… (계속 맴돌기)";
 
     return (
@@ -4693,8 +4693,25 @@ const Tab9 = ({ onScore }) => {
         </div>
 
         <div className="p-3 rounded-xl" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-          <p className="text-xs text-purple-800 leading-relaxed">
-            🧑‍🏫 <strong>사수 김과장</strong>이 "이런 질문엔 이렇게 답해" 라고 수만 개의 정답 Q&amp;A를 신입에게 보여줍니다. 신입(=사전학습된 LLM)은 시범을 보며 <strong>답변 스타일</strong>을 익힙니다.
+          <p className="text-xs text-purple-800 leading-relaxed mb-2">
+            🏢 <strong>회사 등장인물</strong>
+          </p>
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div className="p-2 bg-white rounded-lg border border-purple-100">
+              <p>🧑‍💼 <strong className="text-purple-700">부장</strong></p>
+              <p className="text-purple-600 text-[10px] mt-0.5">질문/지시를 내는 사람 (입력)</p>
+            </div>
+            <div className="p-2 bg-white rounded-lg border border-purple-100">
+              <p>🧑‍🏫 <strong className="text-purple-700">사수 과장</strong></p>
+              <p className="text-purple-600 text-[10px] mt-0.5">모범 답변을 보여주는 사람 (정답)</p>
+            </div>
+            <div className="p-2 bg-white rounded-lg border border-purple-100">
+              <p>🧑‍🎓 <strong className="text-purple-700">신입 = LLM</strong></p>
+              <p className="text-purple-600 text-[10px] mt-0.5">배우는 사람 (학습 대상 모델)</p>
+            </div>
+          </div>
+          <p className="text-xs text-purple-800 leading-relaxed mt-3">
+            부장이 질문하면 → 사수가 모범 답변을 시범으로 보여줍니다 → 신입(LLM)은 그걸 보며 <strong>답변 스타일</strong>을 익힙니다. 이것이 SFT입니다.
           </p>
         </div>
 
@@ -4721,12 +4738,12 @@ const Tab9 = ({ onScore }) => {
           <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">예시 — 실제 학습 데이터 한 쌍</p>
 
           <div className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-            <p className="text-[10px] font-bold text-gray-500 mb-1">질문 (입력)</p>
-            <p className="text-xs text-gray-800 font-medium">{question}</p>
+            <p className="text-[10px] font-bold text-gray-500 mb-1">🧑‍💼 부장의 질문 (입력)</p>
+            <p className="text-xs text-gray-800 font-medium">"{question}"</p>
           </div>
 
           <div className="p-3 rounded-lg border-2 border-purple-200" style={{ background: "rgba(168,85,247,0.04)" }}>
-            <p className="text-[10px] font-bold text-purple-700 mb-2">사수 김과장의 모범 답변 (= 학습 목표 토큰)</p>
+            <p className="text-[10px] font-bold text-purple-700 mb-2">🧑‍🏫 사수 과장의 모범 답변 (= 학습 목표 토큰)</p>
             <div className="flex flex-wrap gap-1">
               {answerTokens.map((tok, i) => (
                 <span key={i} className="px-1.5 py-0.5 text-[11px] font-mono rounded bg-purple-100 text-purple-800 border border-purple-200">
@@ -4739,15 +4756,15 @@ const Tab9 = ({ onScore }) => {
 
           <button onClick={() => setShowBefore(!showBefore)}
             className="w-full px-3 py-2 rounded-lg text-xs font-medium border border-dashed border-gray-300 hover:border-gray-400 text-gray-500 hover:text-gray-700 transition-all">
-            {showBefore ? "SFT 전 답변 접기" : "SFT 전, 사전학습만 된 신입의 답은?"}
+            {showBefore ? "신입 답변 접기" : "같은 질문에 SFT 전 신입은 뭐라고 답할까?"}
             <ChevronDown size={12} className={`inline ml-1 transition-transform ${showBefore ? "rotate-180" : ""}`} />
           </button>
 
           {showBefore && (
             <div className="p-3 rounded-lg bg-gray-50 border border-gray-200" style={{ animation: "fadeIn 0.3s ease-out" }}>
-              <p className="text-[10px] font-bold text-gray-500 mb-2">사전학습만 된 신입의 답변</p>
+              <p className="text-[10px] font-bold text-gray-500 mb-2">🧑‍🎓 사전학습만 된 신입의 답변 (SFT 전)</p>
               <p className="text-xs text-gray-500 italic leading-relaxed">"{beforeAnswer}"</p>
-              <p className="text-[10px] text-gray-400 mt-2">← 배경지식은 있지만 <strong>핵심만 간결히 답하는 스타일</strong>을 모름. SFT가 이 차이를 메웁니다.</p>
+              <p className="text-[10px] text-gray-400 mt-2">← 책은 많이 읽어서 배경지식은 있지만 <strong>부장이 원하는 답변 스타일</strong>을 모름. SFT는 "사수처럼 답하는 법"을 알려주는 과정입니다.</p>
             </div>
           )}
         </div>
