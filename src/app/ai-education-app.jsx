@@ -5642,6 +5642,927 @@ const Tab9 = ({ onScore }) => {
   );
 };
 
+// ─── TAB 12: 필수 용어 사전 (Course 1) ────────────────
+const Tab12 = ({ onScore }) => {
+  const t = T.concept;
+  const [step, setStep] = useState(0);
+
+  // Step 1: 토큰 & 컨텍스트 윈도우
+  const TokenContextStep = () => {
+    const [ctxSize, setCtxSize] = useState(128);
+    const [textKr, setTextKr] = useState("저 내일 오후에 반차 쓰겠습니다");
+    const krTokens = textKr.split(" ").flatMap(w => w.length > 2 ? [w.slice(0, Math.ceil(w.length/2)), w.slice(Math.ceil(w.length/2))] : [w]);
+    const enText = "I'll take a half-day off tomorrow afternoon.";
+    const enTokens = enText.split(/(\s+)/).filter(s => s.trim());
+    const pages = Math.round(ctxSize * 1000 / 500); // 토큰당 약 0.5페이지
+
+    return (
+      <div className="space-y-5">
+        {/* 토큰 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🍱</span>
+            <p className="text-sm font-bold text-gray-800">토큰 (Token)</p>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI가 한 입에 먹는 조각</span>
+          </div>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            AI는 문장을 통째로 이해하지 않습니다. <strong>단어보다 작고 글자보다 큰 조각</strong>으로 쪼개서 처리해요. 영어는 보통 단어 1개 ≈ 1토큰, 한국어는 글자 1개 ≈ 1.5~2토큰입니다.
+          </p>
+
+          <div className="space-y-2">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-gray-500 mb-1">🇰🇷 한국어: "{textKr}"</p>
+              <div className="flex gap-1 flex-wrap">
+                {krTokens.map((tk, i) => (
+                  <span key={i} className="px-2 py-0.5 text-[10px] font-mono rounded bg-purple-100 text-purple-700 border border-purple-200">{tk}</span>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1">{krTokens.length}토큰</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-gray-500 mb-1">🇺🇸 English: "{enText}"</p>
+              <div className="flex gap-1 flex-wrap">
+                {enTokens.map((tk, i) => (
+                  <span key={i} className="px-2 py-0.5 text-[10px] font-mono rounded bg-blue-100 text-blue-700 border border-blue-200">{tk}</span>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1">{enTokens.length}토큰</p>
+            </div>
+            <div className="p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-[10px] text-amber-800">💡 같은 의미 문장이 <strong>한국어가 영어보다 토큰을 많이 소모</strong>합니다. API 비용은 토큰 기준이라, 한국어가 더 비쌉니다.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 컨텍스트 윈도우 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🧠</span>
+            <p className="text-sm font-bold text-gray-800">컨텍스트 윈도우 (Context Window)</p>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI의 단기 기억력 크기</span>
+          </div>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            AI가 한 번의 대화에서 "기억하고 참고할 수 있는" 토큰의 최대 개수입니다. 이 한계를 넘으면 앞 내용을 잊어버립니다.
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500 w-20">컨텍스트:</span>
+              <input type="range" min="4" max="2000" step="4" value={ctxSize}
+                onChange={e => setCtxSize(parseInt(e.target.value))}
+                className="flex-1" style={{ accentColor: t.accent }} />
+              <span className="text-xs font-mono font-bold w-16 text-right" style={{ color: t.accent }}>{ctxSize}K</span>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-[10px] text-gray-500">📚 환산하면 약 <strong className="text-base" style={{ color: t.accent }}>{pages.toLocaleString()}페이지</strong>의 책을 동시에 기억</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { name: "GPT-3.5 (2022)", size: "4K", pages: "8쪽" },
+                { name: "GPT-4 (2023)", size: "32K", pages: "60쪽" },
+                { name: "GPT-4 Turbo", size: "128K", pages: "250쪽" },
+                { name: "Claude 3.5", size: "200K", pages: "400쪽" },
+                { name: "Gemini 1.5", size: "1M", pages: "2,000쪽" },
+                { name: "Claude 4.5 1M", size: "1M+", pages: "책 한 권+" },
+              ].map((m, i) => (
+                <div key={i} className="p-2 bg-gray-50 rounded-lg text-[10px]">
+                  <p className="font-bold text-gray-700">{m.name}</p>
+                  <p className="text-purple-600 font-mono">{m.size} · {m.pages}</p>
+                </div>
+              ))}
+            </div>
+            <div className="p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-[10px] text-amber-800">⚡ <strong>실무 영향:</strong> 컨텍스트가 크면 긴 보고서·매뉴얼을 한 번에 분석 가능. 한전의 변전소 운영 매뉴얼 통째로 넣고 질문 가능!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 2: 정형/비정형 데이터
+  const DataTypeStep = () => {
+    const [items, setItems] = useState({
+      "SCADA 변압기 온도 측정값": null,
+      "고객 민원 이메일": null,
+      "전주 점검 드론 사진": null,
+      "월별 전력 판매량 엑셀": null,
+      "현장 작업자 음성 보고": null,
+      "재무회계 DB 테이블": null,
+    });
+    const answers = {
+      "SCADA 변압기 온도 측정값": "structured",
+      "고객 민원 이메일": "unstructured",
+      "전주 점검 드론 사진": "unstructured",
+      "월별 전력 판매량 엑셀": "structured",
+      "현장 작업자 음성 보고": "unstructured",
+      "재무회계 DB 테이블": "structured",
+    };
+    const [done, setDone] = useState(false);
+    const score = done ? Object.entries(items).filter(([k, v]) => v === answers[k]).length : 0;
+
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📊</span>
+              <p className="text-sm font-bold text-blue-800">정형 데이터 (Structured)</p>
+            </div>
+            <p className="text-[11px] text-blue-700">행과 열로 정리된 표 형태. <strong>엑셀, DB</strong>처럼 셀에 정확한 값이 들어있음.</p>
+            <ul className="text-[10px] text-blue-600 space-y-0.5">
+              <li>• SCADA 측정값 (온도, 전압, 전류)</li>
+              <li>• 고객 정보 DB</li>
+              <li>• 판매량 엑셀</li>
+            </ul>
+          </div>
+          <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📝</span>
+              <p className="text-sm font-bold text-purple-800">비정형 데이터 (Unstructured)</p>
+            </div>
+            <p className="text-[11px] text-purple-700">정해진 형식이 없는 자유 형태. <strong>문서·이미지·음성·영상</strong> 등.</p>
+            <ul className="text-[10px] text-purple-600 space-y-0.5">
+              <li>• 점검 보고서, 이메일</li>
+              <li>• 드론 사진, CCTV 영상</li>
+              <li>• 음성 통화 녹음</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>왜 중요?</strong> 회사 데이터의 <strong>80% 이상이 비정형</strong>이라고 합니다. 기존 BI/통계는 정형만 다뤘지만, AI는 비정형까지 분석 가능 — 이것이 AI 도입의 가장 큰 동기입니다.</p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">분류 게임 — 한전 데이터를 분류하세요</p>
+
+          {Object.keys(items).map((item, i) => (
+            <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+              <span className="text-xs flex-1 text-gray-700">{item}</span>
+              {!done ? (
+                <div className="flex gap-1">
+                  <button onClick={() => setItems(p => ({...p, [item]: "structured"}))}
+                    className={`px-2 py-1 text-[10px] rounded ${items[item] === "structured" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"}`}>정형</button>
+                  <button onClick={() => setItems(p => ({...p, [item]: "unstructured"}))}
+                    className={`px-2 py-1 text-[10px] rounded ${items[item] === "unstructured" ? "bg-purple-500 text-white" : "bg-gray-200 text-gray-500"}`}>비정형</button>
+                </div>
+              ) : (
+                <span className={`px-2 py-1 text-[10px] rounded font-bold ${items[item] === answers[item] ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                  {items[item] === answers[item] ? "✅" : "❌"} {answers[item] === "structured" ? "정형" : "비정형"}
+                </span>
+              )}
+            </div>
+          ))}
+
+          {!done ? (
+            <button onClick={() => setDone(true)} disabled={Object.values(items).some(v => v === null)}
+              className="px-5 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-30" style={{ background: t.accent }}>채점하기</button>
+          ) : (
+            <div className="p-3 rounded-lg text-center" style={{ background: score === 6 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)" }}>
+              <p className="text-sm font-black" style={{ color: score === 6 ? "#059669" : "#d97706" }}>{score}/6 정답</p>
+              <button onClick={() => { setItems(Object.fromEntries(Object.keys(items).map(k => [k, null]))); setDone(false); }} className="mt-2 text-[10px] text-gray-500"><RotateCcw size={10} className="inline mr-1" />다시</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Step 3: 멀티모달
+  const MultimodalStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">👀👂✍️</span>
+          <p className="text-sm font-bold text-gray-800">멀티모달 (Multimodal)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI의 오감</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          "Modal"은 <strong>감각의 종류</strong>를 뜻합니다. 텍스트만 처리하던 AI가 이제 <strong>이미지·음성·영상</strong>까지 동시에 처리하는 것이 멀티모달입니다.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-bold text-gray-700 mb-2">📜 싱글모달 (텍스트 전용)</p>
+            <p className="text-[10px] text-gray-500">"드론 사진을 텍스트로 묘사해서 보내주세요"</p>
+            <p className="text-[10px] text-gray-400 italic mt-1">→ 사진 자체를 못 봄</p>
+          </div>
+          <div className="p-3 rounded-lg border-2 border-purple-300 bg-purple-50">
+            <p className="text-xs font-bold text-purple-700 mb-2">🎨 멀티모달</p>
+            <p className="text-[10px] text-purple-600">사진 첨부 + "이 전주 상태 분석해줘"</p>
+            <p className="text-[10px] text-purple-500 italic mt-1">→ 사진 직접 분석</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg space-y-1.5">
+          <p className="text-[10px] font-bold text-gray-700">🤖 대표 모델 (2025년 기준)</p>
+          {[
+            { name: "GPT-4o", modal: "텍스트 + 이미지 + 음성 + 영상" },
+            { name: "Claude 3.5 Sonnet", modal: "텍스트 + 이미지" },
+            { name: "Gemini 2.0", modal: "텍스트 + 이미지 + 음성 + 영상 + 코드" },
+          ].map((m, i) => (
+            <div key={i} className="flex justify-between text-[10px]">
+              <span className="font-mono text-gray-600">{m.name}</span>
+              <span className="text-gray-500">{m.modal}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>전력산업 활용:</strong> 드론 사진 + 작업일지(텍스트) + 진동 센서 음향 데이터를 <strong>한 번에</strong> AI에게 주고 종합 분석 요청 가능. 코스2 "AI가 이미지를 보는 법"이 멀티모달의 한 축입니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 4: 환각
+  const HallucinationStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">👻</span>
+          <p className="text-sm font-bold text-gray-800">환각 (Hallucination)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">그럴듯한 거짓말</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          AI가 <strong>모르는 걸 모른다고 안 하고</strong>, 그럴듯하게 지어내는 현상. AI의 가장 큰 위험 요소입니다.
+        </p>
+
+        <div className="space-y-2">
+          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+            <p className="text-[10px] font-bold text-red-700 mb-1">❌ 환각 예시</p>
+            <p className="text-[11px] text-red-700">
+              <strong>질문:</strong> "한전의 2024년 변압기 고장률은?"<br/>
+              <strong>AI:</strong> "약 0.34%로, 전년 대비 12% 감소했습니다." <em>(완전한 거짓말, 출처 없음)</em>
+            </p>
+          </div>
+          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+            <p className="text-[10px] font-bold text-emerald-700 mb-1">✅ 바람직한 답변</p>
+            <p className="text-[11px] text-emerald-700">"이 데이터는 제가 가진 학습 데이터에 없습니다. 한전 공시 자료나 사내 통계를 확인하시기 바랍니다."</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg space-y-1.5">
+          <p className="text-[10px] font-bold text-gray-700">🛡️ 환각 줄이는 법</p>
+          <ul className="text-[10px] text-gray-600 space-y-0.5">
+            <li>• <strong>RAG 사용</strong> — 외부 문서를 참고하게 함 (다음 챕터)</li>
+            <li>• <strong>Temperature 낮춤</strong> — 0.2 이하로 보수적 답변 유도</li>
+            <li>• <strong>출처 요구</strong> — "근거 문서를 인용해줘"</li>
+            <li>• <strong>크로스체크</strong> — 다른 AI/사람이 검증</li>
+          </ul>
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>왜 환각이 생길까?</strong> AI는 "다음 단어 맞추기"로 학습합니다. 정답을 몰라도 가장 그럴듯한 단어를 골라 문장을 완성하려 하죠. 사실 확인 기능이 따로 없습니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 5: 파라미터 & 파인튜닝
+  const ParamFineTuneStep = () => (
+    <div className="space-y-5">
+      {/* 파라미터 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🧬</span>
+          <p className="text-sm font-bold text-gray-800">파라미터 (Parameter)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI의 뇌세포 수</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          AI 신경망의 <strong>가중치(weight) 개수</strong>. "GPT-4는 1.7조 파라미터"라고 하면, 1.7조 개의 숫자가 모델 안에서 작동한다는 뜻입니다. <strong>많을수록 똑똑하지만, 비싸고 무거워집니다</strong>.
+        </p>
+        <div className="space-y-1">
+          {[
+            { model: "GPT-2 (2019)", params: "1.5억", note: "사람 뇌의 1/1000 수준" },
+            { model: "GPT-3 (2020)", params: "1,750억", note: "100배 점프 → 창발 등장" },
+            { model: "GPT-4 (2023)", params: "약 1.7조", note: "추정 (비공개)" },
+            { model: "Llama 3 8B", params: "80억", note: "오픈소스, 가벼움" },
+            { model: "Mistral 7B", params: "70억", note: "노트북에서도 실행 가능" },
+          ].map((m, i) => (
+            <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded text-[11px]">
+              <span className="font-bold text-gray-700">{m.model}</span>
+              <span className="font-mono" style={{ color: t.accent }}>{m.params}</span>
+              <span className="text-[9px] text-gray-500">{m.note}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 파인튜닝 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🎯</span>
+          <p className="text-sm font-bold text-gray-800">파인튜닝 (Fine-tuning)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">범용 → 우리 회사 전용</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          <strong>이미 학습된 범용 AI</strong>를 우리 회사 데이터로 추가 학습시켜 <strong>도메인 전문가</strong>로 만드는 것. 사전학습이 "대학 졸업"이라면, 파인튜닝은 "신입 OJT"입니다.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2.5 bg-gray-50 rounded-lg">
+            <p className="text-[10px] font-bold text-gray-700">🌍 범용 GPT-4</p>
+            <p className="text-[10px] text-gray-600 mt-1">"전압 강하 현상을 설명해줘" → 교과서 수준 답변</p>
+          </div>
+          <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-[10px] font-bold text-purple-700">🏢 한전 파인튜닝 모델</p>
+            <p className="text-[10px] text-purple-600 mt-1">"여수 변전소 22.9kV 라인에서 전압 강하 시 점검 절차는?" → 한전 사내 매뉴얼 기준 답변</p>
+          </div>
+        </div>
+        <div className="p-2 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-[10px] text-amber-800">💡 SFT(코스3)가 파인튜닝의 한 종류입니다. LoRA, PEFT 등 비용 절감 기법도 활발히 사용됩니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 6: API
+  const APIStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🔌</span>
+          <p className="text-sm font-bold text-gray-800">API & API Key</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">AI 사용 통로 + 출입증</span>
+        </div>
+
+        <div className="space-y-2">
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-bold text-gray-700 mb-1">📡 API (Application Programming Interface)</p>
+            <p className="text-[11px] text-gray-600">웹사이트(ChatGPT)가 아닌, <strong>코드에서 AI를 호출</strong>하는 방법. 우리 회사 시스템에 AI를 연결할 때 필수.</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-bold text-gray-700 mb-1">🔑 API Key</p>
+            <p className="text-[11px] text-gray-600">API 사용 권한을 인증하는 <strong>비밀 문자열</strong>. <code className="bg-gray-200 px-1 rounded text-[10px]">sk-proj-abc123...</code>. 유출되면 비용 폭탄!</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-900 rounded-lg font-mono text-[10px] space-y-1">
+          <p className="text-gray-400"># Python에서 OpenAI API 호출 예시</p>
+          <p className="text-blue-400">import openai</p>
+          <p className="text-emerald-400">openai.api_key = <span className="text-amber-400">"sk-proj-..."</span> <span className="text-gray-500"># 비밀!</span></p>
+          <p className="text-blue-400">response = openai.chat.completions.create(</p>
+          <p className="text-blue-400">&nbsp;&nbsp;model=<span className="text-amber-400">"gpt-4"</span>,</p>
+          <p className="text-blue-400">&nbsp;&nbsp;messages=[<span className="text-amber-400">"변압기 점검 절차 알려줘"</span>])</p>
+        </div>
+
+        <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-xs text-red-800"><strong>⚠️ 보안 주의:</strong> API Key를 GitHub에 올리면 자동봇이 즉시 훔쳐갑니다. 환경변수(.env)에 저장하고, 노출 시 즉시 폐기 → 재발급하세요. 한전 사내 정책상 외부 API 사용 가능 여부도 사전 확인 필수.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 7: 에이전트 & 함수 호출
+  const AgentToolStep = () => (
+    <div className="space-y-5">
+      {/* 에이전트 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🤖</span>
+          <p className="text-sm font-bold text-gray-800">AI 에이전트 (Agent)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">답하는 AI → 행동하는 AI</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          단순 챗봇과 달리, <strong>스스로 계획을 세우고 도구를 사용해 작업을 완료</strong>하는 AI입니다. 2024년부터 핵심 트렌드.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-[10px] font-bold text-gray-700 mb-1">💬 기존 챗봇</p>
+            <p className="text-[10px] text-gray-600">"내일 회의 일정 어떻게 잡으면 좋을까?"</p>
+            <p className="text-[10px] text-gray-500 italic">→ 텍스트로 조언만 함</p>
+          </div>
+          <div className="p-3 rounded-lg border-2 border-purple-300 bg-purple-50">
+            <p className="text-[10px] font-bold text-purple-700 mb-1">🤖 AI 에이전트</p>
+            <p className="text-[10px] text-purple-600">"내일 김부장과 회의 잡아줘"</p>
+            <p className="text-[10px] text-purple-500 italic">→ 캘린더 조회·빈시간 찾기·초대장 발송까지 직접 실행</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 함수 호출 */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🛠️</span>
+          <p className="text-sm font-bold text-gray-800">함수 호출 (Function Calling / Tool Use)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">에이전트의 손과 발</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          AI가 외부 시스템(달력, 이메일, DB, API)을 호출할 수 있게 하는 기능. AI가 "이 도구를 써야겠다" 판단하면, 우리가 정의한 함수를 자동 호출합니다.
+        </p>
+
+        <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+          <p className="text-[10px] font-bold text-gray-700">예시: 변압기 점검 에이전트</p>
+          <div className="space-y-1 text-[10px]">
+            <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">1</span><span className="text-gray-700"><strong>사용자:</strong> "여수 변전소 1호 변압기 상태 점검해줘"</span></div>
+            <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold">2</span><span className="text-gray-700"><strong>AI:</strong> SCADA API 호출 → 최신 측정값 조회</span></div>
+            <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold">3</span><span className="text-gray-700"><strong>AI:</strong> 점검 기록 DB 조회 → 최근 이슈 확인</span></div>
+            <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">4</span><span className="text-gray-700"><strong>AI:</strong> "온도 정상, 진동 약간 상승 — 다음 정기 점검 시 확인 권장"</span></div>
+          </div>
+        </div>
+
+        <div className="p-2 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-[10px] text-amber-800">💡 함수 호출은 <strong>MCP(다음 코스 챕터)의 전신</strong>입니다. MCP는 이것을 표준화한 프로토콜입니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 8: 종합 퀴즈
+  const QuizStep = () => {
+    const [ans, setAns] = useState({});
+    const [done, setDone] = useState(false);
+    const qs = [
+      { id:"q1", q:"한국어 문장이 영어보다 토큰을 더 많이 소모하는 이유는?", opts:["한국어가 더 어렵기 때문","한 글자당 평균 1.5~2토큰으로 분해되기 때문 (BPE 구조상)","API 회사가 한국 기업에 차별을 둠"], a:1 },
+      { id:"q2", q:"컨텍스트 윈도우가 200K라는 의미는?", opts:["AI가 200,000개의 토큰까지 동시에 기억할 수 있음","200KB 파일까지 처리 가능","AI 가격이 200,000원"], a:0 },
+      { id:"q3", q:"SCADA 변압기 온도 측정값은 어떤 데이터?", opts:["정형 (표 형태로 정리됨)","비정형","둘 다 아님"], a:0 },
+      { id:"q4", q:"멀티모달 AI의 핵심 특징은?", opts:["여러 언어 지원","텍스트·이미지·음성·영상 등 여러 형태를 동시 처리","여러 모델을 합침"], a:1 },
+      { id:"q5", q:"AI 환각(Hallucination)이란?", opts:["AI가 그래픽 환영을 만드는 것","AI가 모르는 내용을 그럴듯하게 지어내는 현상","AI 시스템 오류"], a:1 },
+      { id:"q6", q:"GPT-4의 파라미터 수가 약 1.7조라는 의미는?", opts:["1.7조 명이 학습에 참여","1.7조 개의 가중치(숫자)가 모델 안에서 작동","1.7조 원 가치"], a:1 },
+      { id:"q7", q:"파인튜닝의 목적은?", opts:["AI 속도를 빠르게","범용 AI를 특정 도메인(우리 회사)에 맞게 추가 학습","AI 크기를 줄임"], a:1 },
+      { id:"q8", q:"API Key가 유출되면?", opts:["문제없음","다른 사람이 내 계정으로 비용을 무한 발생시킬 수 있음","API가 자동 비활성화됨"], a:1 },
+      { id:"q9", q:"AI 에이전트가 기존 챗봇과 다른 점은?", opts:["더 빠른 답변","스스로 도구를 호출하고 실제 작업을 수행","더 큰 모델"], a:1 },
+      { id:"q10", q:"함수 호출(Function Calling)의 역할은?", opts:["AI가 외부 도구·API를 사용할 수 있게 함","AI 학습을 빠르게 함","AI 비용을 줄임"], a:0 },
+    ];
+    const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)" }}>
+          <p className="text-xs text-purple-800">🎯 10문항으로 핵심 용어 이해도를 점검합니다. 모두 맞히면 용어 마스터!</p>
+        </div>
+        {qs.map((q, qi) => (
+          <div key={q.id} className="bg-white rounded-xl border border-gray-200 p-3">
+            <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
+            <div className="space-y-1">
+              {q.opts.map((o, oi) => {
+                const sel=ans[q.id]===oi, cor=done&&oi===q.a, wr=done&&sel&&oi!==q.a;
+                return <button key={oi} onClick={() => !done&&setAns(p=>({...p,[q.id]:oi}))} disabled={done}
+                  className={`w-full text-left p-2 rounded-lg text-[11px] border transition-all ${cor?"bg-emerald-50 border-emerald-300 font-bold text-emerald-800":wr?"bg-red-50 border-red-300 text-red-700":sel?"border-purple-400 bg-purple-50 text-purple-700":"border-gray-100 hover:border-gray-200 text-gray-600"}`}>{o}</button>;
+              })}
+            </div>
+          </div>
+        ))}
+        {!done ? (
+          <button onClick={() => setDone(true)} disabled={Object.keys(ans).length<qs.length} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{background:t.accent}}>제출하기</button>
+        ) : (
+          <div className="p-3 rounded-xl text-center" style={{background:sc===qs.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"}}>
+            <p className="text-lg font-black" style={{color:sc===qs.length?"#059669":"#d97706"}}>{sc}/{qs.length} 정답</p>
+            <p className="text-xs text-gray-500 mt-1">{sc===qs.length?"용어 사전 마스터! 🎉":"틀린 문제의 초록색 정답을 확인하세요."}</p>
+            <button onClick={() => {setAns({});setDone(false);}} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1"/>다시 풀기</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const steps = [
+    { title: "토큰 & 컨텍스트 윈도우", subtitle: "AI가 먹는 조각·기억 크기", icon: Blocks, content: TokenContextStep },
+    { title: "정형 / 비정형 데이터", subtitle: "엑셀 vs 자유 텍스트", icon: FileText, content: DataTypeStep },
+    { title: "멀티모달", subtitle: "AI의 오감", icon: Eye, content: MultimodalStep },
+    { title: "환각 (Hallucination)", subtitle: "그럴듯한 거짓말", icon: AlertTriangle, content: HallucinationStep },
+    { title: "파라미터 & 파인튜닝", subtitle: "AI 뇌세포·맞춤 학습", icon: SlidersHorizontal, content: ParamFineTuneStep },
+    { title: "API & API Key", subtitle: "AI 통로·출입증", icon: Send, content: APIStep },
+    { title: "에이전트 & 함수 호출", subtitle: "답하는 AI → 행동하는 AI", icon: Bot, content: AgentToolStep },
+    { title: "종합 퀴즈", subtitle: "10문항", icon: CheckCircle2, content: QuizStep },
+  ];
+
+  const StepContent = steps[step]?.content;
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <BookOpen size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>AI GLOSSARY</p>
+            <h2 className="text-lg font-black text-slate-800">필수 용어 사전</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">ChatGPT 쓰면서 매일 마주치는 용어 10가지 — 실무에서 안 헷갈리게 정리합니다.</p>
+
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {steps.map((s, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === step ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            {(() => { const Icon = steps[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+            <div>
+              <h3 className="font-semibold text-gray-900">{steps[step].title}</h3>
+              <p className="text-xs text-gray-400">{steps[step].subtitle}</p>
+            </div>
+          </div>
+          <StepContent />
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30"><ArrowLeft size={14} /> 이전</button>
+          <span className="text-xs text-gray-400 self-center">{step + 1} / {steps.length}</span>
+          <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} disabled={step === steps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">다음 <ArrowRight size={14} /></button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TAB 13: AI 똑똑하게 쓰는 법 (Course 2) ────────────
+const Tab13 = ({ onScore }) => {
+  const t = T.apply;
+  const [step, setStep] = useState(0);
+
+  // Step 1: 임베딩 & 벡터DB
+  const EmbeddingVDBStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🗺️</span>
+          <p className="text-sm font-bold text-gray-800">임베딩 (Embedding)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">단어 → 좌표</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          단어·문장·문서를 <strong>수백~수천 차원의 숫자 좌표(벡터)</strong>로 변환하는 기술. 의미가 비슷한 것끼리는 좌표상 가까이 위치합니다.
+        </p>
+        <div className="p-3 bg-gray-50 rounded-lg space-y-1">
+          <p className="text-[10px] font-mono text-gray-500">"변압기" → [0.23, -0.45, 0.78, ..., 0.12] (1536차원)</p>
+          <p className="text-[10px] font-mono text-gray-500">"트랜스" → [0.21, -0.43, 0.79, ..., 0.10] ← 변압기와 가까움</p>
+          <p className="text-[10px] font-mono text-gray-500">"커피"&nbsp;&nbsp;→ [-0.91, 0.34, -0.12, ..., 0.67] ← 멀리 떨어짐</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🗄️</span>
+          <p className="text-sm font-bold text-gray-800">벡터 DB (Vector Database)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">의미로 검색하는 DB</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          임베딩 벡터를 저장하고 <strong>"가장 비슷한 의미"</strong>를 빠르게 찾아주는 DB. 기존 DB가 "이름으로 검색"이라면, 벡터DB는 "뜻으로 검색"합니다.
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-[10px]">
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <p className="font-bold text-gray-700">🔍 기존 DB</p>
+            <p className="text-gray-500">"변압기"를 정확히 입력해야 매칭</p>
+          </div>
+          <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
+            <p className="font-bold text-orange-700">🧠 벡터 DB</p>
+            <p className="text-orange-600">"전압을 바꿔주는 장치" 입력해도 변압기 매뉴얼이 검색됨</p>
+          </div>
+        </div>
+        <div className="p-2 bg-gray-50 rounded-lg">
+          <p className="text-[10px] text-gray-600"><strong>대표 솔루션:</strong> Pinecone, Weaviate, Qdrant, Chroma, pgvector(PostgreSQL 확장)</p>
+        </div>
+      </div>
+
+      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <p className="text-xs text-amber-800"><strong>왜 중요?</strong> 다음 챕터 <strong>RAG의 인프라</strong>입니다. RAG는 "사내 문서를 벡터DB에 넣고, 질문이 오면 의미상 가까운 문서를 찾아 AI에게 같이 던지는" 구조입니다.</p>
+      </div>
+    </div>
+  );
+
+  // Step 2: RAG
+  const RAGStep = () => {
+    const [mode, setMode] = useState("rag");
+    return (
+      <div className="space-y-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📚</span>
+            <p className="text-sm font-bold text-gray-800">RAG (Retrieval-Augmented Generation)</p>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">검색 증강 생성</span>
+          </div>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            <strong>"오픈북 시험"</strong> 비유가 정확합니다. AI 혼자 답하지 않고, <strong>사내 문서·DB를 먼저 검색</strong>한 후 그 내용을 참고해서 답하게 합니다. 환각을 줄이는 가장 효과적인 방법.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">RAG 전 vs 후 비교</p>
+
+          <div className="flex gap-2">
+            <button onClick={() => setMode("no-rag")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${mode === "no-rag" ? "bg-red-500 text-white" : "bg-gray-100 text-gray-500"}`}>RAG 없이</button>
+            <button onClick={() => setMode("rag")} className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${mode === "rag" ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"}`}>RAG 적용</button>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-[10px] text-gray-500 mb-1">질문</p>
+            <p className="text-xs text-gray-800 font-medium">"우리 회사의 154kV 변압기 정기점검 주기는 며칠인가요?"</p>
+          </div>
+
+          {mode === "no-rag" ? (
+            <div className="p-3 bg-red-50 rounded-lg border border-red-200" style={{ animation: "fadeIn 0.3s" }}>
+              <p className="text-[10px] font-bold text-red-700 mb-1">❌ RAG 없는 답변 (환각 위험)</p>
+              <p className="text-[11px] text-red-700 leading-relaxed">"일반적으로 154kV급 변압기는 매 6개월 주기로 정기점검을 실시합니다. 한전의 경우 약 180일이 표준입니다." <em className="text-red-500">(출처 없음, 사실 확인 불가)</em></p>
+            </div>
+          ) : (
+            <div className="space-y-2" style={{ animation: "fadeIn 0.3s" }}>
+              <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-[10px] font-bold text-blue-700">① 검색 (Retrieval)</p>
+                <p className="text-[10px] text-blue-600">벡터DB에서 "154kV 변압기 점검 주기" 의미상 가까운 문서 3건 찾음</p>
+              </div>
+              <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-[10px] font-bold text-purple-700">② 증강 (Augmentation)</p>
+                <p className="text-[10px] text-purple-600">검색한 문서를 프롬프트에 첨부:<br/>"다음 문서를 참고해서 답변하세요: [송변전 점검 표준 v3.2.pdf 발췌]..."</p>
+              </div>
+              <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                <p className="text-[10px] font-bold text-emerald-700">③ 생성 (Generation)</p>
+                <p className="text-[11px] text-emerald-700">"송변전 점검 표준 v3.2 §4.2에 따르면, 154kV 변압기는 <strong>매 12개월</strong> 정기점검 + <strong>매 36개월</strong> 정밀점검입니다. (출처: 사내 표준 v3.2, 2024.06)"</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800"><strong>실무 가치:</strong> RAG는 한전 AI 도입의 <strong>가장 현실적인 시작점</strong>입니다. 모델 자체를 학습시킬 필요 없이, 사내 문서를 벡터DB에 넣어두기만 하면 됩니다. 보안상 외부에 데이터를 보내지 않아도 됩니다.</p>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 3: MCP
+  const MCPStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🪪</span>
+          <p className="text-sm font-bold text-gray-800">MCP (Model Context Protocol)</p>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">AI의 사내 출입증</span>
+        </div>
+        <p className="text-xs text-gray-600 leading-relaxed">
+          <strong>Anthropic이 2024년 11월에 공개한 오픈 표준</strong>. AI가 외부 도구(Slack, GitHub, DB, 사내 시스템 등)를 <strong>안전하고 표준화된 방법</strong>으로 사용할 수 있게 합니다.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">왜 필요했나?</p>
+
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+            <p className="font-bold text-red-700 mb-1">😩 MCP 전</p>
+            <p className="text-red-600">AI 도구마다 연결 방식이 제각각. Slack 연결 코드, GitHub 연결 코드, DB 연결 코드... <strong>N×M 통합 지옥</strong></p>
+          </div>
+          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+            <p className="font-bold text-emerald-700 mb-1">😊 MCP 후</p>
+            <p className="text-emerald-600">한 번 MCP 표준으로 만들면 <strong>모든 AI에서 사용 가능</strong>. USB-C처럼 표준화된 연결 방식.</p>
+          </div>
+        </div>
+
+        <div className="p-3 bg-gray-50 rounded-lg">
+          <p className="text-[10px] font-bold text-gray-700 mb-2">🔧 MCP가 제공하는 표준</p>
+          <ul className="text-[10px] text-gray-600 space-y-0.5">
+            <li>• <strong>Tools (도구)</strong> — AI가 호출할 함수 (이메일 보내기, DB 조회)</li>
+            <li>• <strong>Resources (리소스)</strong> — AI가 읽을 데이터 (파일, 문서)</li>
+            <li>• <strong>Prompts (프롬프트)</strong> — 재사용 가능한 프롬프트 템플릿</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">한전 적용 시나리오</p>
+        <div className="space-y-2 text-[11px]">
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <p className="font-bold text-gray-700">예: 한전 사내 MCP 서버를 만들면...</p>
+            <ul className="text-gray-600 mt-1 space-y-0.5 ml-2">
+              <li>📊 SCADA 데이터 조회 도구</li>
+              <li>📋 점검 보고서 검색 도구</li>
+              <li>🗓️ 작업 일정 등록 도구</li>
+              <li>📧 사내 이메일 발송 도구</li>
+            </ul>
+          </div>
+          <div className="p-2 bg-orange-50 rounded-lg border border-orange-200">
+            <p className="text-orange-700">→ Claude, ChatGPT, 사내 자체 AI 등 <strong>어떤 AI를 쓰든 동일하게 연결</strong> 가능. AI 벤더 종속 탈출!</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <p className="text-xs text-amber-800"><strong>왜 큰 변화?</strong> 이전엔 "ChatGPT용 플러그인", "Claude용 도구" 따로 만들었지만, MCP 이후로는 한 번 만들어서 어디나 씁니다. <strong>Anthropic·OpenAI·Google이 모두 MCP를 지원</strong>하기 시작했습니다 (2025년 트렌드).</p>
+      </div>
+    </div>
+  );
+
+  // Step 4: 학습 vs 추론
+  const TrainInferStep = () => (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏗️</span>
+            <p className="text-sm font-bold text-blue-800">학습 (Training)</p>
+          </div>
+          <p className="text-[11px] text-blue-700">AI를 <strong>만드는 과정</strong>. 데이터를 수집하고 모델 파라미터를 조정합니다.</p>
+          <div className="space-y-0.5 text-[10px] text-blue-600">
+            <p>• 시간: 수일~수개월</p>
+            <p>• 비용: GPT-4 학습 ≈ 1억$+</p>
+            <p>• GPU: 수천 대 동시</p>
+            <p>• 빈도: 1회 (or 가끔 업데이트)</p>
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚡</span>
+            <p className="text-sm font-bold text-emerald-800">추론 (Inference)</p>
+          </div>
+          <p className="text-[11px] text-emerald-700">완성된 AI를 <strong>사용하는 과정</strong>. ChatGPT에 질문하면 답이 나오는 것.</p>
+          <div className="space-y-0.5 text-[10px] text-emerald-600">
+            <p>• 시간: 수밀리초~수초</p>
+            <p>• 비용: 토큰당 ~0.001원</p>
+            <p>• GPU: 1대도 OK</p>
+            <p>• 빈도: 수십억 회/일</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">비유: 자동차 비교</p>
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <p className="font-bold text-gray-700">🏭 자동차 생산</p>
+            <p className="text-gray-600">공장 + 수천 명 인력 + 수개월 (= 학습)</p>
+          </div>
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <p className="font-bold text-gray-700">🚗 자동차 운전</p>
+            <p className="text-gray-600">키 꽂고 출발, 누구나 가능 (= 추론)</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <p className="text-xs text-amber-800"><strong>실무 의미:</strong> 한전이 자체 AI를 "학습"시키려면 천문학적 비용이 듭니다. 대신 기존 모델(GPT, Claude)을 <strong>추론으로만 사용 + RAG/파인튜닝</strong>이 현실적 전략입니다.</p>
+      </div>
+    </div>
+  );
+
+  // Step 5: 온프레미스 vs 클라우드
+  const OnPremCloudStep = () => (
+    <div className="space-y-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <p className="text-xs text-gray-600 leading-relaxed">사내 AI 도입 시 <strong>가장 큰 결정</strong>입니다. 보안·비용·성능 트레이드오프가 첨예합니다.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">☁️</span>
+            <p className="text-sm font-bold text-blue-800">클라우드 (Cloud API)</p>
+          </div>
+          <p className="text-[10px] text-blue-700">OpenAI, Anthropic 등의 외부 AI를 API로 호출</p>
+          <div className="space-y-1 text-[10px]">
+            <p className="text-emerald-600">✅ 최신·최강 모델 즉시 사용</p>
+            <p className="text-emerald-600">✅ 초기 비용 0, 사용량 기반</p>
+            <p className="text-emerald-600">✅ 인프라 관리 불필요</p>
+            <p className="text-red-600">❌ 데이터가 외부로 전송됨 (보안)</p>
+            <p className="text-red-600">❌ 사용량 늘면 비용 폭증</p>
+            <p className="text-red-600">❌ 인터넷 필수, 외부 의존</p>
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏢</span>
+            <p className="text-sm font-bold text-emerald-800">온프레미스 (On-premise)</p>
+          </div>
+          <p className="text-[10px] text-emerald-700">자체 서버에 오픈소스 모델(Llama 등) 직접 설치</p>
+          <div className="space-y-1 text-[10px]">
+            <p className="text-emerald-600">✅ 데이터 외부 유출 0 (보안)</p>
+            <p className="text-emerald-600">✅ 무제한 사용, 고정 비용</p>
+            <p className="text-emerald-600">✅ 인터넷 단절 시도 작동</p>
+            <p className="text-red-600">❌ 초기 GPU 서버 투자 (수억~)</p>
+            <p className="text-red-600">❌ 인프라 운영 인력 필요</p>
+            <p className="text-red-600">❌ 모델 업데이트 직접 관리</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+        <p className="text-xs font-bold text-gray-500 tracking-widest uppercase">한전 같은 공기업의 일반적 선택</p>
+        <div className="space-y-1.5 text-[11px]">
+          <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="font-bold text-purple-700">🎯 하이브리드 전략 (가장 현실적)</p>
+            <p className="text-purple-600 mt-0.5">민감 데이터 → 온프레미스 (사내 Llama) / 일반 업무 → 클라우드 (GPT, Claude). 또는 클라우드 중 <strong>전용 격리 환경(Azure OpenAI 등)</strong> 사용.</p>
+          </div>
+          <div className="p-2 bg-gray-50 rounded-lg">
+            <p className="font-bold text-gray-700">📊 비교 요소</p>
+            <p className="text-gray-600">데이터 민감도 / 사용 빈도 / 초기 예산 / 인력 / 사내 보안 정책</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+        <p className="text-xs text-amber-800"><strong>트렌드 (2025):</strong> 오픈소스 모델(Llama 3, Mistral, Qwen)의 성능이 GPT-4에 근접하면서, <strong>온프레미스가 점점 매력적</strong>이 되고 있습니다. 한전 같은 보안 민감 조직엔 특히 유리.</p>
+      </div>
+    </div>
+  );
+
+  // Step 6: 종합 퀴즈
+  const QuizStep = () => {
+    const [ans, setAns] = useState({});
+    const [done, setDone] = useState(false);
+    const qs = [
+      { id:"q1", q:"임베딩(Embedding)이란?", opts:["단어/문서를 수백~수천 차원의 숫자 벡터로 변환","AI 학습 단계","파라미터를 축소하는 기법"], a:0 },
+      { id:"q2", q:"벡터DB가 기존 DB와 다른 점은?", opts:["용량이 더 큼","'이름'이 아닌 '의미'로 검색 가능","SQL을 안 씀"], a:1 },
+      { id:"q3", q:"RAG의 핵심 아이디어는?", opts:["AI를 더 크게 만듦","답변 전에 관련 문서를 검색해서 참고시킴","답변 속도를 높임"], a:1 },
+      { id:"q4", q:"RAG가 환각을 줄이는 이유는?", opts:["AI 자체가 똑똑해져서","실제 사내 문서를 근거로 답하기 때문","Temperature를 낮춰서"], a:1 },
+      { id:"q5", q:"MCP(Model Context Protocol)의 핵심은?", opts:["AI 모델의 크기 표준", "AI가 외부 도구를 사용하는 표준 프로토콜", "데이터 압축 방식"], a:1 },
+      { id:"q6", q:"MCP의 비유로 적절한 것은?", opts:["USB-C 같은 표준 연결 방식", "방화벽", "백신 프로그램"], a:0 },
+      { id:"q7", q:"AI 학습(Training)과 추론(Inference)의 차이는?", opts:["학습=만들기, 추론=사용하기 (시간/비용 천차만별)", "둘은 같은 것", "학습이 추론보다 항상 빠름"], a:0 },
+      { id:"q8", q:"한전 같은 조직의 가장 현실적 AI 도입 전략은?", opts:["모든 데이터를 클라우드로", "전부 자체 학습", "민감 데이터는 온프레미스, 일반은 클라우드 하이브리드"], a:2 },
+    ];
+    const sc = done ? qs.filter(q => ans[q.id]===q.a).length : 0;
+    return (
+      <div className="space-y-4">
+        <div className="p-3 rounded-xl" style={{ background: "rgba(234,88,12,0.06)", border: "1px solid rgba(234,88,12,0.15)" }}>
+          <p className="text-xs text-orange-800">🎯 8문항으로 활용 핵심 개념을 점검합니다.</p>
+        </div>
+        {qs.map((q, qi) => (
+          <div key={q.id} className="bg-white rounded-xl border border-gray-200 p-3">
+            <p className="text-xs font-bold text-gray-800 mb-2">Q{qi+1}. {q.q}</p>
+            <div className="space-y-1">
+              {q.opts.map((o, oi) => {
+                const sel=ans[q.id]===oi, cor=done&&oi===q.a, wr=done&&sel&&oi!==q.a;
+                return <button key={oi} onClick={() => !done&&setAns(p=>({...p,[q.id]:oi}))} disabled={done}
+                  className={`w-full text-left p-2 rounded-lg text-[11px] border transition-all ${cor?"bg-emerald-50 border-emerald-300 font-bold text-emerald-800":wr?"bg-red-50 border-red-300 text-red-700":sel?"border-orange-400 bg-orange-50 text-orange-700":"border-gray-100 hover:border-gray-200 text-gray-600"}`}>{o}</button>;
+              })}
+            </div>
+          </div>
+        ))}
+        {!done ? (
+          <button onClick={() => setDone(true)} disabled={Object.keys(ans).length<qs.length} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-30" style={{background:t.accent}}>제출하기</button>
+        ) : (
+          <div className="p-3 rounded-xl text-center" style={{background:sc===qs.length?"rgba(16,185,129,0.08)":"rgba(245,158,11,0.08)"}}>
+            <p className="text-lg font-black" style={{color:sc===qs.length?"#059669":"#d97706"}}>{sc}/{qs.length} 정답</p>
+            <p className="text-xs text-gray-500 mt-1">{sc===qs.length?"활용 마스터! 🎉":"틀린 문제의 초록색 정답을 확인하세요."}</p>
+            <button onClick={() => {setAns({});setDone(false);}} className="mt-2 text-xs text-gray-500"><RotateCcw size={12} className="inline mr-1"/>다시 풀기</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const steps = [
+    { title: "임베딩 & 벡터DB", subtitle: "RAG의 인프라", icon: Binary, content: EmbeddingVDBStep },
+    { title: "RAG", subtitle: "오픈북 시험", icon: BookOpen, content: RAGStep },
+    { title: "MCP", subtitle: "AI 사내 출입증", icon: Workflow, content: MCPStep },
+    { title: "학습 vs 추론", subtitle: "만들기 vs 쓰기", icon: Cpu, content: TrainInferStep },
+    { title: "온프레미스 vs 클라우드", subtitle: "사내 vs 외부 AI", icon: Settings, content: OnPremCloudStep },
+    { title: "종합 퀴즈", subtitle: "8문항", icon: CheckCircle2, content: QuizStep },
+  ];
+
+  const StepContent = steps[step]?.content;
+  return (
+    <div className="space-y-8">
+      <Card t={t}>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg" style={{ background: t.dim, border: `1px solid ${t.border}` }}>
+            <Sparkles size={18} style={{ color: t.accent }} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: t.accent }}>SMART AI USAGE</p>
+            <h2 className="text-lg font-black text-slate-800">AI를 똑똑하게 쓰는 법</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 mb-6">AI를 "내 회사 데이터"에 연결하는 핵심 기술들 — RAG, MCP, 그리고 도입 전략</p>
+
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
+          {steps.map((s, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${i === step ? "text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+              style={i === step ? { background: t.accent } : {}}>
+              <span className="font-mono">{i + 1}</span>
+              <span className="hidden sm:inline">{s.subtitle}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            {(() => { const Icon = steps[step].icon; return <Icon size={20} className="text-gray-700" />; })()}
+            <div>
+              <h3 className="font-semibold text-gray-900">{steps[step].title}</h3>
+              <p className="text-xs text-gray-400">{steps[step].subtitle}</p>
+            </div>
+          </div>
+          <StepContent />
+        </div>
+
+        <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
+          <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30"><ArrowLeft size={14} /> 이전</button>
+          <span className="text-xs text-gray-400 self-center">{step + 1} / {steps.length}</span>
+          <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} disabled={step === steps.length - 1} className="flex items-center gap-1.5 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30">다음 <ArrowRight size={14} /></button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ─── COURSE STRUCTURE ──────────────────────────────────
 const courses = [
   {
@@ -5654,6 +6575,7 @@ const courses = [
     color: { accent: "#7c3aed", dim: "rgba(124,58,237,0.08)", border: "rgba(124,58,237,0.2)", grad: "linear-gradient(135deg,#6d28d9,#a78bfa)" },
     chapters: [
       { id: "concept", label: "AI 개념과 역사", icon: Brain, component: Tab1, themeKey: "concept" },
+      { id: "glossary", label: "필수 용어 사전", icon: BookOpen, component: Tab12, themeKey: "concept" },
       { id: "how", label: "AI 동작원리", icon: Cpu, component: Tab2, themeKey: "how" },
       { id: "prompt", label: "프롬프트 꿀팁", icon: Sparkles, component: Tab4, themeKey: "prompt" },
       { id: "ethics", label: "AI 주의사항", icon: Shield, component: Tab5, themeKey: "ethics" },
@@ -5673,6 +6595,7 @@ const courses = [
       { id: "ind-cv", label: "AI가 이미지를 보는 법", icon: Eye, component: IndustryCH3, themeKey: "apply" },
       { id: "ind-predict", label: "AI가 미래를 예측하는 법", icon: TrendingUp, component: IndustryCH4, themeKey: "apply" },
       { id: "ind-optimize", label: "AI가 시스템을 운영하는 법", icon: Settings, component: IndustryCH5, themeKey: "apply" },
+      { id: "smart-ai", label: "AI를 똑똑하게 쓰는 법", icon: Sparkles, component: Tab13, themeKey: "apply" },
       { id: "apply", label: "AI 실무적용 종합", icon: Zap, component: Tab3, themeKey: "apply" },
     ],
   },
