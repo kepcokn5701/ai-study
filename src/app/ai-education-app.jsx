@@ -6705,6 +6705,294 @@ const Certificate = ({ nickname, course, onClose }) => {
   );
 };
 
+// ─── WELCOME MANUAL COMPONENT ──────────────────────────
+const WelcomeManual = ({ onClose, isAdmin }) => {
+  const [section, setSection] = useState(0);
+
+  const sections = [
+    {
+      title: "환영합니다",
+      icon: "👋",
+      content: (
+        <div className="space-y-4">
+          <div className="p-5 rounded-2xl text-center" style={{ background: "linear-gradient(135deg, #6d28d9 0%, #0284c7 100%)" }}>
+            <p className="text-3xl mb-2">🎓</p>
+            <p className="text-white font-bold text-lg">AI 교육 아카데미</p>
+            <p className="text-white/80 text-xs mt-1">전력산업 종사자를 위한 단계별 AI 학습</p>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed">
+            안녕하세요! 이 아카데미는 <strong>전력산업 실무자</strong>가 AI를 처음부터 깊이까지 이해할 수 있도록 설계됐습니다. <strong>비유 → 인터랙티브 체험 → 퀴즈</strong>의 흐름으로, 책처럼 읽되 게임처럼 즐길 수 있어요.
+          </p>
+          <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+            <p className="text-xs text-purple-800"><strong>💡 학습 철학:</strong> 단순히 "AI 용어를 외우기"가 아니라, <strong>"AI를 활용해 내 업무를 어떻게 바꿀까"</strong>를 고민하게 하는 것이 목표입니다.</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "학습 구조",
+      icon: "🗺️",
+      content: (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700">3단계 코스로 구성되어 있습니다. 각 코스는 여러 챕터로 이루어져 있어요.</p>
+
+          {[
+            { badge: "🥉", title: "AI 문해력", subtitle: "AI가 뭔데?", color: "#7c3aed", chapters: 5, time: "약 1시간", desc: "AI 개념, 동작원리, 필수 용어, 프롬프트, 주의사항", who: "AI 처음 접하는 분, 일반 사무직" },
+            { badge: "🥈", title: "AI 활용", subtitle: "AI는 어떻게 생각할까?", color: "#0284c7", chapters: 7, time: "약 2시간", desc: "딥다이브, OCR/CV/시계열/최적화, RAG·MCP, 실무 적용", who: "AI를 실무에 도입하려는 분, IT/현장 담당자" },
+            { badge: "🥇", title: "AI 전문", subtitle: "AI의 수학과 구조", color: "#a855f7", chapters: 6, time: "약 3시간", desc: "AI 혁명사, Transformer 수식, CNN/RNN/RL, RLHF·DPO", who: "AI 깊이 이해하고 싶은 분, 모델 직접 다루는 분" },
+          ].map((c, i) => (
+            <div key={i} className="p-3 rounded-xl border-2" style={{ borderColor: c.color + "40", background: c.color + "08" }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{c.badge}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold" style={{ color: c.color }}>{c.title}</p>
+                  <p className="text-[10px] text-gray-500">{c.subtitle}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-gray-700">{c.chapters}챕터</p>
+                  <p className="text-[10px] text-gray-500">⏱️ {c.time}</p>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-600 mt-2">{c.desc}</p>
+              <p className="text-[10px] text-gray-500 mt-1 italic">👤 추천 대상: {c.who}</p>
+            </div>
+          ))}
+
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p className="text-xs text-amber-800"><strong>🔓 잠금 해제:</strong> 코스1 절반 이상 완료 → 코스2 해제, 코스2 완료 → 코스3 해제. 관리자 모드는 모든 코스 자유 열람.</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "챕터 안에서",
+      icon: "📖",
+      content: (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700">각 챕터는 일관된 흐름으로 구성됩니다:</p>
+
+          {[
+            { step: "1", title: "개념 설명", desc: "비유 + 핵심 정의 + 한전 실무 연결", icon: "💡" },
+            { step: "2", title: "Origin Story", desc: "이 기술이 왜 만들어졌나? 역사적 맥락 (코스3 위주)", icon: "📜" },
+            { step: "3", title: "인터랙티브 체험", desc: "슬라이더·게임·시뮬레이터로 직접 만져보기", icon: "🎮" },
+            { step: "4", title: "글로벌 사례", desc: "TEPCO·National Grid·Schneider 등 (코스2)", icon: "🌍" },
+            { step: "5", title: "이해도 퀴즈", desc: "객관식 문제로 학습 확인 + 즉시 피드백", icon: "✅" },
+          ].map((s, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs font-bold flex items-center justify-center shrink-0">{s.step}</div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-800">{s.icon} {s.title}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+
+          <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+            <p className="text-xs text-purple-800"><strong>💡 팁:</strong> 모든 인터랙티브 요소는 <strong>여러 번 시도해도 OK</strong>. 슬라이더를 끝까지 움직여보고, 퀴즈도 틀린 뒤 다시 도전하면 더 잘 기억됩니다.</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "수료 & 뱃지",
+      icon: "🏆",
+      content: (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700">학습을 완료하면 <strong>수료증과 뱃지</strong>를 얻을 수 있습니다.</p>
+
+          <div className="p-4 rounded-xl bg-white border-2 border-amber-300 space-y-2">
+            <p className="text-xs font-bold text-amber-700">📜 수료증 (Certificate)</p>
+            <ul className="text-[11px] text-gray-600 space-y-1 ml-2">
+              <li>• 코스 내 <strong>모든 챕터를 완료</strong>하면 자동 발급</li>
+              <li>• 이름·과정명·날짜가 표시된 정식 수료증</li>
+              <li>• <strong>인쇄/PDF 저장</strong> 가능 (브라우저 인쇄 기능)</li>
+              <li>• 상단 📜 버튼으로 언제든 재열람</li>
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl bg-white border-2 border-purple-300 space-y-2">
+            <p className="text-xs font-bold text-purple-700">🎖️ 뱃지 시스템</p>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {[
+                { badge: "🥉", title: "AI 문해력", color: "#7c3aed" },
+                { badge: "🥈", title: "AI 활용가", color: "#0284c7" },
+                { badge: "🥇", title: "AI 전문가", color: "#a855f7" },
+              ].map((b, i) => (
+                <div key={i} className="p-2 rounded-lg text-center" style={{ background: b.color + "10", border: `1px solid ${b.color}30` }}>
+                  <p className="text-2xl">{b.badge}</p>
+                  <p className="text-[10px] font-bold" style={{ color: b.color }}>{b.title}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-500 mt-2">3개 모두 획득 시 <strong>🏆 전 과정 완료</strong> 표시!</p>
+          </div>
+
+          <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+            <p className="text-xs text-blue-800"><strong>🏆 리더보드:</strong> 좌하단 트로피 버튼으로 접근. 닉네임별 총점·완료 코스·정답률 랭킹을 볼 수 있습니다. (knai-zone 닉네임으로 자동 연동)</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "추천 학습 경로",
+      icon: "🎯",
+      content: (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700">목적에 따라 다른 방법을 추천합니다.</p>
+
+          <div className="space-y-2">
+            {[
+              {
+                title: "🌱 AI 처음 접하는 분",
+                path: "코스1 (전체) → 코스2 CH1·CH2 → 코스3 CH1",
+                time: "약 2시간",
+                color: "#10b981",
+              },
+              {
+                title: "💼 실무에 AI 도입 검토 중",
+                path: "코스1 (필수 용어·주의사항) → 코스2 (전체) → 코스3 (Origin Story만)",
+                time: "약 4시간",
+                color: "#3b82f6",
+              },
+              {
+                title: "🔬 AI 깊이 이해하고 싶음",
+                path: "코스1 (전체) → 코스2 (딥다이브·전문 4챕터) → 코스3 (전체)",
+                time: "약 6시간",
+                color: "#a855f7",
+              },
+              {
+                title: "⚡ 시간 없음, 핵심만",
+                path: "코스1 CH1·CH2 (필수 용어) → 코스2 CH7 (AI 똑똑하게 쓰는 법)",
+                time: "약 1시간",
+                color: "#f59e0b",
+              },
+            ].map((p, i) => (
+              <div key={i} className="p-3 rounded-xl border-2" style={{ borderColor: p.color + "40", background: p.color + "08" }}>
+                <p className="text-xs font-bold" style={{ color: p.color }}>{p.title}</p>
+                <p className="text-[11px] text-gray-600 mt-1">{p.path}</p>
+                <p className="text-[10px] text-gray-500 mt-1">⏱️ {p.time}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+            <p className="text-xs text-purple-800"><strong>💡 학습 부담 없이:</strong> 한 번에 다 안 해도 됩니다. 매일 챕터 1~2개씩, <strong>2주 분량으로 나눠</strong> 학습하면 부담 없고 기억에도 더 잘 남습니다.</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: isAdmin ? "관리자 가이드" : "FAQ",
+      icon: isAdmin ? "⚙️" : "❓",
+      content: isAdmin ? (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700">관리자 모드에서 추가로 사용 가능한 기능들입니다.</p>
+
+          <div className="p-4 rounded-xl bg-white border-2 border-red-200 space-y-2">
+            <p className="text-xs font-bold text-red-700">📊 학습 통계 대시보드</p>
+            <p className="text-[11px] text-gray-600">우하단 <strong>"학습 통계"</strong> 버튼으로 접근</p>
+            <ul className="text-[11px] text-gray-600 space-y-0.5 ml-2">
+              <li>• 총 응시 수 · 참여자 수 · 평균 정답률</li>
+              <li>• 최근 7일 학습 활동 차트</li>
+              <li>• 가장 많이 틀리는 문제 TOP 10 (콘텐츠 개선 힌트)</li>
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl bg-white border-2 border-purple-200 space-y-2">
+            <p className="text-xs font-bold text-purple-700">🔓 자유 열람 모드</p>
+            <p className="text-[11px] text-gray-600">관리자는 <strong>모든 코스/챕터를 잠금 없이 자유롭게 둘러볼 수 있습니다</strong>. 콘텐츠 검토 시 유용.</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-white border-2 border-blue-200 space-y-2">
+            <p className="text-xs font-bold text-blue-700">📈 자율 학습 관리</p>
+            <ul className="text-[11px] text-gray-600 space-y-0.5 ml-2">
+              <li>• 학습 통계로 <strong>이탈 지점</strong> 파악 → 콘텐츠 개선</li>
+              <li>• 오답률 높은 문제 = <strong>설명이 부족하거나 자료에 오류</strong>일 수 있음</li>
+              <li>• 리더보드로 <strong>활성 학습자</strong> 격려 / 보상 가능</li>
+              <li>• knai-zone 닉네임으로 통계가 누적되니, 부서별 분석도 가능</li>
+            </ul>
+          </div>
+
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p className="text-xs text-amber-800"><strong>💡 콘텐츠 개선 사이클:</strong> 통계 확인 → 오답률 높은 문제 → 해당 챕터 설명 보강 → 재배포. 학습자 피드백 없이도 <strong>데이터로 자율 개선</strong>이 가능합니다.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {[
+            { q: "Q. 챕터를 건너뛰어도 되나요?", a: "네! 같은 코스 내에서는 자유롭게 이동 가능합니다. 다만 코스 잠금 해제는 진행도가 필요합니다." },
+            { q: "Q. 퀴즈를 틀리면 어떻게 되나요?", a: "감점은 없습니다. 정답을 확인하고 다시 풀 수 있어요. 틀린 문제도 학습의 일부입니다." },
+            { q: "Q. 학습 진행도는 어디에 저장되나요?", a: "knai-zone 닉네임으로 로그인했다면 Supabase에, 그렇지 않으면 브라우저 localStorage에 저장됩니다." },
+            { q: "Q. 모바일에서도 잘 보이나요?", a: "네, 반응형으로 설계되어 있어 스마트폰에서도 학습 가능합니다." },
+            { q: "Q. 수료증을 PDF로 저장하려면?", a: "수료증 화면의 '인쇄/저장' 버튼 → 브라우저 인쇄 다이얼로그에서 'PDF로 저장' 선택." },
+            { q: "Q. 한 챕터에 시간이 얼마나 걸리나요?", a: "보통 10~25분. 인터랙티브가 많은 챕터는 더 오래 걸릴 수 있습니다." },
+          ].map((f, i) => (
+            <div key={i} className="p-3 bg-gray-50 rounded-xl">
+              <p className="text-xs font-bold text-gray-800">{f.q}</p>
+              <p className="text-[11px] text-gray-600 mt-1">{f.a}</p>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[200] overflow-y-auto" onClick={onClose}>
+      <div className="max-w-2xl mx-auto my-4 sm:my-8 bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()} style={{ animation: "fadeIn 0.3s ease-out" }}>
+        {/* Header */}
+        <div className="p-5 text-white flex items-center justify-between" style={{ background: "linear-gradient(135deg, #6d28d9, #0284c7)" }}>
+          <div className="flex items-center gap-3">
+            <BookOpen size={20} />
+            <div>
+              <p className="text-base font-bold">교육 매뉴얼</p>
+              <p className="text-xs text-white/70">AI 아카데미 사용 가이드</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg"><X size={18} /></button>
+        </div>
+
+        {/* Section nav */}
+        <div className="px-5 pt-4 border-b border-gray-100">
+          <div className="flex gap-1 overflow-x-auto pb-3">
+            {sections.map((s, i) => (
+              <button key={i} onClick={() => setSection(i)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${i === section ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}>
+                <span className="mr-1">{s.icon}</span>{s.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Section content */}
+        <div className="p-5 max-h-[60vh] overflow-y-auto" key={section} style={{ animation: "fadeIn 0.3s" }}>
+          {sections[section].content}
+        </div>
+
+        {/* Footer nav */}
+        <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+          <button onClick={() => setSection(Math.max(0, section - 1))} disabled={section === 0}
+            className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-gray-900 disabled:opacity-30">
+            <ArrowLeft size={12} /> 이전
+          </button>
+          <span className="text-[10px] text-gray-400">{section + 1} / {sections.length}</span>
+          {section < sections.length - 1 ? (
+            <button onClick={() => setSection(section + 1)}
+              className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-white rounded-lg" style={{ background: "linear-gradient(135deg, #6d28d9, #0284c7)" }}>
+              다음 <ArrowRight size={12} />
+            </button>
+          ) : (
+            <button onClick={onClose}
+              className="flex items-center gap-1 px-4 py-2 text-xs font-bold text-white rounded-lg" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
+              🚀 학습 시작
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── LEADERBOARD COMPONENT ──────────────────────────────
 const Leaderboard = ({ onClose, currentUser }) => {
   const [data, setData] = useState([]);
@@ -6912,6 +7200,7 @@ export default function App() {
   const [adminError, setAdminError] = useState("");
   const [showCertificate, setShowCertificate] = useState(null); // course id
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showManual, setShowManual] = useState(false);
 
   // URL 파라미터로 자동 로그인 (knai-zone 연동)
   useEffect(() => {
@@ -6941,6 +7230,13 @@ export default function App() {
       const savedNickname = localStorage.getItem("ai_study_nickname");
       if (savedAdmin === "true") setIsAdmin(true);
       if (savedNickname) setNickname(savedNickname);
+    }
+
+    // 첫 방문 시 매뉴얼 자동 표시
+    const manualSeen = localStorage.getItem("ai_study_manual_seen");
+    if (!manualSeen) {
+      setShowManual(true);
+      localStorage.setItem("ai_study_manual_seen", "true");
     }
   }, []);
 
@@ -7049,6 +7345,12 @@ export default function App() {
               </div>
               <p className="text-xs text-slate-400">{nickname ? `${nickname}님의 학습 공간` : "전력산업 종사자를 위한 단계별 AI 학습"}</p>
             </div>
+            <button onClick={() => setShowManual(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-all shrink-0"
+              title="교육 매뉴얼">
+              <BookOpen size={12} />
+              <span className="hidden sm:inline">매뉴얼</span>
+            </button>
             {totalScore > 0 && (
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
@@ -7244,6 +7546,9 @@ export default function App() {
 
       {/* Leaderboard modal */}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} currentUser={nickname} />}
+
+      {/* Welcome Manual modal */}
+      {showManual && <WelcomeManual onClose={() => setShowManual(false)} isAdmin={isAdmin} />}
     </div>
   );
 }
