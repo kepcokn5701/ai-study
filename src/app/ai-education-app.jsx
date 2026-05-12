@@ -6758,8 +6758,8 @@ const WelcomeManual = ({ onClose, isAdmin }) => {
             </div>
           ))}
 
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <p className="text-xs text-amber-800"><strong>🔓 잠금 해제:</strong> 코스1 절반 이상 완료 → 코스2 해제, 코스2 완료 → 코스3 해제. 관리자 모드는 모든 코스 자유 열람.</p>
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+            <p className="text-xs text-emerald-800"><strong>🔓 자유 열람:</strong> 모든 코스와 챕터를 <strong>순서 상관없이 자유롭게 학습</strong>할 수 있습니다. 본인 필요에 맞게 골라서 들으세요.</p>
           </div>
         </div>
       ),
@@ -6899,8 +6899,8 @@ const WelcomeManual = ({ onClose, isAdmin }) => {
           </div>
 
           <div className="p-4 rounded-xl bg-white border-2 border-purple-200 space-y-2">
-            <p className="text-xs font-bold text-purple-700">🔓 자유 열람 모드</p>
-            <p className="text-[11px] text-gray-600">관리자는 <strong>모든 코스/챕터를 잠금 없이 자유롭게 둘러볼 수 있습니다</strong>. 콘텐츠 검토 시 유용.</p>
+            <p className="text-xs font-bold text-purple-700">🎖️ ADMIN 배지</p>
+            <p className="text-[11px] text-gray-600">헤더에 <strong>빨간색 ADMIN 배지</strong>가 표시됩니다. 본인이 관리자 모드임을 확인할 수 있어요. 우하단 "관리자 로그아웃"으로 일반 모드로 전환 가능.</p>
           </div>
 
           <div className="p-4 rounded-xl bg-white border-2 border-blue-200 space-y-2">
@@ -7298,19 +7298,8 @@ export default function App() {
     });
   }, [completedChapters]);
 
-  // Course unlock logic: admin bypasses all locks
-  const isCourseUnlocked = (courseId) => {
-    if (isAdmin) return true;
-    if (courseId === "literacy") return true;
-    if (courseId === "practitioner") {
-      const c1 = getCourseCompletion("literacy");
-      return c1.completed >= Math.ceil(c1.total / 2);
-    }
-    if (courseId === "expert") {
-      return getCourseCompletion("practitioner").done;
-    }
-    return false;
-  };
+  // Course unlock logic: 모든 사용자 자유 열람
+  const isCourseUnlocked = () => true;
 
   return (
     <div className="min-h-screen" style={{
